@@ -1,0 +1,8 @@
+---
+description: do not format the entire code
+globs: 
+---
+
+# Your rule content
+
+when you revise existing code, don't show me the entire preview in the chat composer just let me apply it
