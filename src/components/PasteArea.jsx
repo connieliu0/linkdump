@@ -1,6 +1,6 @@
 // src/components/PasteArea.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import Draggable from 'react-draggable';
+import PanZoom, { Element } from '@sasza/react-panzoom';
 import { db, saveItem, loadItems } from '../utils/storage';
 import LinkCard from './LinkCard';
 import ImageCard from './ImageCard';
@@ -11,8 +11,8 @@ const COMPRESSION_QUALITY = 0.7; // 0 = max compression, 1 = max quality
 const PasteArea = () => {
   const [items, setItems] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
-  const [canvasSize] = useState({ width: 3000, height: 3000 });
-  const nodeRefs = useRef(new Map()).current;
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const panzoomRef = useRef();
 
   // Load items on mount
   useEffect(() => {
@@ -27,48 +27,20 @@ const PasteArea = () => {
     fetchItems();
   }, []);
 
-  // Get or create a ref for an item
-  const getNodeRef = (id) => {
-    if (!nodeRefs.has(id)) {
-      nodeRefs.set(id, React.createRef());
+  // Track mouse position relative to panzoom
+  const handleMouseMove = (e) => {
+    if (panzoomRef.current) {
+      const { x, y } = panzoomRef.current.getPosition(e);
+      setMousePosition({ x, y });
     }
-    return nodeRefs.get(id);
-  };
-
-  // New function to compress and resize image
-  const processImage = (dataUrl) => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-
-        // Calculate new dimensions maintaining aspect ratio
-        if (width > MAX_WIDTH) {
-          height = Math.round((height * MAX_WIDTH) / width);
-          width = MAX_WIDTH;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // Convert to compressed JPEG
-        resolve(canvas.toDataURL('image/jpeg', COMPRESSION_QUALITY));
-      };
-      img.src = dataUrl;
-    });
   };
 
   const handlePaste = async (e) => {
     e.preventDefault();
     const clipboardData = e.clipboardData;
     
-    const x = window.scrollX + e.clientX;
-    const y = window.scrollY + e.clientY;
+    // Use tracked mouse position
+    const { x, y } = mousePosition;
     
     try {
       // Handle pasted images
@@ -109,24 +81,9 @@ const PasteArea = () => {
     }
   };
 
-  const handleDragStop = async (id, e, data) => {
-    try {
-      const newPosition = { x: Math.round(data.x), y: Math.round(data.y) };
-      await db.items.update(id, { position: newPosition });
-      setItems(prev => prev.map(item => 
-        item.id === id 
-          ? { ...item, position: newPosition }
-          : item
-      ));
-    } catch (error) {
-      console.error('Error updating position:', error);
-    }
-  };
-
   const handleDelete = async (id) => {
     await db.items.delete(id);
     setItems(prev => prev.filter(item => item.id !== id));
-    nodeRefs.delete(id);
     setSelectedId(null);
   };
 
@@ -136,76 +93,58 @@ const PasteArea = () => {
     }
   };
 
-  const handleCanvasClick = (e) => {
-    if (e.target.className === 'canvas-area') {
-      setSelectedId(null);
-    }
-  };
-
   return (
-    <div className="paste-container" onPaste={handlePaste} onKeyDown={handleKeyDown} tabIndex={0}>
-      <div 
+    <div 
+      className="paste-container" 
+      onPaste={handlePaste} 
+      onKeyDown={handleKeyDown} 
+      onMouseMove={handleMouseMove}
+      tabIndex={0}
+    >
+      <PanZoom 
+        ref={panzoomRef}
         className="canvas-area"
-        style={{ width: canvasSize.width, height: canvasSize.height }}
-        onClick={handleCanvasClick}
+        style={{ width: '100%', height: '100vh' }}
+        onContainerClick={() => setSelectedId(null)}
+        
       >
         <div style={{ 
           position: 'fixed', 
           top: '1rem', 
           left: '50%', 
           transform: 'translateX(-50%)',
-          color: '#6B7280'
+          color: '#6B7280',
+          pointerEvents: 'none'
         }}>
           Paste an image or link here
         </div>
         
-        {items.map(item => {
-          // Ensure position values are numbers
-          const x = Number(item.position?.x) || 0;
-          const y = Number(item.position?.y) || 0;
-          
-          return (
-            <Draggable
-              key={item.id}
-              nodeRef={getNodeRef(item.id)}
-              defaultPosition={{ x, y }}
-              onDrag={(e, data) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              onStop={(e, data) => handleDragStop(item.id, e, data)}
-              bounds="parent"
-            >
-              <div 
-                ref={getNodeRef(item.id)}
-                className={`paste-item ${selectedId === item.id ? 'selected' : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedId(item.id);
-                }}
-                style={{
-                  position: 'absolute',
-                  transform: `translate(${x}px, ${y}px)`
-                }}
-              >
-                {item.type === 'image' ? (
-                  <ImageCard src={item.content} />
-                ) : item.type === 'link' ? (
-                  <LinkCard 
-                    url={item.content} 
-                    itemId={item.id}
-                    initialMetadata={item.metadata}
-                  />
-                ) : (
-                  <div className="text-content">
-                    {item.content}
-                  </div>
-                )}
+        {items.map(item => (
+          <Element
+            id={item.id}
+            className={`paste-item ${selectedId === item.id ? 'selected' : ''}`}
+            onClick={(e) => {
+              setSelectedId(item.id);
+            }}
+            x={item.position?.x || 0}
+            y={item.position?.y || 0}       
+          >
+            {item.type === 'image' ? (
+              <ImageCard src={item.content} />
+            ) : item.type === 'link' ? (
+              <LinkCard 
+                url={item.content} 
+                itemId={item.id}
+                initialMetadata={item.metadata}
+              />
+            ) : (
+              <div className="text-content">
+                {item.content}
               </div>
-            </Draggable>
-          );
-        })}
-      </div>
+            )}
+          </Element>
+        ))}
+      </PanZoom>
     </div>
   );
 };
