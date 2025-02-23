@@ -14,18 +14,20 @@ export const findLinkGroups = (elements, panzoom) => {
   elements.forEach(element => {
     if (used.has(element)) return;
     
+    // Start a new group with this element
     const group = [element];
     used.add(element);
 
-    let foundNew = true;
-    while (foundNew) {
-      foundNew = false;
-      elements.forEach(other => {
-        if (used.has(other)) return;
+    // Check all remaining elements against ALL elements in the current group
+    elements.forEach(other => {
+      if (used.has(other)) return;
+
+      // Check if the element overlaps with ANY element in the current group
+      const overlapsWithGroup = group.some(groupElement => {
+        const rect1 = groupElement.getBoundingClientRect();
+        const rect2 = other.getBoundingClientRect();
         
         // Get real-world coordinates accounting for panzoom
-        const rect1 = element.getBoundingClientRect();
-        const rect2 = other.getBoundingClientRect();
         const { x: x1, y: y1 } = panzoom.getPosition(rect1);
         const { x: x2, y: y2 } = panzoom.getPosition(rect2);
 
@@ -45,13 +47,15 @@ export const findLinkGroups = (elements, panzoom) => {
           bottom: y2 + rect2.height
         };
 
-        if (isOverlapping(transformedRect1, transformedRect2)) {
-          group.push(other);
-          used.add(other);
-          foundNew = true;
-        }
+        return isOverlapping(transformedRect1, transformedRect2);
       });
-    }
+
+      if (overlapsWithGroup) {
+        group.push(other);
+        used.add(other);
+      }
+    });
+
     groups.push(group);
   });
 
@@ -72,6 +76,15 @@ export const generateCSV = (groups) => {
         console.log('Found text element:', text);
         csv += `${text},\n`;
         console.log('Added text row:', text);
+        return;
+      }
+
+      // For image elements
+      if (element.classList.contains('image-content')) {
+        const imgSrc = element.querySelector('img')?.src || '-';
+        const altText = element.querySelector('img')?.alt || '';
+        csv += `IMAGE,${altText},${imgSrc}\n`;
+        console.log('Added image row:', `IMAGE,${altText},${imgSrc}`);
         return;
       }
 
@@ -102,4 +115,15 @@ export const downloadCSV = (csv, filename = 'links.csv') => {
   link.download = filename;
   link.click();
   URL.revokeObjectURL(link.href);
+};
+
+// Add this helper function if you want to debug the grouping
+export const visualizeGroups = (groups) => {
+  const colors = ['red', 'blue', 'green', 'purple', 'orange'];
+  groups.forEach((group, index) => {
+    const color = colors[index % colors.length];
+    group.forEach(element => {
+      element.style.outline = `2px solid ${color}`;
+    });
+  });
 };

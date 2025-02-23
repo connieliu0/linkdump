@@ -4,6 +4,7 @@ import PanZoom, { Element } from '@sasza/react-panzoom';
 import { db, saveItem, loadItems } from '../utils/storage';
 import LinkCard from './LinkCard';
 import ImageCard from './ImageCard';
+import Toolbar from './Toolbar';
 
 const MAX_WIDTH = 800; // Maximum width for images
 const COMPRESSION_QUALITY = 0.7; // 0 = max compression, 1 = max quality
@@ -139,6 +140,7 @@ const PasteArea = () => {
       onMouseMove={handleMouseMove}
       tabIndex={0}
     >
+        <Toolbar panzoomRef={panzoomRef} />
       <PanZoom 
         selecting={isSelecting}
         ref={panzoomRef}
