@@ -14,12 +14,12 @@ const PasteArea = () => {
   const [items, setItems] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isSelecting, setIsSelecting] = useState(false);
   const panzoomRef = useRef();
   const activeItemRef = useRef(null);
 
   // Define handlePaste first
   const handlePaste = useCallback(async (e) => {
-    console.log('Paste event triggered');
     e.preventDefault();
     const clipboardData = e.clipboardData;
     
@@ -112,6 +112,25 @@ const PasteArea = () => {
     }
   };
 
+  // Add selection mode effect
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.shiftKey) setIsSelecting(true);
+    };
+    
+    const handleKeyUp = (e) => {
+      if (!e.shiftKey) setIsSelecting(false);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
   return (
     <div 
       className="paste-container" 
@@ -121,6 +140,7 @@ const PasteArea = () => {
       tabIndex={0}
     >
       <PanZoom 
+        selecting={isSelecting}
         ref={panzoomRef}
         className="canvas-area"
         style={{ width: '100%', height: '100vh' }}
