@@ -1,114 +1,89 @@
 // utils/export.js
-export const isOverlapping = (rect1, rect2) => {
-  const padding = 5; // Small padding to detect "touching"
-  return !(rect1.right + padding < rect2.left || 
-           rect1.left > rect2.right + padding || 
-           rect1.bottom + padding < rect2.top || 
-           rect1.top > rect2.bottom + padding);
-};
-
-export const findLinkGroups = (elements, panzoom) => {
-  const groups = [];
-  const used = new Set();
-
-  elements.forEach(element => {
-    if (used.has(element)) return;
-    
-    // Start a new group with this element
-    const group = [element];
-    used.add(element);
-
-    // Check all remaining elements against ALL elements in the current group
-    elements.forEach(other => {
-      if (used.has(other)) return;
-
-      // Check if the element overlaps with ANY element in the current group
-      const overlapsWithGroup = group.some(groupElement => {
-        const rect1 = groupElement.getBoundingClientRect();
-        const rect2 = other.getBoundingClientRect();
-        
-        // Get real-world coordinates accounting for panzoom
-        const { x: x1, y: y1 } = panzoom.getPosition(rect1);
-        const { x: x2, y: y2 } = panzoom.getPosition(rect2);
-
-        const transformedRect1 = {
-          ...rect1,
-          left: x1,
-          right: x1 + rect1.width,
-          top: y1,
-          bottom: y1 + rect1.height
-        };
-
-        const transformedRect2 = {
-          ...rect2,
-          left: x2,
-          right: x2 + rect2.width,
-          top: y2,
-          bottom: y2 + rect2.height
-        };
-
-        return isOverlapping(transformedRect1, transformedRect2);
-      });
-
-      if (overlapsWithGroup) {
-        group.push(other);
-        used.add(other);
-      }
-    });
-
-    groups.push(group);
+export const sortElements = (elements, panzoom) => {
+  const panzoomElements = panzoom.getElements();
+  
+  // Convert elements to array with their panzoom positions
+  const elementEntries = Array.from(elements).map(element => {
+    const id = element.getAttribute('id');
+    const panzoomData = panzoomElements[id];
+    return {
+      domElement: element,
+      id,
+      ...panzoomData
+    };
   });
 
-  return groups;
+  return elementEntries
+    .sort((a, b) => {
+      const verticalThreshold = 50;
+      const verticalDiff = Math.abs(a.y - b.y);
+      
+      if (verticalDiff < verticalThreshold) {
+        return a.x - b.x;
+      }
+      return a.y - b.y;
+    })
+    .map(entry => entry.domElement);
 };
 
-export const generateCSV = (groups) => {
+export const generateCSV = (elements) => {
   let csv = '';
-  console.log('Groups to process:', groups);
+  const processed = new Set(); // Track processed elements to avoid duplicates
   
-  groups.forEach((group, index) => {
-    console.log(`Processing group ${index}:`, group);
-    // Add content from this group
-    group.forEach(element => {
-      // For text elements, get the direct textContent
-      if (element.classList.contains('text-content')) {
-        const text = element.textContent;
-        console.log('Found text element:', text);
-        csv += `${text},\n`;
-        console.log('Added text row:', text);
-        return;
-      }
-
-      // For image elements
-      if (element.classList.contains('image-content')) {
-        const imgSrc = element.querySelector('img')?.src || '-';
-        const altText = element.querySelector('img')?.alt || '';
-        csv += `IMAGE,${altText},${imgSrc}\n`;
-        console.log('Added image row:', `IMAGE,${altText},${imgSrc}`);
-        return;
-      }
-
-      // For link elements, get title and URL
-      const url = element.querySelector('a')?.href || '-';
-      const title = element.querySelector('.link-title')?.textContent || '';
-      if (title || url) {
-        csv += `${title},${url}\n`;
-        console.log('Added link row:', `${title},${url}`);
-      }
-    });
+  elements.forEach(element => {
+    // Skip if we've already processed this element
+    if (processed.has(element)) return;
     
-    // Add separator between groups (except for last group)
-    if (index < groups.length - 1) {
-      csv += '----,----\n';
-      console.log('Added separator');
+    console.log('Processing element:', {
+      id: element.id,
+      classList: Array.from(element.classList),
+      type: element.tagName,
+      hasLink: !!element.querySelector('a'),
+      hasText: !!element.querySelector('.text-content'),
+      hasImage: !!element.querySelector('img')
+    });
+
+    // For text elements (look for div with text-content class)
+    const textContent = element.querySelector('.text-content');
+    if (textContent) {
+      const text = textContent.textContent.trim();
+      if (text) {
+        csv += `TEXT,${text}\n`;
+        processed.add(element);
+        return;
+      }
+    }
+
+    // For image elements
+    const img = element.querySelector('img');
+    if (img) {
+      const src = img.src || '';
+      const alt = img.alt || '';
+      if (src) {
+        csv += `IMAGE,${alt},${src}\n`;
+        processed.add(element);
+        return;
+      }
+    }
+
+    // For link elements
+    const link = element.querySelector('a');
+    if (link) {
+      const url = link.href || '';
+      const title = element.querySelector('.link-title')?.textContent?.trim() || '';
+      if (url) {
+        csv += `LINK,${title},${url}\n`;
+        processed.add(element);
+        return;
+      }
     }
   });
   
-  console.log('Final CSV content:', csv);
+  console.log('Generated CSV:', csv);
   return csv;
 };
 
-export const downloadCSV = (csv, filename = 'links.csv') => {
+export const downloadCSV = (csv, filename = 'export.csv') => {
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
@@ -117,13 +92,22 @@ export const downloadCSV = (csv, filename = 'links.csv') => {
   URL.revokeObjectURL(link.href);
 };
 
-// Add this helper function if you want to debug the grouping
-export const visualizeGroups = (groups) => {
-  const colors = ['red', 'blue', 'green', 'purple', 'orange'];
-  groups.forEach((group, index) => {
-    const color = colors[index % colors.length];
-    group.forEach(element => {
-      element.style.outline = `2px solid ${color}`;
-    });
+// Update visualizeElements to show the order
+export const visualizeElements = (elements) => {
+  elements.forEach((element, index) => {
+    element.style.outline = '2px solid blue';
+    // Add a small number indicator
+    const indicator = document.createElement('div');
+    indicator.style.position = 'absolute';
+    indicator.style.top = '-20px';
+    indicator.style.left = '0';
+    indicator.style.background = 'blue';
+    indicator.style.color = 'white';
+    indicator.style.padding = '2px 6px';
+    indicator.style.borderRadius = '4px';
+    indicator.style.fontSize = '12px';
+    indicator.textContent = (index + 1).toString();
+    element.style.position = 'relative';
+    element.appendChild(indicator);
   });
 };
