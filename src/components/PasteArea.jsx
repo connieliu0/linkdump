@@ -170,7 +170,7 @@ const PasteArea = () => {
           color: '#6B7280',
           pointerEvents: 'none'
         }}>
-          Paste an image or link here
+          Paste an image or link here; Hold down shift to drag and select multiple 
         </div>
         
         {items.map(item => (
