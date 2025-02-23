@@ -41,6 +41,7 @@ const PasteArea = () => {
   };
 
   const handlePaste = async (e) => {
+    console.log("works");
     e.preventDefault();
     const clipboardData = e.clipboardData;
     
