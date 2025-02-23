@@ -1,5 +1,5 @@
 // src/components/PasteArea.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import PanZoom, { Element } from '@sasza/react-panzoom';
 import { db, saveItem, loadItems } from '../utils/storage';
 import LinkCard from './LinkCard';
@@ -17,36 +17,15 @@ const PasteArea = () => {
   const panzoomRef = useRef();
   const activeItemRef = useRef(null);
 
-  // Load items on mount
-  useEffect(() => {
-    console.log('Loading items effect running');
-    const fetchItems = async () => {
-      try {
-        const savedItems = await loadItems();
-        console.log('Loaded items with positions:', savedItems);
-        setItems(savedItems || []);
-      } catch (error) {
-        console.error('Error loading items:', error);
-      }
-    };
-    fetchItems();
-  }, []);
-
-  // Track mouse position relative to panzoom
-  const handleMouseMove = (e) => {
-    if (panzoomRef.current) {
-      const { x, y } = panzoomRef.current.getPosition(e);
-      setMousePosition({ x, y });
-    }
-  };
-
-  const handlePaste = async (e) => {
-    console.log("works");
+  // Define handlePaste first
+  const handlePaste = useCallback(async (e) => {
+    console.log('Paste event triggered');
     e.preventDefault();
     const clipboardData = e.clipboardData;
     
     // Use tracked mouse position
     const { x, y } = mousePosition;
+    console.log('Pasting at position:', { x, y });
     
     try {
       // Handle pasted images
@@ -84,6 +63,40 @@ const PasteArea = () => {
       }
     } catch (error) {
       console.error('Error saving item:', error);
+    }
+  }, [mousePosition]);
+
+  // Then add the global paste handler
+  useEffect(() => {
+    const handleGlobalPaste = (e) => {
+      console.log('Global paste event triggered');
+      handlePaste(e);
+    };
+    
+    document.addEventListener('paste', handleGlobalPaste);
+    return () => document.removeEventListener('paste', handleGlobalPaste);
+  }, [handlePaste]); // Only need handlePaste as dependency since it includes mousePosition
+
+  // Load items on mount
+  useEffect(() => {
+    console.log('Loading items effect running');
+    const fetchItems = async () => {
+      try {
+        const savedItems = await loadItems();
+        console.log('Loaded items with positions:', savedItems);
+        setItems(savedItems || []);
+      } catch (error) {
+        console.error('Error loading items:', error);
+      }
+    };
+    fetchItems();
+  }, []);
+
+  // Track mouse position relative to panzoom
+  const handleMouseMove = (e) => {
+    if (panzoomRef.current) {
+      const { x, y } = panzoomRef.current.getPosition(e);
+      setMousePosition({ x, y });
     }
   };
 
