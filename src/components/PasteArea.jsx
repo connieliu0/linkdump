@@ -9,16 +9,21 @@ const MAX_WIDTH = 800; // Maximum width for images
 const COMPRESSION_QUALITY = 0.7; // 0 = max compression, 1 = max quality
 
 const PasteArea = () => {
+  console.log('PasteArea component rendering');
+
   const [items, setItems] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const panzoomRef = useRef();
+  const activeItemRef = useRef(null);
 
   // Load items on mount
   useEffect(() => {
+    console.log('Loading items effect running');
     const fetchItems = async () => {
       try {
         const savedItems = await loadItems();
+        console.log('Loaded items with positions:', savedItems);
         setItems(savedItems || []);
       } catch (error) {
         console.error('Error loading items:', error);
@@ -106,7 +111,22 @@ const PasteArea = () => {
         className="canvas-area"
         style={{ width: '100%', height: '100vh' }}
         onContainerClick={() => setSelectedId(null)}
-        
+        onElementsChange={(element) => {
+          if (!activeItemRef.current) {
+            return;
+          }
+          // Get the element data using the activeItemRef as the key
+          const elementData = element[activeItemRef.current];
+          if (elementData) {
+            console.log('Found element data:', elementData);
+            console.log('New position:', { x: elementData.x, y: elementData.y });
+            db.items.update(activeItemRef.current, { 
+              position: { x: elementData.x, y: elementData.y } 
+            });
+          } else {
+            console.log('No element data found for id:', activeItemRef.current);
+          }
+        }}
       >
         <div style={{ 
           position: 'fixed', 
@@ -121,13 +141,17 @@ const PasteArea = () => {
         
         {items.map(item => (
           <Element
+            key={item.id}
             id={item.id}
             className={`paste-item ${selectedId === item.id ? 'selected' : ''}`}
             onClick={(e) => {
+              console.log('Setting active item:', item.id); // Debug click
               setSelectedId(item.id);
+              activeItemRef.current = item.id; // Set the active item ref
             }}
             x={item.position?.x || 0}
-            y={item.position?.y || 0}       
+            y={item.position?.y || 0}
+   
           >
             {item.type === 'image' ? (
               <ImageCard src={item.content} />
