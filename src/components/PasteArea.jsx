@@ -1,31 +1,63 @@
 // src/components/PasteArea.jsx
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PanZoom, { Element } from '@sasza/react-panzoom';
 import { db, saveItem, loadItems } from '../utils/storage';
 import LinkCard from './LinkCard';
 import ImageCard from './ImageCard';
-
-const MAX_WIDTH = 800; // Maximum width for images
-const COMPRESSION_QUALITY = 0.7; // 0 = max compression, 1 = max quality
+import { findLinkGroups, generateCSV, downloadCSV } from '../utils/export';
 
 const PasteArea = () => {
-  console.log('PasteArea component rendering');
-
   const [items, setItems] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const panzoomRef = useRef();
   const activeItemRef = useRef(null);
+  const containerRef = useRef();
 
-  // Define handlePaste first
-  const handlePaste = useCallback(async (e) => {
-    console.log('Paste event triggered');
+  // Load items on mount
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const savedItems = await loadItems();
+        setItems(savedItems || []);
+      } catch (error) {
+        console.error('Error loading items:', error);
+      }
+    };
+    fetchItems();
+  }, []);
+
+  // Keep focus on container
+  useEffect(() => {
+    containerRef.current?.focus();
+    
+    const handleClick = () => containerRef.current?.focus();
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, []);
+
+  const handleExport = () => {
+    if (!panzoomRef.current) return;
+    const elements = document.querySelectorAll('.link-card, .text-content');
+    if (!elements.length) return;
+    const groups = findLinkGroups(Array.from(elements), panzoomRef.current);
+    const csv = generateCSV(groups);
+    downloadCSV(csv);
+  };
+
+  const handleMouseMove = (e) => {
+    setMousePosition({
+      x: e.clientX,
+      y: e.clientY
+    });
+  };
+
+  const handlePaste = async (e) => {
+    console.log("Paste event triggered", e.clientX, e.clientY);
     e.preventDefault();
     const clipboardData = e.clipboardData;
     
-    // Use tracked mouse position
     const { x, y } = mousePosition;
-    console.log('Pasting at position:', { x, y });
     
     try {
       // Handle pasted images
@@ -64,40 +96,6 @@ const PasteArea = () => {
     } catch (error) {
       console.error('Error saving item:', error);
     }
-  }, [mousePosition]);
-
-  // Then add the global paste handler
-  useEffect(() => {
-    const handleGlobalPaste = (e) => {
-      console.log('Global paste event triggered');
-      handlePaste(e);
-    };
-    
-    document.addEventListener('paste', handleGlobalPaste);
-    return () => document.removeEventListener('paste', handleGlobalPaste);
-  }, [handlePaste]); // Only need handlePaste as dependency since it includes mousePosition
-
-  // Load items on mount
-  useEffect(() => {
-    console.log('Loading items effect running');
-    const fetchItems = async () => {
-      try {
-        const savedItems = await loadItems();
-        console.log('Loaded items with positions:', savedItems);
-        setItems(savedItems || []);
-      } catch (error) {
-        console.error('Error loading items:', error);
-      }
-    };
-    fetchItems();
-  }, []);
-
-  // Track mouse position relative to panzoom
-  const handleMouseMove = (e) => {
-    if (panzoomRef.current) {
-      const { x, y } = panzoomRef.current.getPosition(e);
-      setMousePosition({ x, y });
-    }
   };
 
   const handleDelete = async (id) => {
@@ -114,33 +112,36 @@ const PasteArea = () => {
 
   return (
     <div 
+      ref={containerRef}
       className="paste-container" 
       onPaste={handlePaste} 
       onKeyDown={handleKeyDown} 
       onMouseMove={handleMouseMove}
       tabIndex={0}
+      autoFocus
+      style={{ cursor: 'pointer' }}
     >
       <PanZoom 
         ref={panzoomRef}
         className="canvas-area"
         style={{ width: '100%', height: '100vh' }}
-        onContainerClick={() => setSelectedId(null)}
+        onContainerClick={() => {
+          setSelectedId(null);
+        }}
         onElementsChange={(element) => {
-          if (!activeItemRef.current) {
-            return;
-          }
-          // Get the element data using the activeItemRef as the key
+          if (!activeItemRef.current) return;
           const elementData = element[activeItemRef.current];
           if (elementData) {
-            console.log('Found element data:', elementData);
-            console.log('New position:', { x: elementData.x, y: elementData.y });
             db.items.update(activeItemRef.current, { 
               position: { x: elementData.x, y: elementData.y } 
             });
-          } else {
-            console.log('No element data found for id:', activeItemRef.current);
           }
         }}
+        minZoom={0.1}
+        maxZoom={2}
+        initialZoom={1}
+        boundaryRatio={0.8}
+        center
       >
         <div style={{ 
           position: 'fixed', 
@@ -148,9 +149,28 @@ const PasteArea = () => {
           left: '50%', 
           transform: 'translateX(-50%)',
           color: '#6B7280',
-          pointerEvents: 'none'
+          pointerEvents: 'none',
+          zIndex: 1000
         }}>
           Paste an image or link here
+          <button
+            onClick={handleExport}
+            style={{ 
+              position: 'fixed',
+              top: '1rem',
+              right: '1rem',
+              zIndex: 1000,
+              backgroundColor: '#3B82F6',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '0.5rem',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              cursor: 'pointer',
+              pointerEvents: 'auto'
+            }}
+          >
+            Export Links
+          </button>
         </div>
         
         {items.map(item => (
@@ -159,13 +179,11 @@ const PasteArea = () => {
             id={item.id}
             className={`paste-item ${selectedId === item.id ? 'selected' : ''}`}
             onClick={(e) => {
-              console.log('Setting active item:', item.id); // Debug click
               setSelectedId(item.id);
-              activeItemRef.current = item.id; // Set the active item ref
+              activeItemRef.current = item.id;
             }}
             x={item.position?.x || 0}
             y={item.position?.y || 0}
-   
           >
             {item.type === 'image' ? (
               <ImageCard src={item.content} />
