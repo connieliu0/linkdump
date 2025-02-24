@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+.canvas-area {
+  position: relative;
+}
+
+.canvas-area__in {
+  border: black solid 4px;
+}
+
 .paste-item {
   padding: 1rem;
   background: white;
@@ -27,14 +35,6 @@
   height: 100vh;
   overflow: auto;
   position: relative;
-}
-
-.canvas-area {
-  position: relative;
-  background-color: rgb(243, 244, 246);
-}
-.canvas-area__in{
-  border: black solid 4px;
 }
 
 .pasted-image {

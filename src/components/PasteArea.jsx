@@ -5,12 +5,19 @@ import { db, saveItem, loadItems } from '../utils/storage';
 import LinkCard from './LinkCard';
 import ImageCard from './ImageCard';
 import Toolbar from './Toolbar';
+import TimeInputDialog from './TimeInputDialog';
+import ExpiryDialog from './ExpiryDialog';
+import { saveTimeSettings, getTimeSettings, clearBoard } from '../utils/storage';
+import { useBackgroundAnimation } from '../hooks/useBackgroundAnimation';
+
 
 const MAX_WIDTH = 800; // Maximum width for images
 const COMPRESSION_QUALITY = 0.7; // 0 = max compression, 1 = max quality
 
-const PasteArea = () => {
-  console.log('PasteArea component rendering');
+const PasteArea = ({ onExport }) => {
+  useEffect(() => {
+    console.log('PasteArea component mounted');
+  }, []); // Empty dependency array means this only runs once on mount
 
   const [items, setItems] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -18,6 +25,10 @@ const PasteArea = () => {
   const [isSelecting, setIsSelecting] = useState(false);
   const panzoomRef = useRef();
   const activeItemRef = useRef(null);
+    // Add these new states
+    const [timeSettings, setTimeSettings] = useState(null);
+    const [isExpired, setIsExpired] = useState(false);
+    const [timeRemaining, setTimeRemaining] = useState(null);
 
   // Define handlePaste first
   const handlePaste = useCallback(async (e) => {
@@ -66,7 +77,35 @@ const PasteArea = () => {
       console.error('Error saving item:', error);
     }
   }, [mousePosition]);
+// Add this effect for time management
+useEffect(() => {
+  const loadTimeSettings = async () => {
+    const settings = await getTimeSettings();
+    if (settings) {
+      setTimeSettings(settings);
+    }
+  };
+  loadTimeSettings();
+}, []);
+useEffect(() => {
+  if (!timeSettings) return;
 
+  const interval = setInterval(() => {
+    const now = Date.now();
+    if (now >= timeSettings.endTime) {
+      setIsExpired(true);
+      clearInterval(interval);
+    } else {
+      setTimeRemaining(Math.ceil((timeSettings.endTime - now) / 1000));
+    }
+  }, 1000);
+  return () => clearInterval(interval);
+}, [timeSettings]);
+
+const handleTimeSet = async (settings) => {
+  await saveTimeSettings(settings);
+  setTimeSettings(settings);
+};
   // Then add the global paste handler
   useEffect(() => {
     const handleGlobalPaste = (e) => {
@@ -131,36 +170,56 @@ const PasteArea = () => {
       window.removeEventListener('keyup', handleKeyUp);
     };
   }, []);
+  const handleRestart = async () => {
+    await clearBoard();
+    setTimeSettings(null);
+    setIsExpired(false);
+    setItems([]);
+  };
+
+  useBackgroundAnimation(timeSettings);
 
   return (
+    <>
+    {!timeSettings && (
+      <TimeInputDialog onTimeSet={handleTimeSet} />
+    )}
+    
+    {isExpired && (
+      <ExpiryDialog 
+        panzoomRef={panzoomRef}
+        onRestart={handleRestart} 
+      />
+    )}
     <div 
       className="paste-container" 
-      onPaste={handlePaste} 
       onKeyDown={handleKeyDown} 
       onMouseMove={handleMouseMove}
       tabIndex={0}
     >
-        <Toolbar panzoomRef={panzoomRef} />
+      <Toolbar 
+        panzoomRef={panzoomRef} 
+        onExport={onExport} 
+        timeRemaining={timeRemaining}
+        timeSettings={timeSettings}
+      />
       <PanZoom 
         selecting={isSelecting}
         ref={panzoomRef}
         className="canvas-area"
         style={{ width: '100%', height: '100vh' }}
         onContainerClick={() => setSelectedId(null)}
+        containerClassNames={{
+          outer: 'canvas-area',
+          inner: 'canvas-area__in'
+        }}
         onElementsChange={(element) => {
-          if (!activeItemRef.current) {
-            return;
-          }
-          // Get the element data using the activeItemRef as the key
+          if (!activeItemRef.current) return;
           const elementData = element[activeItemRef.current];
           if (elementData) {
-            console.log('Found element data:', elementData);
-            console.log('New position:', { x: elementData.x, y: elementData.y });
             db.items.update(activeItemRef.current, { 
               position: { x: elementData.x, y: elementData.y } 
             });
-          } else {
-            console.log('No element data found for id:', activeItemRef.current);
           }
         }}
       >
@@ -206,6 +265,7 @@ const PasteArea = () => {
         ))}
       </PanZoom>
     </div>
+    </>
   );
 };
 
