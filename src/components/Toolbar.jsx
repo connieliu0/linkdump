@@ -17,37 +17,24 @@ const Toolbar = ({ panzoomRef, timeRemaining, timeSettings }) => {
     };
 
   return (
-    <div style={{
-      position: 'fixed',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      background: 'white',
-      boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
-      zIndex: 50,
-      padding: '16px',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center'
-    }}>
-      <button 
-        onClick={handleExport}
-        style={{
-          background: '#3B82F6',
-          color: 'white',
-          padding: '8px 16px',
-          borderRadius: '4px',
-          border: 'none',
-          cursor: 'pointer'
-        }}
-      >
-        Export Content
-      </button>
-      <div style={{ color: '#4B5563', display: 'flex', gap: '16px', alignItems: 'center' }}>
+    <div className="toolbar">
+
+      <div className="toolbar-text">
         <span>{getMessage()}</span>
         <span>{timeRemaining ? `${timeRemaining} seconds remaining` : 'Loading...'}</span>
       </div>
+      <div className="toolbar-text">
+      <span>{timeSettings?.description}</span>
+      <button 
+        onClick={handleExport}
+        className="button"
+        style={{ padding: '8px' }}
+      >
+        Export Content
+      </button>
     </div>
+    </div>
+
   );
 };
 

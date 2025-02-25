@@ -205,9 +205,12 @@ const handleTimeSet = async (settings) => {
       />
       <PanZoom 
         selecting={isSelecting}
+        zoomInitial={1.1}
+        zoomMin={0.9}
+        zoomMax={3}
         ref={panzoomRef}
         className="canvas-area"
-        style={{ width: '100%', height: '100vh' }}
+        style={{ width: '100%', height: '100%' }}
         onContainerClick={() => setSelectedId(null)}
         containerClassNames={{
           outer: 'canvas-area',

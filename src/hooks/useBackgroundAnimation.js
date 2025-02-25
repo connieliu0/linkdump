@@ -24,14 +24,17 @@ export const useBackgroundAnimation = (timeSettings) => {
       // Clamp progress between 0 and 100
       progress = Math.max(0, Math.min(100, progress));
 
+      // Scale the progress to start subtle but end at 100%
+      const scaledProgress = Math.min(10 + (progress * 0.9), 100); // Starts at 10%, grows to 100%
+
       // Changed 90deg to 180deg for vertical gradient
       const gradient = isBeforeHalfway
-        ? `linear-gradient(0deg, #dcfce7 ${progress}%, white 100%)`
-        : `linear-gradient(0deg, #fee2e2 ${progress}%, white 100%)`;
+        ? `linear-gradient(0deg, #dcfce7 ${scaledProgress}%, rgba(255,255,255,0.8) 100%)`
+        : `linear-gradient(0deg, #fee2e2 ${scaledProgress}%, rgba(255,255,255,0.8) 100%)`;
 
       console.log('Updating background:', {
         now,
-        progress: `${progress.toFixed(1)}%`,
+        progress: `${scaledProgress.toFixed(1)}%`,
         isBeforeHalfway,
         gradient
       });
@@ -47,4 +50,4 @@ export const useBackgroundAnimation = (timeSettings) => {
 
     return () => clearInterval(interval);
   }, [timeSettings]);
-}; 
+};

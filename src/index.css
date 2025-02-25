@@ -1,13 +1,19 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
+body{
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-image: url('./assets/background.JPG');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+}
 .canvas-area {
   position: relative;
 }
 
 .canvas-area__in {
-  border: black solid 4px;
+  border: gray dashed 2px;
 }
 
 .paste-item {

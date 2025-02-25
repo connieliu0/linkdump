@@ -1,10 +1,10 @@
 import React from 'react';
 import { sortElements, generateCSV, downloadCSV } from '../utils/export';
 import { useExport } from '../hooks/useExport';
+import '../styles/components.css';
 
 const ExpiryDialog = ({ onRestart, panzoomRef }) => {
-const handleExport = useExport(panzoomRef);
-
+  const handleExport = useExport(panzoomRef);
 
   const handleRestartClick = (e) => {
     e.stopPropagation();
@@ -18,62 +18,24 @@ const handleExport = useExport(panzoomRef);
   return (
     <div 
       onClick={handleDialogClick}
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000
-      }}
+      className="dialog-overlay"
     >
       <div 
         onClick={e => e.stopPropagation()}
-        style={{
-          backgroundColor: 'white',
-          padding: '20px',
-          borderRadius: '8px',
-          width: '300px'
-        }}
+        className="dialog-content"
       >
-        <h2 style={{ marginBottom: '16px' }}>Time's Up!</h2>
-        <p style={{ marginBottom: '16px' }}>
-          Your session has expired. Would you like to export your work or start a new session?
+        <h2 className="dialog-title">Time's Up!</h2>
+        <p className="dialog-text">
+          The sun has set, your work has decayed. If you'd like to save, you can always export your work for local storage, or start anew...
         </p>
-        <div style={{
-          display: 'flex',
-          gap: '8px',
-          justifyContent: 'space-between'
-        }}>
+        <div className="button-container">
           <button
             onClick={handleExport}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#3B82F6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              width: '48%'
-            }}
           >
             Export
           </button>
           <button
             onClick={handleRestartClick}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#3B82F6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              width: '48%'
-            }}
           >
             New Session
           </button>
