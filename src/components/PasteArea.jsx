@@ -9,6 +9,7 @@ import TimeInputDialog from './TimeInputDialog';
 import ExpiryDialog from './ExpiryDialog';
 import { saveTimeSettings, getTimeSettings, clearBoard } from '../utils/storage';
 import { useBackgroundAnimation } from '../hooks/useBackgroundAnimation';
+import { useAgingEffect } from '../hooks/useAgingEffect';
 
 
 const MAX_WIDTH = 800; // Maximum width for images
@@ -131,6 +132,7 @@ const handleTimeSet = async (settings) => {
     };
     fetchItems();
   }, []);
+  useAgingEffect(timeSettings);
 
   // Track mouse position relative to panzoom
   const handleMouseMove = (e) => {

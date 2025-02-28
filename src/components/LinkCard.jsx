@@ -46,18 +46,19 @@ const LinkCard = ({ url, itemId, initialMetadata }) => {
   }, [url, itemId]);
 
   return (
-    <>
+    <div className="link-card">
       <a 
         href={url}
         target="_blank"
         rel="noopener noreferrer"
+        className="link-title"
       >
         {metadata.title || url}
       </a>
       {metadata.description && (
-        <p>{metadata.description}</p>
+        <p className="link-description">{metadata.description}</p>
       )}
-    </>
+    </div>
   );
 };
 

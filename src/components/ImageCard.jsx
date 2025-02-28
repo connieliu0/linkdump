@@ -1,4 +1,6 @@
-// src/components/ImageCard.jsx
+// Optional enhancement for ImageCard.jsx
+// This wraps the image in a container to better support the fading border effect
+
 import React, { useState, useEffect } from 'react';
 
 const ImageCard = ({ src }) => {
@@ -8,16 +10,14 @@ const ImageCard = ({ src }) => {
     const compressImage = () => {
       const img = new Image();
       img.onload = () => {
+        // Compression logic (same as your original)
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-
-        // Max dimensions
         const maxWidth = 1200;
         const maxHeight = 1200;
-
-        // Calculate new dimensions
         let width = img.width;
         let height = img.height;
+        
         if (width > maxWidth) {
           height = (maxWidth * height) / width;
           width = maxWidth;
@@ -27,13 +27,10 @@ const ImageCard = ({ src }) => {
           height = maxHeight;
         }
 
-        // Set canvas dimensions
         canvas.width = width;
         canvas.height = height;
-
-        // Draw and compress
         ctx.drawImage(img, 0, 0, width, height);
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8); // 0.8 quality
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
         setCompressedSrc(compressedDataUrl);
       };
       img.src = src;
@@ -43,11 +40,13 @@ const ImageCard = ({ src }) => {
   }, [src]);
 
   return (
-    <img 
-      src={compressedSrc} 
-      alt="Pasted content"
-      className="pasted-image"
-    />
+    <div className="image-container">
+      <img 
+        src={compressedSrc} 
+        alt="Pasted content"
+        className="pasted-image"
+      />
+    </div>
   );
 };
 
