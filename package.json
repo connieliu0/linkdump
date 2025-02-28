@@ -12,6 +12,8 @@
   "dependencies": {
     "@sasza/react-panzoom": "^1.18.2",
     "dexie": "^4.0.11",
+    "file-saver": "^2.0.5",
+    "jszip": "^3.10.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-draggable": "^4.4.6"

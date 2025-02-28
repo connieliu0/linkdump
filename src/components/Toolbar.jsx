@@ -1,5 +1,4 @@
 import React from 'react';
-import { sortElements, generateCSV, downloadCSV } from '../utils/export';
 import { useExport } from '../hooks/useExport';
 
 const Toolbar = ({ panzoomRef, timeRemaining, timeSettings }) => {
