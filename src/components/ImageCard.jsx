@@ -43,13 +43,11 @@ const ImageCard = ({ src }) => {
   }, [src]);
 
   return (
-    <div className="bg-white p-2 rounded-lg shadow-lg">
-      <img 
-        src={compressedSrc} 
-        alt="Pasted content" 
-        className="max-w-[200px] h-auto"
-      />
-    </div>
+    <img 
+      src={compressedSrc} 
+      alt="Pasted content"
+      className="pasted-image"
+    />
   );
 };
 

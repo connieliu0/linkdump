@@ -1,6 +1,5 @@
 // src/components/LinkCard.jsx
-import React from 'react';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { db } from '../utils/storage';
 
 const fetchMetadata = async (url) => {
@@ -17,10 +16,7 @@ const fetchMetadata = async (url) => {
 };
 
 const LinkCard = ({ url, itemId, initialMetadata }) => {
-  const [metadata, setMetadata] = useState({
-    title: initialMetadata?.title || '',
-    isLoading: !initialMetadata
-  });
+  const [metadata, setMetadata] = useState(initialMetadata || {});
 
   useEffect(() => {
     const getMetadata = async () => {
@@ -47,24 +43,21 @@ const LinkCard = ({ url, itemId, initialMetadata }) => {
     };
 
     getMetadata();
-  }, [url, itemId, initialMetadata]);
+  }, [url, itemId]);
 
   return (
-    <div className="link-card">
+    <>
       <a 
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="link-content"
       >
-        <h3 className="link-title">
-          {metadata.isLoading ? 'Loading...' : metadata.title}
-        </h3>
-        <p className="link-url">
-          {url}
-        </p>
+        {metadata.title || url}
       </a>
-    </div>
+      {metadata.description && (
+        <p>{metadata.description}</p>
+      )}
+    </>
   );
 };
 

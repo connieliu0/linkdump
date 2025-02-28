@@ -18,6 +18,8 @@ body{
 
 .paste-item {
   padding: 1rem;
+  max-width: 300px;
+  width: fit-content;
   background: white;
   border-radius: 0.5rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
@@ -44,9 +46,12 @@ body{
 }
 
 .pasted-image {
-  width: 800px;
+  display: block;
+  max-width: 100%;
+  width: auto;
   height: auto;
   object-fit: contain;
+  max-height: 100%;
 }
 
 .text-content {
