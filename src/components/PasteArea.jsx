@@ -16,10 +16,6 @@ const MAX_WIDTH = 800; // Maximum width for images
 const COMPRESSION_QUALITY = 0.7; // 0 = max compression, 1 = max quality
 
 const PasteArea = ({ onExport }) => {
-  useEffect(() => {
-    console.log('PasteArea component mounted');
-  }, []); // Empty dependency array means this only runs once on mount
-
   const [items, setItems] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -38,7 +34,6 @@ const PasteArea = ({ onExport }) => {
     
     // Use tracked mouse position
     const { x, y } = mousePosition;
-    console.log('Pasting at position:', { x, y });
     
     try {
       // Handle pasted images
@@ -243,15 +238,14 @@ const handleTimeSet = async (settings) => {
           <Element
             key={item.id}
             id={item.id}
-            className={`paste-item ${selectedId === item.id ? 'selected' : ''}`}
+            className={`paste-item paste-item--${item.type} ${selectedId === item.id ? 'selected' : ''}`}
             onClick={(e) => {
-              console.log('Setting active item:', item.id); // Debug click
+              console.log('Setting active item:', item.id);
               setSelectedId(item.id);
-              activeItemRef.current = item.id; // Set the active item ref
+              activeItemRef.current = item.id;
             }}
             x={item.position?.x || 0}
             y={item.position?.y || 0}
-   
           >
             {item.type === 'image' ? (
               <ImageCard src={item.content} />

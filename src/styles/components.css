@@ -39,7 +39,8 @@ body {
   display: block;
   max-width: 100%;
   margin: 0;
-  background: transparent;
+  background: white;
+  padding: 2px;
 }
 
 .image-container:before {
@@ -54,9 +55,7 @@ body {
   transition: box-shadow 2s ease;
 }
 
-.paste-item{
-  padding: 0.75em;
-}
+
 .pasted-image {
   display: block;
   max-width: 100%;
@@ -193,4 +192,47 @@ button:hover {
   display: flex;
   gap: 16px;
   align-items: center;
+}
+
+/* Base paste item styles */
+.paste-item {
+  padding: 0.5rem;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  cursor: move;
+  transition: box-shadow 0.2s ease, outline 0.2s ease;
+  will-change: transform;
+  user-select: none;
+}
+
+/* Image-specific paste item */
+.paste-item--image {
+  max-width: 400px;  /* Larger max-width for images */
+  padding: 0.75rem;  /* Slightly more padding */
+}
+
+/* Text-specific paste item */
+.paste-item--text {
+  max-width: 300px;
+  padding: 1rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* Link-specific paste item */
+.paste-item--link {
+  max-width: 350px;
+  padding: 1rem;
+  background: linear-gradient(to bottom, white, #fafafa);
+}
+
+.paste-item:hover {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  cursor: grab;
+}
+
+.paste-item.selected {
+  outline: 2px solid rgb(59, 130, 246);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 } 
