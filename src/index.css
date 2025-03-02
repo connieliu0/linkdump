@@ -55,3 +55,10 @@ body{
   max-width: 28rem;
   word-break: break-word;
 }
+
+.external-link-icon {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 0.9em;
+  color: inherit;
+}

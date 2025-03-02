@@ -61,21 +61,22 @@ export const useAgingEffect = (timeSettings) => {
         img.style.borderRadius = `${progress * 8}px`;
       });
 
-      // Apply effects to text content
-      const textElements = document.querySelectorAll('.text-content');
-      textElements.forEach(text => {
+      // Apply effects to text content and links
+      const elements = document.querySelectorAll('.text-content, .link-preview');
+      elements.forEach(element => {
         const blurValue = Math.min(progress * 1.5, 0.8);
-        text.style.filter = `blur(${blurValue}px)`;
-        text.style.color = `rgb(${Math.min(50 + progress * 100, 100)}, ${Math.min(40 + progress * 60, 70)}, 0)`;
-        text.style.backgroundColor = `rgba(255, 255, ${Math.max(255 - progress * 60, 200)}, ${Math.max(1 - progress * 0.3, 0.7)})`;
-      });
-      
-      // Apply effects to link cards
-      const linkCards = document.querySelectorAll('a');
-      linkCards.forEach(link => {
-        const blurValue = Math.min(progress * 1, 0.6);
-        link.style.filter = `blur(${blurValue}px)`;
-        link.style.color = `rgb(${Math.min(75 + progress * 80, 75)}, ${Math.min(75 + progress * 40, 75)}, 0)`;
+        element.style.filter = `blur(${blurValue}px)`;
+        element.style.backgroundColor = `rgba(255, 255, ${Math.max(255 - progress * 60, 200)}, ${Math.max(1 - progress * 0.3, 0.7)})`;
+
+        // Apply color to all text elements within link preview
+        const textElements = element.classList.contains('link-preview') 
+          ? element.querySelectorAll('.link-description, .link-domain')
+          : [element];
+          
+        textElements.forEach(el => {
+          el.style.color = `rgb(${Math.min(50 + progress * 100, 100)}, ${Math.min(40 + progress * 60, 70)}, 0)`;
+        });
+        
       });
 
       // Apply aging to card containers
