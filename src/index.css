@@ -7,10 +7,6 @@ body{
   background-repeat: no-repeat;
   background-size: cover;
   background-attachment: fixed;
-  font-family: 'Decompositionphase1';
-  src: url('../assets/Decompositionphase1.ttf') format('ttf');
-  font-weight: normal;
-  font-style: normal;
 }
 .canvas-area {
   position: relative;
