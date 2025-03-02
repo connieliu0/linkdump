@@ -22,19 +22,12 @@ export const useExport = (panzoomRef) => {
       // Create a new zip file
       const zip = new JSZip();
       
-      // Process text and links for CSV export
-      const textAndLinks = itemsOnCanvas.filter(item => 
-        item.type === 'text' || item.type === 'link'
-      );
-      
-      if (textAndLinks.length > 0) {
-        const csvContent = generateCSV(textAndLinks);
-        zip.file('clipboard_content.csv', csvContent);
-      }
+      // Generate CSV for all items
+      const csvContent = generateCSV(itemsOnCanvas);
+      zip.file('content.csv', csvContent);
 
-      // Process images
+      // Still save image files separately
       const images = itemsOnCanvas.filter(item => item.type === 'image');
-      
       for (let i = 0; i < images.length; i++) {
         const image = images[i];
         const imageBlob = await dataURLToBlob(image.content);
@@ -61,15 +54,28 @@ const dataURLToBlob = async (dataURL) => {
 // Helper function for CSV generation
 const generateCSV = (items) => {
   const sortedItems = sortElements(items);
-  let csvContent = 'Type,Content,X,Y\n';
+  let csvContent = 'Type,Content,Source\n';
   
   sortedItems.forEach(item => {
     const type = item.type;
-    const content = item.content.replace(/"/g, '""'); // Escape quotes
-    const x = item.position?.x || 0;
-    const y = item.position?.y || 0;
+    let content = '';
+    let source = item.sourceUrl || '';
+
+    // Handle different types of content
+    switch(type) {
+      case 'image':
+        content = `image_${items.indexOf(item) + 1}.jpg`;
+        break;
+      case 'link':
+      case 'pastedText':
+      case 'newText':
+        content = item.content.replace(/"/g, '""'); // Escape quotes
+        break;
+      default:
+        content = '';
+    }
     
-    csvContent += `"${type}","${content}",${x},${y}\n`;
+    csvContent += `"${type}","${content}","${source}"\n`;
   });
   
   return csvContent;

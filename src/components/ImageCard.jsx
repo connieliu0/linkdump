@@ -2,9 +2,12 @@
 // This wraps the image in a container to better support the fading border effect
 
 import React, { useState, useEffect } from 'react';
+import { db } from '../utils/storage';
 
-const ImageCard = ({ src }) => {
+const ImageCard = ({ src, itemId, sourceUrl: initialSourceUrl }) => {
   const [compressedSrc, setCompressedSrc] = useState(src);
+  const [isEditing, setIsEditing] = useState(false);
+  const [sourceUrl, setSourceUrl] = useState(initialSourceUrl || '');
 
   useEffect(() => {
     const compressImage = () => {
@@ -39,6 +42,24 @@ const ImageCard = ({ src }) => {
     compressImage();
   }, [src]);
 
+  const handleSourceClick = (e) => {
+    e.stopPropagation(); // Prevent PanZoom container click
+    setIsEditing(true);
+  };
+
+  const handleSourceChange = async (e) => {
+    const newSource = e.target.value;
+    setSourceUrl(newSource);
+    await db.items.update(itemId, { sourceUrl: newSource });
+  };
+
+  const handleKeyDown = (e) => {
+    e.stopPropagation(); // Stop event from reaching PanZoom
+    if (e.key === 'Enter') {
+      setIsEditing(false);
+    }
+  };
+
   return (
     <div className="image-container">
       <img 
@@ -46,6 +67,28 @@ const ImageCard = ({ src }) => {
         alt="Pasted content"
         className="pasted-image"
       />
+      <div 
+        className="source-url-container" 
+        onClick={handleSourceClick}
+        onKeyDown={e => e.stopPropagation()} // Stop all keyboard events
+      >
+        {isEditing ? (
+          <input
+            type="text"
+            value={sourceUrl}
+            onChange={handleSourceChange}
+            onKeyDown={handleKeyDown}
+            onBlur={() => setIsEditing(false)}
+            className="input-field source-input"
+            placeholder="Add source URL"
+            autoFocus
+          />
+        ) : (
+          <div className="source-text">
+            {sourceUrl ? sourceUrl : 'Click to add source'}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

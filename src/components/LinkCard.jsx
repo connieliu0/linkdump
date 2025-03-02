@@ -31,18 +31,22 @@ const LinkCard = ({ url, itemId, initialMetadata }) => {
   return (
     <div className="link-card">
       <div className="link-preview">
-        <div className="link-header">
-          {metadata.favicon && (
-            <img src={metadata.favicon} alt="" className="link-favicon" />
-          )}
-          <span className="link-domain">{domain}</span>
-        </div>
-        <a href={url} target="_blank" rel="noopener noreferrer" className="link-title">
-          {metadata.title || url} <span className="external-link-icon">↗</span>
-        </a>
-        {metadata.description && (
-          <p className="link-description">{metadata.description}</p>
+        {metadata.imageUrl && (
+          <div className="link-image-container">
+            <img src={metadata.imageUrl} alt="" className="link-preview-image" />
+          </div>
         )}
+        <div className="link-content">
+          <div className="link-header">
+            <span className="link-domain">{domain}</span>
+          </div>
+          <a href={url} target="_blank" rel="noopener noreferrer" className="link-title">
+            {metadata.title || url} <span className="external-link-icon">↗</span>
+          </a>
+          {metadata.description && (
+            <p className="link-description">{metadata.description}</p>
+          )}
+        </div>
       </div>
     </div>
   );

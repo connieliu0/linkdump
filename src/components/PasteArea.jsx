@@ -10,17 +10,66 @@ import ExpiryDialog from './ExpiryDialog';
 import { saveTimeSettings, getTimeSettings, clearBoard } from '../utils/storage';
 import { useBackgroundAnimation } from '../hooks/useBackgroundAnimation';
 import { useAgingEffect } from '../hooks/useAgingEffect';
+import TextCard from './TextCard';
+import { useCards } from '../hooks/useCards';
+import InactivityOverlay from './InactivityOverlay';
+import OnboardingDialog from './OnboardingDialog';
 
 
 const MAX_WIDTH = 800; // Maximum width for images
 const COMPRESSION_QUALITY = 0.7; // 0 = max compression, 1 = max quality
 
+const extractSourceFromHtml = (html) => {
+  if (!html) return null;
+  
+  try {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    
+    // Try to find image source
+    const img = tempDiv.querySelector('img');
+    if (img) {
+      return img.src || img.getAttribute('data-source');
+    }
+    
+    // Try to find link source
+    const link = tempDiv.querySelector('a');
+    if (link) {
+      return link.href;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error extracting source from HTML:', error);
+    return null;
+  }
+};
+
+const detectImageSource = async (clipboardData, file) => {
+  // Try methods in order of reliability
+  const source = 
+    clipboardData.getData('text/plain') || // Direct URL copy
+    extractSourceFromHtml(clipboardData.getData('text/html')) ||
+    document.activeElement?.baseURI ||
+    ''; // Fallback to empty string
+    
+  return source;
+};
+
 const PasteArea = ({ onExport }) => {
+  const { 
+    items, 
+    setItems, 
+    addEmptyCard, 
+    addCard, 
+    updateCard, 
+    deleteCard 
+  } = useCards();
+
   useEffect(() => {
     // console.log('PasteArea component mounted');
   }, []); // Empty dependency array means this only runs once on mount
 
-  const [items, setItems] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isSelecting, setIsSelecting] = useState(false);
@@ -30,6 +79,11 @@ const PasteArea = ({ onExport }) => {
     const [timeSettings, setTimeSettings] = useState(null);
     const [isExpired, setIsExpired] = useState(false);
     const [timeRemaining, setTimeRemaining] = useState(null);
+    const [isInputActive, setIsInputActive] = useState(false);
+    const [isInactive, setIsInactive] = useState(false);
+    let inactivityTimer = useRef(null);
+    const [showOnboarding, setShowOnboarding] = useState(false);
+    const [showTimeInput, setShowTimeInput] = useState(false);
 
   // Define handlePaste first
   const handlePaste = useCallback(async (e) => {
@@ -47,18 +101,22 @@ const PasteArea = ({ onExport }) => {
       );
       
       if (imageItem) {
-        const blob = imageItem.getAsFile();
+        const file = imageItem.getAsFile();
+        const sourceUrl = await detectImageSource(clipboardData, file);
+        
         const reader = new FileReader();
-        reader.onload = async (event) => {
+        reader.onload = async () => {
           const newItem = {
             type: 'image',
-            content: event.target.result,
-            position: { x, y }
+            content: reader.result,
+            position: { x, y },
+            sourceUrl,
+            timestamp: Date.now()
           };
           const id = await db.items.add(newItem);
           setItems(prev => [...prev, { ...newItem, id }]);
         };
-        reader.readAsDataURL(blob);
+        reader.readAsDataURL(file);
         return;
       }
 
@@ -67,9 +125,11 @@ const PasteArea = ({ onExport }) => {
       if (text) {
         const isUrl = text.startsWith('http://') || text.startsWith('https://');
         const newItem = {
-          type: isUrl ? 'link' : 'text',
+          type: isUrl ? 'link' : 'pastedText',
           content: text,
-          position: { x, y }
+          position: { x, y },
+          sourceUrl: '', // Just set it to empty string for pasted text
+          timestamp: Date.now()
         };
         const id = await db.items.add(newItem);
         setItems(prev => [...prev, { ...newItem, id }]);
@@ -142,12 +202,6 @@ const handleTimeSet = async (settings) => {
     }
   };
 
-  const handleDelete = async (id) => {
-    await db.items.delete(id);
-    setItems(prev => prev.filter(item => item.id !== id));
-    setSelectedId(null);
-  };
-
   const handleKeyDown = (e) => {
     if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
       handleDelete(selectedId);
@@ -181,95 +235,202 @@ const handleTimeSet = async (settings) => {
 
   useBackgroundAnimation(timeSettings);
 
+  // Pass this to TextCard
+  const handleInputActiveChange = (active) => {
+    setIsInputActive(active);
+  };
+
+  const handleClearCanvas = () => {
+    const elements = document.querySelectorAll('.paste-item');
+    elements.forEach((el, index) => {
+      setTimeout(() => {
+        el.classList.add('clear-animation');
+        // Small delay to ensure transition class is applied first
+        requestAnimationFrame(() => {
+          el.classList.add('disappear');
+        });
+      }, index * 100);
+    });
+
+    setTimeout(() => {
+      setItems([]);
+    }, elements.length * 100 + 500);
+  };
+
+  const resetInactivityTimer = useCallback(() => {
+    if (inactivityTimer.current) {
+      clearTimeout(inactivityTimer.current);
+    }
+    inactivityTimer.current = setTimeout(() => {
+      setIsInactive(true);
+    }, 180000); // 3 minutes = 3 * 60 * 1000 milliseconds
+  }, []);
+
+  useEffect(() => {
+    // Set up event listeners for user activity
+    const activityEvents = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
+    
+    const handleActivity = () => {
+      resetInactivityTimer();
+    };
+
+    activityEvents.forEach(event => {
+      document.addEventListener(event, handleActivity);
+    });
+
+    // Initial timer
+    resetInactivityTimer();
+
+    // Cleanup
+    return () => {
+      if (inactivityTimer.current) {
+        clearTimeout(inactivityTimer.current);
+      }
+      activityEvents.forEach(event => {
+        document.removeEventListener(event, handleActivity);
+      });
+    };
+  }, [resetInactivityTimer]);
+
+  const handleDismissOverlay = () => {
+    setIsInactive(false);
+    resetInactivityTimer();
+  };
+
+  // Check for first visit and manage dialog sequence
+  useEffect(() => {
+    const hasVisited = localStorage.getItem('hasVisitedBefore');
+    if (!hasVisited) {
+      setShowOnboarding(true);
+      setShowTimeInput(false); // Ensure time input is hidden initially
+    } else {
+      setShowTimeInput(!timeSettings); // Show time input only if no time settings
+    }
+  }, [timeSettings]);
+
+  const handleOnboardingClose = () => {
+    setShowOnboarding(false);
+    localStorage.setItem('hasVisitedBefore', 'true');
+    setShowTimeInput(true); // Show time input after onboarding
+  };
+
   return (
     <>
-    {!timeSettings && (
-      <TimeInputDialog onTimeSet={handleTimeSet} />
-    )}
-    
-    {isExpired && (
-      <ExpiryDialog 
-        panzoomRef={panzoomRef}
-        onRestart={handleRestart} 
+      {showOnboarding && (
+        <OnboardingDialog onClose={handleOnboardingClose} />
+      )}
+      {!showOnboarding && showTimeInput && (
+        <TimeInputDialog onTimeSet={handleTimeSet} />
+      )}
+      <InactivityOverlay 
+        isVisible={isInactive} 
+        onDismiss={handleDismissOverlay}
       />
-    )}
-    <div 
-      className="paste-container" 
-      onKeyDown={handleKeyDown} 
-      onMouseMove={handleMouseMove}
-      tabIndex={0}
-    >
-      <Toolbar 
-        panzoomRef={panzoomRef} 
-        onExport={onExport} 
-        timeRemaining={timeRemaining}
-        timeSettings={timeSettings}
-      />
-      <PanZoom 
-        selecting={isSelecting}
-        zoomInitial={1.1}
-        zoomMin={0.9}
-        zoomMax={3}
-        ref={panzoomRef}
-        className="canvas-area"
-        style={{ width: '100%', height: '100%' }}
-        onContainerClick={() => setSelectedId(null)}
-        containerClassNames={{
-          outer: 'canvas-area',
-          inner: 'canvas-area__in'
-        }}
-        onElementsChange={(element) => {
-          if (!activeItemRef.current) return;
-          const elementData = element[activeItemRef.current];
-          if (elementData) {
-            db.items.update(activeItemRef.current, { 
-              position: { x: elementData.x, y: elementData.y } 
-            });
-          }
-        }}
+      {isExpired && (
+        <ExpiryDialog 
+          panzoomRef={panzoomRef}
+          onRestart={handleRestart} 
+        />
+      )}
+      <div 
+        className="paste-container" 
+        onKeyDown={handleKeyDown} 
+        onMouseMove={handleMouseMove}
+        tabIndex={0}
       >
-        <div style={{ 
-          position: 'fixed', 
-          top: '1rem', 
-          left: '50%', 
-          transform: 'translateX(-50%)',
-          color: '#6B7280',
-          pointerEvents: 'none'
-        }}>
-          Paste an image or link here; Hold down shift to drag and select multiple 
-        </div>
-        
-        {items.map(item => (
-          <Element
-            key={item.id}
-            id={item.id}
-            className={`paste-item ${selectedId === item.id ? 'selected' : ''}`}
-            onClick={(e) => {
-              // console.log('Setting active item:', item.id); // Debug click
-              setSelectedId(item.id);
-              activeItemRef.current = item.id; // Set the active item ref
-            }}
-            x={item.position?.x || 0}
-            y={item.position?.y || 0}
-   
-          >
-            {item.type === 'image' ? (
-              <ImageCard src={item.content} />
-            ) : item.type === 'link' ? (
-              <LinkCard 
-                url={item.content} 
-                itemId={item.id}
-                initialMetadata={item.metadata}
-              />
-            ) : (
-              <div className="text-content">
-                {item.content}
-              </div>
-            )}
-          </Element>
-        ))}
-      </PanZoom>
-    </div>
+        <Toolbar 
+          panzoomRef={panzoomRef} 
+          onExport={onExport} 
+          timeRemaining={timeRemaining}
+          timeSettings={timeSettings}
+          onAddEmptyCard={addEmptyCard}
+          onClearCanvas={handleClearCanvas}
+        />
+        <PanZoom 
+          selecting={isSelecting}
+          zoomInitial={1.1}
+          zoomMin={0.9}
+          zoomMax={3}
+          ref={panzoomRef}
+          className="canvas-area"
+          style={{ width: '100%', height: '100%' }}
+          onContainerClick={() => setSelectedId(null)}
+          disabled={isInputActive} // Disable PanZoom when input is active
+          containerClassNames={{
+            outer: 'canvas-area',
+            inner: 'canvas-area__in'
+          }}
+          onElementsChange={(element) => {
+            if (!activeItemRef.current) return;
+            const elementData = element[activeItemRef.current];
+            if (elementData) {
+              db.items.update(activeItemRef.current, { 
+                position: { x: elementData.x, y: elementData.y } 
+              });
+            }
+          }}
+        >
+          <div style={{ 
+            position: 'fixed', 
+            top: '1rem', 
+            left: '50%', 
+            transform: 'translateX(-50%)',
+            color: '#6B7280',
+            pointerEvents: 'none'
+          }}>
+            Paste an image or link here; Hold down shift to drag and select multiple 
+          </div>
+          
+          {items.map(item => (
+            <Element
+              key={item.id}
+              id={item.id}
+              className={`paste-item ${selectedId === item.id ? 'selected' : ''}`}
+              onClick={(e) => {
+                // console.log('Setting active item:', item.id); // Debug click
+                setSelectedId(item.id);
+                activeItemRef.current = item.id; // Set the active item ref
+              }}
+              x={item.position?.x || 0}
+              y={item.position?.y || 0}
+       
+            >
+              {item.type === 'image' ? (
+                <ImageCard 
+                  src={item.content} 
+                  itemId={item.id}
+                  sourceUrl={item.sourceUrl}
+                />
+              ) : item.type === 'link' ? (
+                <LinkCard 
+                  url={item.content} 
+                  itemId={item.id}
+                  initialMetadata={item.metadata}
+                />
+              ) : item.type === 'pastedText' ? (
+                <TextCard
+                  content={item.content}
+                  itemId={item.id}
+                  sourceUrl={item.sourceUrl}
+                  isEmpty={false}
+                  showSourceUrl={true}
+                  onInputActiveChange={handleInputActiveChange}
+                  type="pastedText"
+                />
+              ) : item.type === 'newText' ? (
+                <TextCard
+                  content={item.content}
+                  itemId={item.id}
+                  isEmpty={item.isEmpty}
+                  showSourceUrl={false}
+                  onInputActiveChange={handleInputActiveChange}
+                  type="newText"
+                />
+              ) : null}
+            </Element>
+          ))}
+        </PanZoom>
+      </div>
     </>
   );
 };
