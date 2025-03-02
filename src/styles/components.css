@@ -1,6 +1,6 @@
 /* Base styles */
 body {
-  font-family: 'Arial Narrow', Arial, sans-serif;
+  /* font-family: 'Arial Narrow', Arial, sans-serif; */
   transition: background-color 2s ease;
 }
 
@@ -31,6 +31,7 @@ body {
 /* Content styles */
 .canvas-area {
   transition: box-shadow 3s ease;
+  
 }
 
 /* Image styles */
@@ -54,8 +55,24 @@ body {
   transition: box-shadow 2s ease;
 }
 
-.paste-item{
-  padding: 0.75em;
+.paste-item:hover {
+box-shadow: 0px 0px 22.2px 0px #FFCB7D;
+}
+.paste-item {
+  padding: 0.5rem;
+  max-width: 300px;
+  width: fit-content;
+  background: white;
+  border-radius: 0.25rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  cursor: move;
+  transition: box-shadow 0.2s ease;
+  will-change: transform;
+  user-select: none;
+}
+.paste-item.selected {
+  outline: 2px solid #E49B3F;  /* Use outline instead of border */
+  outline-offset: -2px;  /* Make it appear inset */
 }
 .pasted-image {
   display: block;

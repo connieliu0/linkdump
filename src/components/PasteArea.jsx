@@ -17,7 +17,7 @@ const COMPRESSION_QUALITY = 0.7; // 0 = max compression, 1 = max quality
 
 const PasteArea = ({ onExport }) => {
   useEffect(() => {
-    console.log('PasteArea component mounted');
+    // console.log('PasteArea component mounted');
   }, []); // Empty dependency array means this only runs once on mount
 
   const [items, setItems] = useState([]);
@@ -38,7 +38,7 @@ const PasteArea = ({ onExport }) => {
     
     // Use tracked mouse position
     const { x, y } = mousePosition;
-    console.log('Pasting at position:', { x, y });
+    // console.log('Pasting at position:', { x, y });
     
     try {
       // Handle pasted images
@@ -120,7 +120,7 @@ const handleTimeSet = async (settings) => {
 
   // Load items on mount
   useEffect(() => {
-    console.log('Loading items effect running');
+    // console.log('Loading items effect running');
     const fetchItems = async () => {
       try {
         const savedItems = await loadItems();
@@ -245,7 +245,7 @@ const handleTimeSet = async (settings) => {
             id={item.id}
             className={`paste-item ${selectedId === item.id ? 'selected' : ''}`}
             onClick={(e) => {
-              console.log('Setting active item:', item.id); // Debug click
+              // console.log('Setting active item:', item.id); // Debug click
               setSelectedId(item.id);
               activeItemRef.current = item.id; // Set the active item ref
             }}
