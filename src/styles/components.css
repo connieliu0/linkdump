@@ -94,16 +94,34 @@ box-shadow: 0px 0px 22.2px 0px #FFCB7D;
   overflow: hidden;
   transition: all 0.2s ease;
   background: white;
+  max-width: 300px;
 }
+
 .link-preview {
-  display: block;
+  display: flex;
+  flex-direction: column;
   text-decoration: none;
   color: inherit;
-    border-radius: 6px;
+  border-radius: 6px;
   overflow: hidden;
-  transition: all 0.2s ease;
   background: white;
-  padding: 0.5rem;
+}
+
+.link-image-container {
+  width: 100%;
+  height: 150px;
+  overflow: hidden;
+  background: #f5f5f5;
+}
+
+.link-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.link-content {
+  padding: 0.75rem;
 }
 
 .link-header {
@@ -112,30 +130,23 @@ box-shadow: 0px 0px 22.2px 0px #FFCB7D;
   gap: 8px;
   margin-bottom: 8px;
 }
-a.link-title {
-  color: #0066cc;
-  text-decoration: none;
-}
-
-a.link-title:hover {
-  text-decoration: underline;
-}
-.link-favicon {
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-}
 
 .link-domain {
   color: #586069;
   font-size: 12px;
 }
 
-.link-title {
-  margin: 0 0 8px 0;
+a.link-title {
+  color: #0066cc;
+  text-decoration: none;
+  display: block;
+  margin-bottom: 8px;
   font-size: 16px;
-  color: #0366d6;
   line-height: 1.4;
+}
+
+a.link-title:hover {
+  text-decoration: underline;
 }
 
 .link-description {
@@ -147,6 +158,12 @@ a.link-title:hover {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.external-link-icon {
+  font-size: 0.8em;
+  margin-left: 4px;
+  opacity: 0.6;
 }
 
 /* Aging effects */

@@ -38,7 +38,7 @@ export async function extractMetadata(url) {
 /**
  * Fetches metadata including title, description, and favicon
  * @param {string} url
- * @returns {Promise<{title: string, description: string|null, favicon: string|null, sourceUrl: string}>}
+ * @returns {Promise<{title: string, imageUrl: string, sourceUrl: string}>}
  */
 export async function fetchMetadata(url) {
   try {
@@ -46,8 +46,7 @@ export async function fetchMetadata(url) {
     if (url.includes('localhost') || url.includes('127.0.0.1')) {
       return {
         title: 'Local Development',
-        description: 'Local development environment',
-        favicon: null,
+        imageUrl: null,
         sourceUrl: url
       };
     }
@@ -59,24 +58,29 @@ export async function fetchMetadata(url) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(data.contents, 'text/html');
     
+    // Get title with fallback to domain name
     const title = doc.querySelector('title')?.textContent || 
                  doc.querySelector('meta[property="og:title"]')?.content ||
                  new URL(url).hostname;
-                 
-    const description = doc.querySelector('meta[name="description"]')?.content ||
-                       doc.querySelector('meta[property="og:description"]')?.content;
-                       
-    const favicon = doc.querySelector('link[rel="icon"]')?.href ||
-                   doc.querySelector('link[rel="shortcut icon"]')?.href ||
-                   `${new URL(url).origin}/favicon.ico`;
+    
+    // Get main image with multiple fallbacks
+    const imageUrl = doc.querySelector('meta[property="og:image"]')?.content ||
+                    doc.querySelector('meta[name="twitter:image"]')?.content ||
+                    doc.querySelector('img')?.src || null;
 
-    return { title, description, favicon, sourceUrl: url };
+    // If image URL is relative, convert to absolute
+    const finalImageUrl = imageUrl ? new URL(imageUrl, url).href : null;
+
+    return { 
+      title, 
+      imageUrl: finalImageUrl,
+      sourceUrl: url 
+    };
   } catch (error) {
     console.error('Error fetching metadata:', error);
     return {
       title: new URL(url).hostname,
-      description: null,
-      favicon: null,
+      imageUrl: null,
       sourceUrl: url
     };
   }
