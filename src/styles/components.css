@@ -1,6 +1,6 @@
 /* Base styles */
 body {
-  font-family: 'Arial Narrow', Arial, sans-serif;
+  /* font-family: 'Arial Narrow', Arial, sans-serif; */
   transition: background-color 2s ease;
 }
 
