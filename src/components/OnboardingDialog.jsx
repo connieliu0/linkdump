@@ -4,7 +4,7 @@ const OnboardingDialog = ({ onClose }) => {
   return (
     <div className="dialog-overlay">
       <div className="dialog-content onboarding-content">
-        <h2>Welcome to Link Pile (please view on web!)</h2>
+        <h2>Welcome to the Link Dump (please view on web!)</h2>
         <div className="onboarding-steps">
           <div className="step">
             <p>📋 Paste images, links, or text anywhere on the canvas</p>

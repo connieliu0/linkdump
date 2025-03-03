@@ -13,28 +13,28 @@ const ImageCard = ({ src, itemId, sourceUrl: initialSourceUrl }) => {
     const compressImage = () => {
       const img = new Image();
       img.onload = () => {
-        // Compression logic (same as your original)
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        const maxWidth = 1200;
-        const maxHeight = 1200;
+        const maxWidth = 300; // Match with paste-item max-width
+        
         let width = img.width;
         let height = img.height;
         
+        // Only scale down if image is larger than maxWidth
         if (width > maxWidth) {
-          height = (maxWidth * height) / width;
+          const ratio = maxWidth / width;
           width = maxWidth;
+          height = height * ratio;
+          
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          setCompressedSrc(compressedDataUrl);
+        } else {
+          // Use original image if it's smaller than maxWidth
+          setCompressedSrc(src);
         }
-        if (height > maxHeight) {
-          width = (maxHeight * width) / height;
-          height = maxHeight;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        setCompressedSrc(compressedDataUrl);
       };
       img.src = src;
     };

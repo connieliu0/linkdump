@@ -30,7 +30,7 @@ const TimeInputDialog = ({ onTimeSet }) => {
           placeholder="Enter project description"
           className="input-field"
         />
-        <label>Enter time in seconds (for testing)</label>
+        <label>Enter time in seconds (will be days later, rn for testing purposes)</label>
         <input
           type="number"
           value={seconds}

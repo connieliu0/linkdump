@@ -47,12 +47,22 @@ const extractSourceFromHtml = (html) => {
 
 const detectImageSource = async (clipboardData, file) => {
   // Try methods in order of reliability
+  const plainText = clipboardData.getData('text/plain');
+  const htmlText = clipboardData.getData('text/html');
+  
+  // Only use plainText if it's a valid URL
+  const isValidUrl = plainText && (plainText.startsWith('http://') || plainText.startsWith('https://'));
+  
   const source = 
-    clipboardData.getData('text/plain') || // Direct URL copy
-    extractSourceFromHtml(clipboardData.getData('text/html')) ||
-    document.activeElement?.baseURI ||
-    ''; // Fallback to empty string
+    (isValidUrl ? plainText : null) || // Only use if valid URL
+    extractSourceFromHtml(htmlText) ||  // Try to get from HTML
+    ''; // Default to empty string instead of baseURI
     
+  // Don't return localhost or app URLs
+  if (source.includes('localhost') || source.includes('127.0.0.1')) {
+    return '';
+  }
+  
   return source;
 };
 
@@ -199,6 +209,13 @@ const handleTimeSet = async (settings) => {
     if (panzoomRef.current) {
       const { x, y } = panzoomRef.current.getPosition(e);
       setMousePosition({ x, y });
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (id) {
+      await deleteCard(id);
+      setSelectedId(null);
     }
   };
 

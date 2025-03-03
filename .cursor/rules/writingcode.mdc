@@ -6,3 +6,5 @@ globs:
 # Your rule content
 
 when you revise existing code, don't show me the entire preview in the chat composer just let me apply it
+
+if you're going to suggest an edit that's going to significantly change my code, offer me some ways I can do it ranging from simple to complex before you go ahead.
