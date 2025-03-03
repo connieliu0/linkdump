@@ -5,7 +5,7 @@ import './styles/components.css';
 
 function App() {
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main>
       <PasteArea />
     </main>
   );
