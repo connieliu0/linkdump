@@ -8,7 +8,7 @@ body{
   background-size: cover;
   background-attachment: fixed;
   font-family: 'Decompositionphase1';
-  src: url('../assets/Decompositionphase1.ttf') format('ttf');
+  src: url('.../public/Decompositionphase1.ttf') format('ttf');
   font-weight: normal;
   font-style: normal;
 }
