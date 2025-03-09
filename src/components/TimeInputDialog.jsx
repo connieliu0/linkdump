@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import Modal from './Modal';
 
-const TimeInputDialog = ({ onTimeSet }) => {
+const TimeInputDialog = ({ onTimeSet, isOpen, onClose }) => {
   const [seconds, setSeconds] = useState('60');
   const [description, setDescription] = useState('');
 
@@ -17,12 +18,14 @@ const TimeInputDialog = ({ onTimeSet }) => {
       duration: durationMs,
       description: description
     });
+    onClose();
   };
 
   return (
-    <div className="dialog-overlay">
-      <div className="dialog-content">
-        <label>Set Project Details</label>
+    <Modal isOpen={isOpen} onClose={onClose}>
+      <h2>Set Project Details</h2>
+      <div>
+        <label>Project Description</label>
         <input
           type="text"
           value={description}
@@ -30,7 +33,9 @@ const TimeInputDialog = ({ onTimeSet }) => {
           placeholder="Enter project description"
           className="input-field"
         />
-        <label>Enter time in seconds (will be days later, rn for testing purposes)</label>
+      </div>
+      <div>
+        <label>Duration (in seconds)</label>
         <input
           type="number"
           value={seconds}
@@ -38,14 +43,13 @@ const TimeInputDialog = ({ onTimeSet }) => {
           className="input-field"
           min="1"
         />
-        <button
-          onClick={handleSubmit}
-          className="button"
-        >
+      </div>
+      <div className="button-container">
+        <button onClick={handleSubmit}>
           Start
         </button>
       </div>
-    </div>
+    </Modal>
   );
 };
 

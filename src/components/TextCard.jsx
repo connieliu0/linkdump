@@ -39,11 +39,9 @@ const TextCard = ({ content, itemId, sourceUrl: initialSourceUrl, isEmpty, showS
   };
 
   const handleContentClick = (e) => {
-    // Only allow editing for newText type
-    if (type === 'newText') {
-      e.stopPropagation();
-      setIsContentEditing(true);
-    }
+    // Allow editing for both newText and pastedText types
+    e.stopPropagation();
+    setIsContentEditing(true);
   };
 
   const handleContentChange = async (e) => {
@@ -106,7 +104,7 @@ const TextCard = ({ content, itemId, sourceUrl: initialSourceUrl, isEmpty, showS
   return (
     <div className={`text-container ${isInputActive ? 'input-active' : ''}`}>
       <div className="text-content">
-        {isContentEditing && type === 'newText' ? (
+        {isContentEditing ? (
           <textarea
             ref={contentRef}
             value={cardContent}
@@ -117,20 +115,20 @@ const TextCard = ({ content, itemId, sourceUrl: initialSourceUrl, isEmpty, showS
               adjustTextareaHeight(e.target);
             }}
             onBlur={handleBlur}
-            className={`input-field content-input ${type === 'newText' ? 'new-text' : ''}`}
+            className={`input-field content-input ${type === 'newText' ? 'new-text' : 'pasted-text'}`}
             placeholder={isEmpty ? "Click to edit" : ""}
             style={{ height: textLength.current ? `${textLength.current}px` : 'auto' }}
             autoFocus
           />
         ) : (
           <div 
-            className={`${isEmpty ? 'empty-content' : ''} ${type === 'newText' ? 'editable' : ''}`}
+            className={`${isEmpty ? 'empty-content' : ''} editable ${type === 'newText' ? 'new-text' : 'pasted-text'}`}
             onClick={handleContentClick}
             ref={el => {
               if (el) textLength.current = el.clientHeight;
             }}
           >
-            {cardContent || (type === 'newText' ? 'Click to edit' : '')}
+            {cardContent || (isEmpty ? 'Click to edit' : '')}
           </div>
         )}
       </div>

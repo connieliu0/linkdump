@@ -1,8 +1,8 @@
 import React from 'react';
+import Modal from './Modal';
 import { useExport } from '../hooks/useExport';
-import '../styles/components.css';
 
-const ExpiryDialog = ({ onRestart, panzoomRef }) => {
+const ExpiryDialog = ({ onRestart, panzoomRef, isOpen }) => {
   const handleExport = useExport(panzoomRef);
 
   const handleRestartClick = (e) => {
@@ -10,37 +10,21 @@ const ExpiryDialog = ({ onRestart, panzoomRef }) => {
     onRestart();
   };
 
-  const handleDialogClick = (e) => {
-    e.stopPropagation();
-  };
-
   return (
-    <div 
-      onClick={handleDialogClick}
-      className="dialog-overlay"
-    >
-      <div 
-        onClick={e => e.stopPropagation()}
-        className="dialog-content"
-      >
-        <h2 className="dialog-title">Time's Up!</h2>
-        <p className="dialog-text">
-          The sun has set, your work has decayed. If you'd like to save, you can always export your work for local storage, or start anew...
-        </p>
-        <div className="button-container">
-          <button
-            onClick={handleExport}
-          >
-            Export
-          </button>
-          <button
-            onClick={handleRestartClick}
-          >
-            New Session
-          </button>
-        </div>
+    <Modal isOpen={isOpen} preventBackdropClick>
+      <h2>Time's Up!</h2>
+      <p>
+        The sun has set, your work has decayed. If you'd like to save, you can always export your work for local storage, or start anew...
+      </p>
+      <div className="button-container">
+        <button onClick={handleExport}>
+          Export
+        </button>
+        <button onClick={handleRestartClick}>
+          New Session
+        </button>
       </div>
-    </div>
+    </Modal>
   );
 };
 

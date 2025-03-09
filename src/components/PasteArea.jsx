@@ -97,12 +97,19 @@ const PasteArea = ({ onExport }) => {
 
   // Define handlePaste first
   const handlePaste = useCallback(async (e) => {
+    // Check if the active element is an input or textarea
+    if (document.activeElement.tagName === 'TEXTAREA' || 
+        document.activeElement.tagName === 'INPUT' ||
+        document.activeElement.classList.contains('content-input')) {
+      // Let the default paste behavior happen in the input
+      return;
+    }
+
     e.preventDefault();
     const clipboardData = e.clipboardData;
     
     // Use tracked mouse position
     const { x, y } = mousePosition;
-    // console.log('Pasting at position:', { x, y });
     
     try {
       // Handle pasted images
@@ -138,8 +145,9 @@ const PasteArea = ({ onExport }) => {
           type: isUrl ? 'link' : 'pastedText',
           content: text,
           position: { x, y },
-          sourceUrl: '', // Just set it to empty string for pasted text
-          timestamp: Date.now()
+          sourceUrl: '',
+          timestamp: Date.now(),
+          isEmpty: false
         };
         const id = await db.items.add(newItem);
         setItems(prev => [...prev, { ...newItem, id }]);
@@ -334,21 +342,29 @@ const handleTimeSet = async (settings) => {
   return (
     <>
       {showOnboarding && (
-        <OnboardingDialog onClose={handleOnboardingClose} />
+        <OnboardingDialog 
+          isOpen={showOnboarding}
+          onClose={handleOnboardingClose} 
+        />
       )}
       {!showOnboarding && showTimeInput && (
-        <TimeInputDialog onTimeSet={handleTimeSet} />
+        <TimeInputDialog 
+          isOpen={showTimeInput}
+          onClose={() => setShowTimeInput(false)}
+          onTimeSet={handleTimeSet} 
+        />
+      )}
+      {isExpired && (
+        <ExpiryDialog 
+          isOpen={isExpired}
+          panzoomRef={panzoomRef}
+          onRestart={handleRestart} 
+        />
       )}
       <InactivityOverlay 
         isVisible={isInactive} 
         onDismiss={handleDismissOverlay}
       />
-      {isExpired && (
-        <ExpiryDialog 
-          panzoomRef={panzoomRef}
-          onRestart={handleRestart} 
-        />
-      )}
       <div 
         className="paste-container" 
         onKeyDown={handleKeyDown} 

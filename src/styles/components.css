@@ -1,5 +1,35 @@
 @import url('https://fonts.googleapis.com/css2?family=Just+Me+Again+Down+Here&display=swap');
 
+@font-face {
+  font-family: 'Decompositionphase1';
+  src: url('/Decompositionphase1.woff2') format('woff2'),
+       url('/Decompositionphase1.woff') format('woff'),
+       url('/Decompositionphase1.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+  font-display: fallback;
+}
+
+/* Fallback font stack */
+:root {
+  --font-decomposition: 'Decompositionphase1', 'Courier New', monospace;
+}
+
+/* Update all Decompositionphase1 references to use the variable */
+.dialog-content h2,
+.dialog-content p,
+.dialog-content label,
+.dialog-content .input-field,
+.dialog-content button,
+button,
+.input-field,
+.text-content .editable.pasted-text,
+.text-content .content-input.pasted-text,
+.text-content:not(.new-text) {
+  font-family: var(--font-decomposition);
+}
+
 /* Base styles */
 
 body {
@@ -24,10 +54,91 @@ body {
   background-color: rgba(255, 255, 255, 0.57);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  padding: 20px;
+  padding: 2rem;
   border-radius: 0;
-  width: 300px;
+  width: 90%;
+  max-width: 300px;
   border: 1px solid rgba(224, 224, 224, 0.8);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dialog-content h2 {
+  font-size: 1.25rem;
+  margin: 0;
+  color: #4B5563;
+}
+
+.dialog-content p {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #6B7280;
+  margin: 0;
+}
+
+.dialog-content label {
+  color: #4B5563;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.dialog-content .input-field {
+  width: 100%;
+  padding: 0.75rem;
+  margin: 0;
+  border: 1px solid #E5E7EB;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+}
+
+.dialog-content .button-container {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.dialog-content button {
+  padding: 0.75rem 1.5rem;
+  background: white;
+  border: 1px solid #E5E7EB;
+  color: #4B5563;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dialog-content button:hover {
+  background: #ffedd2;
+  border-color: #FFD5C2;
+}
+
+/* Specific modal variations */
+.dialog-content.onboarding-content {
+  max-width: 350px;
+}
+
+.onboarding-steps {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.step {
+  background: rgba(255, 255, 255, 0.4);
+  padding: 1rem;
+  border-radius: 0;
+  transition: transform 0.2s ease;
+}
+
+.step:hover {
+  transform: translateX(5px);
+}
+
+.step p {
+  margin: 0;
+  font-size: 1.1rem;
 }
 
 /* Content styles */
@@ -39,7 +150,8 @@ body {
 /* Image styles */
 .image-container {
   position: relative;
-  display: block;
+  display: flex;
+  flex-direction: column;
   margin: 0;
   background: transparent;
   width: fit-content;
@@ -77,22 +189,18 @@ box-shadow: 0px 0px 22.2px 0px #FFCB7D;
   display: block;
   max-width: 100%;
   height: auto;
-  border-radius: 4px;
+  border-radius: 4px 4px 0 0;
   transition: all 2s ease;
 }
 
-/* Update source URL styles to match image width exactly */
+/* Update source URL styles */
 .image-container .source-url-container {
-  position: absolute; /* Position it relative to image container */
-  left: 0;
-  right: 0;
-  bottom: 0;
   width: 100%;
   box-sizing: border-box;
-  margin-top: 4px;
   padding: 8px;
   background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 4px;
+  border-radius: 0 0 4px 4px;
+  margin: 0;
 }
 
 .image-container .source-text {
@@ -112,6 +220,7 @@ box-shadow: 0px 0px 22.2px 0px #FFCB7D;
   padding: 0;
   margin: 0;
   font-size: 12px;
+  color: #6B7280;
 }
 
 .text-content {
@@ -309,6 +418,7 @@ button:hover {
 .content-input {
   width: 100%;
   min-height: 3em;
+  min-width: 285px;
   resize: none;
   font-family: inherit;
   font-size: inherit;
@@ -365,7 +475,7 @@ button:hover {
 }
 
 /* Add specific styles for new text cards */
-.text-content .editable,
+.text-content .editable.new-text,
 .text-content .content-input.new-text {
   font-family: "Just Me Again Down Here", cursive;
   font-weight: 400;
@@ -373,9 +483,13 @@ button:hover {
   font-size: 1.4em; /* Make it a bit larger for better readability */
 }
 
-/* Keep pasted text in regular font */
-.text-content:not(.editable) {
-  font-family: inherit;
+/* Styles for pasted text */
+.text-content .editable.pasted-text,
+.text-content .content-input.pasted-text,
+.text-content:not(.new-text) {
+  font-family: 'Decompositionphase1';
+  font-size: 1em;
+  line-height: 1.5;
 }
 
 .clear-button {
@@ -491,11 +605,6 @@ button:hover {
 .onboarding-content {
   max-width: 500px;
   text-align: center;
-}
-
-.onboarding-steps {
-  margin: 2rem 0;
-  text-align: left;
 }
 
 .step {
