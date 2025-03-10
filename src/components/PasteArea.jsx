@@ -121,17 +121,38 @@ const PasteArea = ({ onExport }) => {
         const file = imageItem.getAsFile();
         const sourceUrl = await detectImageSource(clipboardData, file);
         
-        const reader = new FileReader();
-        reader.onload = async () => {
+        // Create an image to get dimensions
+        const img = new Image();
+        img.onload = async () => {
+          // Create canvas
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Set dimensions
+          canvas.width = img.width;
+          canvas.height = img.height;
+          
+          // Draw image
+          ctx.drawImage(img, 0, 0);
+          
+          // Get as data URL with high quality (0.85)
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          
           const newItem = {
             type: 'image',
-            content: reader.result,
+            content: dataUrl,
             position: { x, y },
             sourceUrl,
             timestamp: Date.now()
           };
           const id = await db.items.add(newItem);
           setItems(prev => [...prev, { ...newItem, id }]);
+        };
+        
+        // Load the image from the file
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          img.src = e.target.result;
         };
         reader.readAsDataURL(file);
         return;

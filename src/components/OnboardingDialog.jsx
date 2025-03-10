@@ -7,6 +7,9 @@ const OnboardingDialog = ({ isOpen, onClose }) => {
       <h2>Welcome to the Link Dump (please view on web!)</h2>
       <div className="onboarding-steps">
         <div className="step">
+          <p>👋 Read more about the thesis behind the project <a href="https://decay.connie.surf" target="_blank">here</a></p>
+        </div>
+        <div className="step">
           <p>📋 Paste images, links, or text anywhere on the canvas</p>
         </div>
         <div className="step">

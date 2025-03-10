@@ -150,8 +150,7 @@ body {
 /* Image styles */
 .image-container {
   position: relative;
-  display: flex;
-  flex-direction: column;
+  display: block;
   margin: 0;
   background: transparent;
   width: fit-content;
@@ -181,6 +180,7 @@ box-shadow: 0px 0px 22.2px 0px #FFCB7D;
   cursor: move;
   will-change: transform;
   user-select: none;
+  overflow: hidden;
 }
 .paste-item.selected {
   outline: 2px solid #E49B3F;  /* Use outline instead of border */
@@ -191,16 +191,21 @@ box-shadow: 0px 0px 22.2px 0px #FFCB7D;
   height: auto;
   border-radius: 4px 4px 0 0;
   transition: all 2s ease;
+  margin-bottom: 0;
 }
 
 /* Update source URL styles */
 .image-container .source-url-container {
+  position: relative;
+  bottom: 0;
+  left: 0;
+  right: 0;
   width: 100%;
   box-sizing: border-box;
   padding: 8px;
   background-color: rgba(255, 255, 255, 0.9);
   border-radius: 0 0 4px 4px;
-  margin: 0;
+  margin-top: -1px;
 }
 
 .image-container .source-text {
