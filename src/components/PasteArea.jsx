@@ -429,7 +429,7 @@ const handleTimeSet = async (settings) => {
             top: '1rem', 
             left: '50%', 
             transform: 'translateX(-50%)',
-            color: '#6B7280',
+            color: 'rgb(58 67 84)',
             pointerEvents: 'none'
           }}>
             Paste an image or link here; Hold down shift to drag and select multiple 

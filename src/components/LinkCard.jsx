@@ -1,11 +1,12 @@
 // src/components/LinkCard.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../utils/storage';
 import { fetchMetadata, getBaseDomain } from '../utils/urlMetadata';
 
 const LinkCard = ({ url, itemId, initialMetadata }) => {
   const [metadata, setMetadata] = useState(initialMetadata || {});
   const domain = getBaseDomain(url);
+  const tweetRef = useRef(null);
 
   useEffect(() => {
     if (initialMetadata) return;
@@ -28,6 +29,28 @@ const LinkCard = ({ url, itemId, initialMetadata }) => {
     getMetadata();
   }, [url, itemId, initialMetadata]);
 
+  useEffect(() => {
+    // Check if it's a Twitter URL
+    if (url.includes('twitter.com') || url.includes('x.com')) {
+      // Create tweet embed
+      if (window.twttr && tweetRef.current) {
+        window.twttr.widgets.load(tweetRef.current);
+      }
+    }
+  }, [url]);
+
+  // If it's a Twitter URL, render the tweet embed
+  if (url.includes('twitter.com') || url.includes('x.com')) {
+    return (
+      <div className="link-card tweet-card" ref={tweetRef}>
+        <blockquote className="twitter-tweet">
+          <a href={url}></a>
+        </blockquote>
+      </div>
+    );
+  }
+
+  // Regular link card for non-Twitter URLs
   return (
     <div className="link-card">
       <div className="link-preview">

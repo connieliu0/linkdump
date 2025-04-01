@@ -642,4 +642,26 @@ button:hover {
   padding: 8px;
   background-color: rgba(255, 255, 255, 0.9);
   border-radius: 4px;
+}
+
+/* Tweet Card styles */
+.tweet-card {
+  background: transparent !important;
+  width: 550px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.tweet-card .twitter-tweet {
+  margin: 0 !important;
+}
+
+.tweet-card iframe {
+  border: none !important;
+}
+
+/* Aging effects for tweets */
+.aged-card .tweet-card {
+  opacity: 0.85;
+  filter: sepia(30%);
 } 

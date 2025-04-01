@@ -1,6 +1,7 @@
 ---
 description: do not format the entire code
 globs: 
+alwaysApply: false
 ---
 
 # Your rule content
