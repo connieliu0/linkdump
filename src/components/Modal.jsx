@@ -4,14 +4,13 @@ const Modal = ({
   isOpen, 
   onClose, 
   children, 
-  className = '',
-  preventBackdropClick = false
+  className = ''
 }) => {
   if (!isOpen) return null;
 
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget && !preventBackdropClick) {
-      onClose?.();
+  const handleBackdropClick = (event) => {
+    if (event.target === event.currentTarget) {
+      onClose();
     }
   };
 
@@ -20,10 +19,7 @@ const Modal = ({
       className="dialog-overlay"
       onClick={handleBackdropClick}
     >
-      <div 
-        className={`dialog-content ${className}`}
-        onClick={e => e.stopPropagation()}
-      >
+      <div className={`dialog-content ${className}`}>
         {children}
       </div>
     </div>

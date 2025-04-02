@@ -125,12 +125,6 @@ body {
   text-align: left;
 }
 
-.step {
-  background: rgba(255, 255, 255, 0.4);
-  padding: 1rem;
-  border-radius: 0;
-  transition: transform 0.2s ease;
-}
 
 .step:hover {
   transform: translateX(5px);
@@ -377,106 +371,128 @@ button:hover {
   bottom: 0;
   left: 0;
   right: 0;
-  background: white;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-  z-index: 50;
-  padding: 16px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  padding: 20px;
+  z-index: 50;
+  pointer-events: none; /* Allow clicking through the toolbar container */
 }
 
-.toolbar-text {
-  color: #4B5563;
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-
-.source-url-container {
-  width: 100%;
-  box-sizing: border-box;
-  margin-top: 4px;
-  padding: 8px;
-  background-color: rgba(255, 255, 255, 0.9);
+.toolbar-section {
+  background-image: url('../assets/crumpled-paper.png');
+  background-size: cover;
+  background-position: center;
+  padding: 20px;
   border-radius: 4px;
-}
-
-.source-text {
-  color: #6B7280;
-  font-size: 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.source-input {
-  width: 100%;
-  box-sizing: border-box;
-  background: transparent;
-  border: none;
-  padding: 0;
-  margin: 0;
-  display: block;
-}
-
-.content-input {
-  width: 100%;
-  min-height: 3em;
-  min-width: 285px;
-  resize: none;
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  background: transparent;
-  border: none;
-  padding: 0;
-  margin: 0;
-  overflow: hidden;
-  cursor: text;
-  box-sizing: border-box;
-  display: block;
-}
-
-.content-input:focus {
-  outline: none;
-  background: white;
-}
-
-.text-container {
-  position: relative;
-  background: white;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-}
-
-.text-container:hover {
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.text-container.input-active {
-  z-index: 10;
-}
-
-.text-container.input-active .content-input,
-.text-container.input-active .source-input {
+  position: absolute;
+  bottom: 20px;
+  max-width: 300px;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
   pointer-events: auto;
-  user-select: text !important;
-  -webkit-user-select: text !important;
-  cursor: text !important;
 }
 
-.input-field {
-  user-select: text;
-  cursor: text;
+/* Time section - left side */
+.time-section {
+  left: 20px;
+  line-height: 1.4;
+  transform: translateY(calc(100% - 60px));
+  transition: transform 0.3s ease;
+  rotate: -2deg;
 }
 
-.text-content .editable {
-  cursor: text;
+.time-section:hover {
+  transform: translateY(0);
 }
 
-.text-content .editable:hover {
-  background-color: rgba(0, 0, 0, 0.02);
+/* Project section - center */
+.project-section {
+  left: 50%;
+  text-align: center;
+  min-width: 200px;
+  max-width: 300px;
+  height: 120px; /* Make it taller */
+  transform: translateX(-50%) translateY(calc(100% - 60px));
+  display: flex;
+  align-items: flex-start; /* Align content to top */
+  justify-content: center;
+  padding-top: 20px; /* Add some padding at the top */
+}
+
+/* Actions section - right side */
+.actions-section {
+  right: 20px;
+  min-width: 200px;
+  text-align: left;
+  transform: translateY(calc(100% - 120px)); /* Show more of the buttons */
+  transition: transform 0.3s ease;
+  padding: 15px;
+  overflow: visible; /* Allow content to be visible outside */
+  rotate: 10deg;
+}
+
+.actions-section:hover {
+  transform: translateY(0);
+}
+
+/* Hover effects */
+.time-section:hover,
+.actions-section:hover {
+  transform: translateY(0);
+}
+
+.actions-header {
+  margin-bottom: 15px;
+  font-weight: 500;
+  font-size: 1.1em;
+}
+
+.actions-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  opacity: 1; /* Always visible */
+}
+
+.actions-menu button {
+  width: 100%;
+  text-align: center;
+  padding: 8px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background: transparent; /* Transparent background */
+  cursor: pointer;
+  font-family: var(--font-decomposition);
+  transition: all 0.2s ease;
+  border-radius: 0;
+  white-space: nowrap;
+  font-size: 1em;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.actions-menu button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.5); /* Semi-transparent on hover */
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.actions-menu button:disabled {
+  color: #999;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.actions-menu a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Project name styles */
+.project-name {
+  font-size: 1.1em;
+  font-family: var(--font-decomposition);
+  word-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
+  line-height: 1.4;
 }
 
 /* Add specific styles for new text cards */
@@ -613,10 +629,13 @@ button:hover {
 }
 
 .step {
-  margin: 1rem 0;
-  padding: 1rem;
+  margin: 0.5rem 0;
   background: rgba(255, 255, 255, 0.5);
   border-radius: 4px;
+  transition: transform 0.2s ease;
+  background: rgba(255, 255, 255, 0.4);
+  padding: 0.5rem;
+  border-radius: 0;
   transition: transform 0.2s ease;
 }
 
