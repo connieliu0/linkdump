@@ -39,9 +39,14 @@ const TextCard = ({ content, itemId, sourceUrl: initialSourceUrl, isEmpty, showS
   };
 
   const handleContentClick = (e) => {
-    // Allow editing for both newText and pastedText types
-    e.stopPropagation();
-    setIsContentEditing(true);
+    // Only stop propagation when editing
+    if (isContentEditing) {
+      e.stopPropagation();
+    } else {
+      // Otherwise, allow the click to bubble up for selection
+      // but still activate editing
+      setIsContentEditing(true);
+    }
   };
 
   const handleContentChange = async (e) => {
@@ -55,7 +60,10 @@ const TextCard = ({ content, itemId, sourceUrl: initialSourceUrl, isEmpty, showS
   };
 
   const handleContentKeyDown = (e) => {
-    e.stopPropagation();
+    // Only stop propagation for text input keys, not for Delete/Backspace
+    if (e.key !== 'Delete' && e.key !== 'Backspace') {
+      e.stopPropagation();
+    }
     if (e.key === 'Enter') {
       setIsContentEditing(false);
     }

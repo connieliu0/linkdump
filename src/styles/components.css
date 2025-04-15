@@ -175,9 +175,14 @@ box-shadow: 0px 0px 22.2px 0px #FFCB7D;
   will-change: transform;
   user-select: none;
   overflow: hidden;
+  position: relative;
+  transition: box-shadow 0.2s ease, outline 0.2s ease;
 }
 .paste-item.selected {
-  outline: 2px solid #E49B3F;  /* Use outline instead of border */
+  outline: 3px solid #E49B3F;  /* Make outline thicker */
+  outline-offset: 2px;         /* Add spacing between the element and the outline */
+  z-index: 10;                 /* Bring selected items to front */
+  box-shadow: 0 10px 30px -3px rgba(0, 0, 0, 0.2);  /* Enhanced shadow for selected state */
 }
 .pasted-image {
   display: block;
@@ -683,4 +688,30 @@ button:hover {
 .aged-card .tweet-card {
   opacity: 0.85;
   filter: sepia(30%);
+}
+
+/* Context menu styles */
+.context-menu {
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.context-menu-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.context-menu-item:hover {
+  background-color: #f5f5f5;
+}
+
+/* Add a clear animation for when items are removed */
+.clear-animation {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.disappear {
+  opacity: 0;
+  transform: scale(0.8);
 } 

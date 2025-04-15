@@ -7,6 +7,7 @@ import ImageCard from './ImageCard';
 import Toolbar from './Toolbar';
 import TimeInputDialog from './TimeInputDialog';
 import ExpiryDialog from './ExpiryDialog';
+import AddContentDialog from './AddContentDialog';
 import { saveTimeSettings, getTimeSettings, clearBoard } from '../utils/storage';
 import { useBackgroundAnimation } from '../hooks/useBackgroundAnimation';
 import { useAgingEffect } from '../hooks/useAgingEffect';
@@ -70,7 +71,6 @@ const PasteArea = ({ onExport }) => {
   const { 
     items, 
     setItems, 
-    addEmptyCard, 
     addCard, 
     updateCard, 
     deleteCard 
@@ -94,19 +94,30 @@ const PasteArea = ({ onExport }) => {
     let inactivityTimer = useRef(null);
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [showTimeInput, setShowTimeInput] = useState(false);
+    const [showAddContentDialog, setShowAddContentDialog] = useState(false);
+    const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, itemId: null });
 
   // Define handlePaste first
   const handlePaste = useCallback(async (e) => {
+    // Don't handle paste if Add Content dialog is open
+    if (showAddContentDialog) {
+      return;
+    }
+
+    // Ensure we're focused
+    if (!document.activeElement.classList.contains('paste-container')) {
+      document.querySelector('.paste-container')?.focus();
+    }
+
     // Check if the active element is an input or textarea
     if (document.activeElement.tagName === 'TEXTAREA' || 
         document.activeElement.tagName === 'INPUT' ||
         document.activeElement.classList.contains('content-input')) {
-      // Let the default paste behavior happen in the input
-      return;
+      return; // Let default paste behavior happen
     }
 
     e.preventDefault();
-    const clipboardData = e.clipboardData;
+    const clipboardData = e.clipboardData || window.clipboardData;
     
     // Use tracked mouse position
     const { x, y } = mousePosition;
@@ -176,7 +187,8 @@ const PasteArea = ({ onExport }) => {
     } catch (error) {
       console.error('Error saving item:', error);
     }
-  }, [mousePosition]);
+  }, [mousePosition, showAddContentDialog]); // Add showAddContentDialog to dependencies
+
 // Add this effect for time management
 useEffect(() => {
   const loadTimeSettings = async () => {
@@ -195,6 +207,8 @@ useEffect(() => {
     if (now >= timeSettings.endTime) {
       setIsExpired(true);
       clearInterval(interval);
+      // Clear the board when time expires
+      handleClearCanvas();
     } else {
       setTimeRemaining(Math.ceil((timeSettings.endTime - now) / 1000));
     }
@@ -203,8 +217,13 @@ useEffect(() => {
 }, [timeSettings]);
 
 const handleTimeSet = async (settings) => {
-  await saveTimeSettings(settings);
-  setTimeSettings(settings);
+  try {
+    await saveTimeSettings(settings);
+    setTimeSettings(settings);
+  } catch (error) {
+    console.error('Error saving time settings:', error);
+    // You might want to show an error message to the user here
+  }
 };
   // Then add the global paste handler
   useEffect(() => {
@@ -243,16 +262,73 @@ const handleTimeSet = async (settings) => {
 
   const handleDelete = async (id) => {
     if (id) {
-      await deleteCard(id);
-      setSelectedId(null);
+      try {
+        console.log('Deleting item with ID:', id);
+        await deleteCard(id);
+        setSelectedId(null);
+      } catch (error) {
+        console.error('Error deleting card:', error);
+      }
     }
   };
 
   const handleKeyDown = (e) => {
+    console.log('Key pressed:', e.key, 'Selected ID:', selectedId);
     if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
-      handleDelete(selectedId);
+      if (!isInputActive) {
+        e.preventDefault(); // Prevent browser back navigation
+        handleDelete(selectedId);
+      }
     }
   };
+
+  // Update the global keyboard event handler to add more shortcuts
+  useEffect(() => {
+    const globalKeyDownHandler = (e) => {
+      // Handle keyboard shortcuts
+      if (e.key === 'Escape') {
+        // Escape key to deselect
+        setSelectedId(null);
+        handleCloseContextMenu();
+        return;
+      }
+      
+      // Handle delete/backspace key globally for deletion
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && !isInputActive) {
+        e.preventDefault();
+        handleDelete(selectedId);
+        return;
+      }
+      
+      // Ctrl+A to select all items (not implemented yet)
+      if (e.key === 'a' && (e.ctrlKey || e.metaKey) && !isInputActive) {
+        e.preventDefault();
+        // Future: implement multi-select all
+        return;
+      }
+    };
+    
+    window.addEventListener('keydown', globalKeyDownHandler);
+    return () => {
+      window.removeEventListener('keydown', globalKeyDownHandler);
+    };
+  }, [selectedId, isInputActive, handleDelete]);
+
+  // Add this before the return statement
+  useEffect(() => {
+    // Disable browser text selection when dragging items
+    const disableTextSelection = (e) => {
+      if (isSelecting) {
+        e.preventDefault();
+        return false;
+      }
+    };
+    
+    document.addEventListener('selectstart', disableTextSelection);
+    return () => {
+      document.removeEventListener('selectstart', disableTextSelection);
+    };
+  }, [isSelecting]);
 
   // Add selection mode effect
   useEffect(() => {
@@ -272,11 +348,17 @@ const handleTimeSet = async (settings) => {
       window.removeEventListener('keyup', handleKeyUp);
     };
   }, []);
+
   const handleRestart = async () => {
-    await clearBoard();
-    setTimeSettings(null);
-    setIsExpired(false);
-    setItems([]);
+    try {
+      await clearBoard(); // This will clear both items and settings
+      setTimeSettings(null);
+      setIsExpired(false);
+      setItems([]);
+      setShowTimeInput(true); // Show time input dialog again
+    } catch (error) {
+      console.error('Error restarting board:', error);
+    }
   };
 
   useBackgroundAnimation(timeSettings);
@@ -286,20 +368,24 @@ const handleTimeSet = async (settings) => {
     setIsInputActive(active);
   };
 
-  const handleClearCanvas = () => {
+  const handleClearCanvas = async () => {
     const elements = document.querySelectorAll('.paste-item');
     elements.forEach((el, index) => {
       setTimeout(() => {
         el.classList.add('clear-animation');
-        // Small delay to ensure transition class is applied first
         requestAnimationFrame(() => {
           el.classList.add('disappear');
         });
       }, index * 100);
     });
 
-    setTimeout(() => {
-      setItems([]);
+    setTimeout(async () => {
+      try {
+        await db.items.clear();
+        setItems([]);
+      } catch (error) {
+        console.error('Error clearing canvas:', error);
+      }
     }, elements.length * 100 + 500);
   };
 
@@ -360,8 +446,182 @@ const handleTimeSet = async (settings) => {
     setShowTimeInput(true); // Show time input after onboarding
   };
 
+  // Add container click handler that's not in the original code
+  const handleContainerClick = (e) => {
+    // Only deselect if clicking directly on the container and not on a card
+    if (e.target.classList.contains('paste-container') || 
+        e.target.classList.contains('canvas-area') ||
+        e.target.classList.contains('canvas-area__in')) {
+      setSelectedId(null);
+    }
+  };
+
+  // Add a new handler to add content from the modal
+  const handleAddNewContent = async (contentData) => {
+    console.log('handleAddNewContent called with:', contentData);
+
+    try {
+      // Default position in the center of the viewport
+      let position = { x: 100, y: 100 };
+
+      // Try to get position from panzoom if available
+      if (panzoomRef.current) {
+        try {
+          const transform = panzoomRef.current.getTransform();
+          if (transform) {
+            position = {
+              x: 100 - transform.x / transform.scale,
+              y: 100 - transform.y / transform.scale
+            };
+          }
+        } catch (e) {
+          console.log('Could not get panzoom position, using default');
+        }
+      }
+
+      let newItem;
+      if (contentData.type === 'image') {
+        newItem = {
+          type: 'image',
+          content: contentData.content,
+          position,
+          sourceUrl: '',
+          timestamp: Date.now()
+        };
+      } else {
+        const isUrl = contentData.content.startsWith('http://') || contentData.content.startsWith('https://');
+        newItem = {
+          type: isUrl ? 'link' : 'pastedText',
+          content: contentData.content,
+          position,
+          sourceUrl: '',
+          timestamp: Date.now()
+        };
+      }
+
+      // Use addCard from useCards hook
+      await addCard(newItem);
+      setShowAddContentDialog(false);
+    } catch (error) {
+      console.error('Error adding new content item:', error);
+    }
+  };
+
+  // Add a dedicated element to handle right clicks
+  const handleContextMenu = (e, itemId) => {
+    if (e && e.preventDefault) {
+      e.preventDefault(); // Only call if it's a real event
+    }
+    
+    const menuX = e ? e.clientX : 0;
+    const menuY = e ? e.clientY : 0;
+    
+    setContextMenu({
+      visible: true,
+      x: menuX,
+      y: menuY,
+      itemId
+    });
+  };
+
+  // Close the context menu when clicking elsewhere
+  const handleCloseContextMenu = () => {
+    setContextMenu({ visible: false, x: 0, y: 0, itemId: null });
+  };
+
+  // Handle context menu option click
+  const handleDeleteFromMenu = () => {
+    if (contextMenu.itemId) {
+      handleDelete(contextMenu.itemId);
+    }
+    handleCloseContextMenu();
+  };
+
+  // Add explicit click handler for selection
+  useEffect(() => {
+    const handleDocumentClick = (e) => {
+      // If we clicked on a paste-item, update selection
+      let targetElement = e.target;
+      let itemElement = null;
+      
+      // Traverse up to find if we clicked on a paste-item or its child
+      while (targetElement && targetElement !== document.body) {
+        if (targetElement.classList && targetElement.classList.contains('paste-item')) {
+          itemElement = targetElement;
+          break;
+        }
+        targetElement = targetElement.parentElement;
+      }
+      
+      if (itemElement) {
+        // Extract the id from the element
+        const itemId = itemElement.getAttribute('data-id') || 
+                      itemElement.id;
+        
+        if (itemId) {
+          console.log('Document click on item:', itemId);
+          setSelectedId(itemId);
+          activeItemRef.current = itemId;
+        }
+      } else if (e.target.classList.contains('paste-container') || 
+                e.target.classList.contains('canvas-area') ||
+                e.target.classList.contains('canvas-area__in')) {
+        // Clear selection when clicking on the container
+        setSelectedId(null);
+      }
+    };
+    
+    document.addEventListener('click', handleDocumentClick);
+    return () => {
+      document.removeEventListener('click', handleDocumentClick);
+    };
+  }, []);
+
   return (
     <>
+      {/* Context Menu */}
+      {contextMenu.visible && (
+        <div 
+          className="context-menu"
+          style={{
+            position: 'fixed',
+            top: `${contextMenu.y}px`,
+            left: `${contextMenu.x}px`,
+            background: 'white',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+            padding: '5px 0',
+            zIndex: 1000,
+            borderRadius: '3px'
+          }}
+        >
+          <div 
+            style={{
+              padding: '8px 12px',
+              cursor: 'pointer',
+              hoverBackground: '#f5f5f5'
+            }}
+            onClick={handleDeleteFromMenu}
+          >
+            Delete
+          </div>
+        </div>
+      )}
+
+      {/* Click catcher for context menu */}
+      {contextMenu.visible && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 999
+          }}
+          onClick={handleCloseContextMenu}
+        />
+      )}
+
       {showOnboarding && (
         <OnboardingDialog 
           isOpen={showOnboarding}
@@ -382,22 +642,43 @@ const handleTimeSet = async (settings) => {
           onRestart={handleRestart} 
         />
       )}
+      {showAddContentDialog && (
+        <AddContentDialog
+          isOpen={showAddContentDialog}
+          onClose={() => setShowAddContentDialog(false)}
+          onAddContent={handleAddNewContent}
+        />
+      )}
       <InactivityOverlay 
         isVisible={isInactive} 
         onDismiss={handleDismissOverlay}
       />
       <div 
         className="paste-container" 
-        onKeyDown={handleKeyDown} 
+        onKeyDown={(e) => {
+          console.log('Container key pressed:', e.key, 'Selected ID:', selectedId);
+          if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && !isInputActive) {
+            e.preventDefault();
+            handleDelete(selectedId);
+          } else if (e.key === 'Escape') {
+            setSelectedId(null);
+            handleCloseContextMenu();
+          }
+        }}
         onMouseMove={handleMouseMove}
+        onClick={(e) => {
+          handleContainerClick(e);
+          handleCloseContextMenu();
+        }}
         tabIndex={0}
+        style={{ outline: 'none' }}
       >
         <Toolbar 
           panzoomRef={panzoomRef} 
           onExport={onExport} 
           timeRemaining={timeRemaining}
           timeSettings={timeSettings}
-          onAddEmptyCard={addEmptyCard}
+          onOpenAddContentModal={() => setShowAddContentDialog(true)}
           onClearCanvas={handleClearCanvas}
         />
         <PanZoom 
@@ -408,7 +689,15 @@ const handleTimeSet = async (settings) => {
           ref={panzoomRef}
           className="canvas-area"
           style={{ width: '100%', height: '100%' }}
-          onContainerClick={() => setSelectedId(null)}
+          onContainerClick={() => {
+            // Only deselect if we clicked on the container, not if we clicked an Element
+            // The Element's onClick will fire first, updating selectedId if needed
+            requestAnimationFrame(() => {
+              console.log('PanZoom container clicked');
+              setSelectedId(null); 
+              handleCloseContextMenu();
+            });
+          }}
           disabled={isInputActive} // Disable PanZoom when input is active
           containerClassNames={{
             outer: 'canvas-area',
@@ -435,54 +724,54 @@ const handleTimeSet = async (settings) => {
             Paste an image or link here; Hold down shift to drag and select multiple 
           </div>
           
-          {items.map(item => (
-            <Element
-              key={item.id}
-              id={item.id}
-              className={`paste-item ${selectedId === item.id ? 'selected' : ''}`}
-              onClick={(e) => {
-                // console.log('Setting active item:', item.id); // Debug click
-                setSelectedId(item.id);
-                activeItemRef.current = item.id; // Set the active item ref
-              }}
-              x={item.position?.x || 0}
-              y={item.position?.y || 0}
-       
-            >
-              {item.type === 'image' ? (
-                <ImageCard 
-                  src={item.content} 
-                  itemId={item.id}
-                  sourceUrl={item.sourceUrl}
-                />
-              ) : item.type === 'link' ? (
-                <LinkCard 
-                  url={item.content} 
-                  itemId={item.id}
-                  initialMetadata={item.metadata}
-                />
-              ) : item.type === 'pastedText' ? (
-                <TextCard
-                  content={item.content}
-                  itemId={item.id}
-                  sourceUrl={item.sourceUrl}
-                  isEmpty={false}
-                  showSourceUrl={true}
-                  onInputActiveChange={handleInputActiveChange}
-                  type="pastedText"
-                />
-              ) : item.type === 'newText' ? (
-                <TextCard
-                  content={item.content}
-                  itemId={item.id}
-                  isEmpty={item.isEmpty}
-                  showSourceUrl={false}
-                  onInputActiveChange={handleInputActiveChange}
-                  type="newText"
-                />
-              ) : null}
-            </Element>
-          ))}
+          {items.map(item => {
+            return (
+              <Element
+                key={item.id}
+                id={item.id}
+                data-id={item.id} // Add data-id for easier selection
+                className={`paste-item ${selectedId === item.id ? 'selected' : ''}`}
+                onClick={() => {
+                  // Don't use e.stopPropagation() here as PanZoom doesn't pass a real event
+                  console.log('Item clicked:', item.id);
+                  setSelectedId(item.id);
+                  activeItemRef.current = item.id;
+                }}
+                // Add a regular div inside to handle context menu properly
+                x={item.position?.x || 0}
+                y={item.position?.y || 0}
+              >
+                <div 
+                  onContextMenu={(e) => handleContextMenu(e, item.id)}
+                  style={{ width: '100%', height: '100%' }}
+                >
+                  {item.type === 'image' ? (
+                    <ImageCard 
+                      src={item.content} 
+                      itemId={item.id}
+                      sourceUrl={item.sourceUrl}
+                    />
+                  ) : item.type === 'link' ? (
+                    <LinkCard 
+                      url={item.content} 
+                      itemId={item.id}
+                      initialMetadata={item.metadata}
+                    />
+                  ) : (
+                    <TextCard
+                      content={item.content}
+                      itemId={item.id}
+                      sourceUrl={item.sourceUrl}
+                      isEmpty={item.isEmpty || false}
+                      showSourceUrl={item.type === 'pastedText'}
+                      onInputActiveChange={handleInputActiveChange}
+                      type={item.type}
+                    />
+                  )}
+                </div>
+              </Element>
+            );
+          })}
         </PanZoom>
       </div>
     </>

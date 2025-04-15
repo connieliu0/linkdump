@@ -27,7 +27,7 @@ const ProjectSection = () => (
   </div>
 );
 
-const ActionsMenu = ({ onClearCanvas, onAddEmptyCard }) => {
+const ActionsMenu = ({ onClearCanvas, onOpenAddContentModal }) => {
   const [showRoadmap, setShowRoadmap] = useState(false);
 
   return (
@@ -36,7 +36,7 @@ const ActionsMenu = ({ onClearCanvas, onAddEmptyCard }) => {
         <div className="actions-header">Actions</div>
         <div className="actions-menu">
           <button onClick={onClearCanvas}>Clear canvas</button>
-          <button onClick={onAddEmptyCard}>Add card</button>
+          <button onClick={onOpenAddContentModal}>Add Content</button>
           <a 
             href="https://docs.google.com/forms/d/e/1FAIpQLScCG7CZkm6JVju3iHANitU1XkBrLCMZC066pjQN_HCYSuBXmg/viewform?usp=header"
             target="_blank"
@@ -59,7 +59,7 @@ const ActionsMenu = ({ onClearCanvas, onAddEmptyCard }) => {
 const Toolbar = ({ 
   timeRemaining,
   timeSettings,
-  onAddEmptyCard,
+  onOpenAddContentModal,
   onClearCanvas
 }) => {
   const handleClear = async () => {
@@ -78,7 +78,7 @@ const Toolbar = ({
       <ProjectSection />
       <ActionsMenu 
         onClearCanvas={handleClear}
-        onAddEmptyCard={onAddEmptyCard}
+        onOpenAddContentModal={onOpenAddContentModal}
       />
     </div>
   );
