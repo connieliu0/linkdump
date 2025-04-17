@@ -431,11 +431,17 @@ const handleTimeSet = async (settings) => {
   // Check for first visit and manage dialog sequence
   useEffect(() => {
     const hasVisited = localStorage.getItem('hasVisitedBefore');
-    if (!hasVisited) {
+    const now = Date.now();
+    const hasActiveTimeSettings = timeSettings && now < timeSettings.endTime;
+
+    if (!hasVisited && !hasActiveTimeSettings) {
+      // Only show onboarding for first visit if there are no active time settings
       setShowOnboarding(true);
-      setShowTimeInput(false); // Ensure time input is hidden initially
+      setShowTimeInput(false);
     } else {
-      setShowTimeInput(!timeSettings); // Show time input only if no time settings
+      // For returning visitors or if there are active time settings
+      setShowOnboarding(false);
+      setShowTimeInput(!hasActiveTimeSettings);
     }
   }, [timeSettings]);
 
