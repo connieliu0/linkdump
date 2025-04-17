@@ -1,6 +1,6 @@
 // src/components/LinkCard.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { db } from '../utils/storage';
+import { updateItemPosition } from '../utils/storage';
 import { fetchMetadata, getBaseDomain } from '../utils/urlMetadata';
 
 const LinkCard = ({ url, itemId, initialMetadata }) => {
@@ -16,7 +16,7 @@ const LinkCard = ({ url, itemId, initialMetadata }) => {
       try {
         const data = await fetchMetadata(url);
         setMetadata({ ...data, isLoading: false });
-        await db.items.update(itemId, { metadata: data });
+        await updateItemPosition(itemId, { metadata: data });
       } catch (error) {
         console.error('Error in LinkCard:', error);
         setMetadata({

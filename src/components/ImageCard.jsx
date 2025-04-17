@@ -2,7 +2,7 @@
 // This wraps the image in a container to better support the fading border effect
 
 import React, { useState, useEffect } from 'react';
-import { db } from '../utils/storage';
+import { updateItemPosition } from '../utils/storage';
 
 const ImageCard = ({ src, itemId, sourceUrl: initialSourceUrl }) => {
   const [compressedSrc, setCompressedSrc] = useState(src);
@@ -50,7 +50,7 @@ const ImageCard = ({ src, itemId, sourceUrl: initialSourceUrl }) => {
   const handleSourceChange = async (e) => {
     const newSource = e.target.value;
     setSourceUrl(newSource);
-    await db.items.update(itemId, { sourceUrl: newSource });
+    await updateItemPosition(itemId, { sourceUrl: newSource });
   };
 
   const handleKeyDown = (e) => {

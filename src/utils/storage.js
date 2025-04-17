@@ -1,5 +1,6 @@
 // src/utils/storage.js
-import Dexie from 'dexie';
+import { ref, set, onValue, remove, update, get } from 'firebase/database';
+import { db } from './firebase';
 
 /**
  * @typedef {Object} ItemPreview
@@ -18,39 +19,49 @@ import Dexie from 'dexie';
  * @property {number} timestamp
  */
 
-// Create the database
-export const db = new Dexie('linkDumpDB');
-
-// Define the database schema - using a completely new version to avoid migration issues
-db.version(4).stores({
-  items: '++id,type,content,position,sourceUrl,timestamp',
-  settings: 'id,endTime,halfwayPoint,totalSeconds'
-});
-
-/**
- * @param {StorageItem} item
- */
 export const saveItem = async (item) => {
   console.log('Saving item to database:', item);
   try {
-    const id = await db.items.add(item);
-    console.log('Item saved successfully with id:', id);
-    return id;
+    const newRef = ref(db, `items/${Date.now()}`);
+    await set(newRef, item);
+    console.log('Item saved successfully with id:', newRef.key);
+    return newRef.key;
   } catch (error) {
     console.error('Error saving item:', error);
     throw error;
   }
 };
 
-export const loadItems = async () => {
-  console.log('Loading items from database');
+export const loadItems = (callback) => {
+  console.log('Setting up real-time items listener');
+  const itemsRef = ref(db, 'items');
+  
   try {
-    const items = await db.items.toArray();
-    console.log('Loaded items:', items);
-    return items;
+    return onValue(itemsRef, (snapshot) => {
+      try {
+        const data = snapshot.val() || {};
+        const items = Object.entries(data).map(([id, item]) => ({
+          ...item,
+          id
+        }));
+        console.log('Loaded items:', items);
+        callback(items);
+      } catch (error) {
+        console.error('Error processing items data:', error);
+        console.error('Snapshot value:', snapshot.val());
+        callback([]);
+      }
+    }, (error) => {
+      console.error('Firebase onValue error:', error);
+      // If there's a permission error, log it clearly
+      if (error.code === 'PERMISSION_DENIED') {
+        console.error('Firebase permission denied. Please check database rules.');
+      }
+      callback([]);
+    });
   } catch (error) {
-    console.error('Error loading items:', error);
-    return [];
+    console.error('Error setting up Firebase listener:', error);
+    return () => {}; // Return a no-op cleanup function
   }
 };
 
@@ -63,7 +74,7 @@ export const saveTimeSettings = async (settings) => {
       totalSeconds: Number(settings.totalSeconds)
     };
     
-    await db.settings.put(timeSettings);
+    await set(ref(db, 'timeSettings'), timeSettings);
     return true;
   } catch (error) {
     console.error('Error saving time settings:', error);
@@ -73,8 +84,8 @@ export const saveTimeSettings = async (settings) => {
 
 export const getTimeSettings = async () => {
   try {
-    const settings = await db.settings.get('timeSettings');
-    return settings;
+    const snapshot = await get(ref(db, 'timeSettings'));
+    return snapshot.val();
   } catch (error) {
     console.error('Error getting time settings:', error);
     return null;
@@ -83,8 +94,8 @@ export const getTimeSettings = async () => {
 
 export const clearBoard = async () => {
   try {
-    await db.items.clear();
-    await db.settings.clear(); // Also clear time settings when clearing the board
+    await remove(ref(db, 'items'));
+    await remove(ref(db, 'timeSettings')); // Also clear time settings when clearing the board
     return true;
   } catch (error) {
     console.error('Error clearing board:', error);
@@ -95,10 +106,21 @@ export const clearBoard = async () => {
 // Add a function to delete an item by ID
 export const deleteItem = async (id) => {
   try {
-    await db.items.delete(id);
+    await remove(ref(db, `items/${id}`));
     return true;
   } catch (error) {
     console.error('Error deleting item:', error);
+    throw error;
+  }
+};
+
+// Add function to update item position
+export const updateItemPosition = async (id, position) => {
+  try {
+    await update(ref(db, `items/${id}`), { position });
+    return true;
+  } catch (error) {
+    console.error('Error updating item position:', error);
     throw error;
   }
 };

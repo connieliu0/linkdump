@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { db } from '../utils/storage';
+import { updateItemPosition } from '../utils/storage';
 
 const TextCard = ({ content, itemId, sourceUrl: initialSourceUrl, isEmpty, showSourceUrl = false, onInputActiveChange, type }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -53,7 +53,7 @@ const TextCard = ({ content, itemId, sourceUrl: initialSourceUrl, isEmpty, showS
     const newContent = e.target.value;
     setCardContent(newContent);
     adjustTextareaHeight(e.target);
-    await db.items.update(itemId, { 
+    await updateItemPosition(itemId, { 
       content: newContent,
       isEmpty: newContent.trim() === ''
     });
@@ -81,7 +81,7 @@ const TextCard = ({ content, itemId, sourceUrl: initialSourceUrl, isEmpty, showS
   const handleSourceChange = async (e) => {
     const newSource = e.target.value;
     setSourceUrl(newSource);
-    await db.items.update(itemId, { sourceUrl: newSource });
+    await updateItemPosition(itemId, { sourceUrl: newSource });
   };
 
   const handleSourceKeyDown = (e) => {

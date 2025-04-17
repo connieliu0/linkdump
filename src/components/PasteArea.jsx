@@ -1,7 +1,7 @@
 // src/components/PasteArea.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import PanZoom, { Element } from '@sasza/react-panzoom';
-import { db, saveItem, loadItems } from '../utils/storage';
+import { saveItem, loadItems, updateItemPosition } from '../utils/storage';
 import LinkCard from './LinkCard';
 import ImageCard from './ImageCard';
 import Toolbar from './Toolbar';
@@ -156,7 +156,7 @@ const PasteArea = ({ onExport }) => {
             sourceUrl,
             timestamp: Date.now()
           };
-          const id = await db.items.add(newItem);
+          const id = await saveItem(newItem);
           setItems(prev => [...prev, { ...newItem, id }]);
         };
         
@@ -181,7 +181,7 @@ const PasteArea = ({ onExport }) => {
           timestamp: Date.now(),
           isEmpty: false
         };
-        const id = await db.items.add(newItem);
+        const id = await saveItem(newItem);
         setItems(prev => [...prev, { ...newItem, id }]);
       }
     } catch (error) {
@@ -238,17 +238,16 @@ const handleTimeSet = async (settings) => {
 
   // Load items on mount
   useEffect(() => {
-    // console.log('Loading items effect running');
-    const fetchItems = async () => {
-      try {
-        const savedItems = await loadItems();
-        console.log('Loaded items with positions:', savedItems);
-        setItems(savedItems || []);
-      } catch (error) {
-        console.error('Error loading items:', error);
+    const unsubscribe = loadItems((loadedItems) => {
+      setItems(loadedItems);
+    });
+
+    // Cleanup subscription on unmount
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
       }
     };
-    fetchItems();
   }, []);
   useAgingEffect(timeSettings);
 
@@ -381,7 +380,7 @@ const handleTimeSet = async (settings) => {
 
     setTimeout(async () => {
       try {
-        await db.items.clear();
+        await loadItems();
         setItems([]);
       } catch (error) {
         console.error('Error clearing canvas:', error);
@@ -499,8 +498,7 @@ const handleTimeSet = async (settings) => {
         };
       }
 
-      // Use addCard from useCards hook
-      await addCard(newItem);
+      const id = await saveItem(newItem);
       setShowAddContentDialog(false);
     } catch (error) {
       console.error('Error adding new content item:', error);
@@ -707,8 +705,9 @@ const handleTimeSet = async (settings) => {
             if (!activeItemRef.current) return;
             const elementData = element[activeItemRef.current];
             if (elementData) {
-              db.items.update(activeItemRef.current, { 
-                position: { x: elementData.x, y: elementData.y } 
+              updateItemPosition(activeItemRef.current, { 
+                x: elementData.x, 
+                y: elementData.y 
               });
             }
           }}
