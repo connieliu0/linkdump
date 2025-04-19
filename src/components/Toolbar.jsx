@@ -13,17 +13,34 @@ const TimeDisplay = ({ timeRemaining, timeSettings }) => {
       : "The sun is setting, process your files before they decay";
   };
 
+  const formatTimeRemaining = (seconds) => {
+    if (!seconds) return 'Loading...';
+    
+    const days = Math.floor(seconds / (24 * 60 * 60));
+    const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
+    const minutes = Math.floor((seconds % (60 * 60)) / 60);
+    const remainingSeconds = seconds % 60;
+
+    const parts = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0) parts.push(`${minutes}m`);
+    if (remainingSeconds > 0 || parts.length === 0) parts.push(`${remainingSeconds}s`);
+
+    return parts.join(' ');
+  };
+
   return (
     <div className="toolbar-section time-section">
       <div>{getMessage()}</div>
-      <div>{timeRemaining ? `${timeRemaining} seconds left` : 'Loading...'}</div>
+      <div>{formatTimeRemaining(timeRemaining)}</div>
     </div>
   );
 };
 
-const ProjectSection = () => (
+const ProjectSection = ({ projectDescription }) => (
   <div className="toolbar-section project-section">
-    <div className="project-name">Project Name here</div>
+    <div className="project-name">{projectDescription || 'Project Name here'}</div>
   </div>
 );
 
@@ -59,6 +76,7 @@ const ActionsMenu = ({ onClearCanvas, onAddEmptyCard }) => {
 const Toolbar = ({ 
   timeRemaining,
   timeSettings,
+  projectDescription,
   onAddEmptyCard,
   onClearCanvas
 }) => {
@@ -75,7 +93,7 @@ const Toolbar = ({
         timeRemaining={timeRemaining} 
         timeSettings={timeSettings} 
       />
-      <ProjectSection />
+      <ProjectSection projectDescription={projectDescription} />
       <ActionsMenu 
         onClearCanvas={handleClear}
         onAddEmptyCard={onAddEmptyCard}

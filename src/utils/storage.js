@@ -23,7 +23,7 @@ export const db = new Dexie('CanvasDB');
 // Update database schema to include sourceUrl and preview
 db.version(3).stores({
   items: '++id,type,content,position,sourceUrl',
-  settings: 'id,endTime,halfwayPoint,totalSeconds'
+  settings: 'id,endTime,halfwayPoint,totalSeconds,description'
 }).upgrade(tx => {
   // Upgrade function to add sourceUrl to existing items
   return tx.items.toCollection().modify(item => {
@@ -56,7 +56,11 @@ export const loadItems = async () => {
   }
 };
 export const saveTimeSettings = async (timeSettings) => {
-  await db.settings.put({ id: 1, ...timeSettings });
+  await db.settings.put({ 
+    id: 1, 
+    ...timeSettings,
+    description: timeSettings.description || ''  // Ensure description is saved
+  });
 };
 
 export const getTimeSettings = async () => {

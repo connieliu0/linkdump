@@ -4,12 +4,13 @@ const Modal = ({
   isOpen, 
   onClose, 
   children, 
-  className = ''
+  className = '',
+  preventBackdropClick = false
 }) => {
   if (!isOpen) return null;
 
   const handleBackdropClick = (event) => {
-    if (event.target === event.currentTarget) {
+    if (!preventBackdropClick && event.target === event.currentTarget) {
       onClose();
     }
   };

@@ -203,8 +203,15 @@ useEffect(() => {
 }, [timeSettings]);
 
 const handleTimeSet = async (settings) => {
-  await saveTimeSettings(settings);
-  setTimeSettings(settings);
+  try {
+    await saveTimeSettings(settings);
+    setTimeSettings({
+      ...settings,
+      description: settings.description // Make sure to include the description
+    });
+  } catch (error) {
+    console.error('Error saving time settings:', error);
+  }
 };
   // Then add the global paste handler
   useEffect(() => {
@@ -397,6 +404,7 @@ const handleTimeSet = async (settings) => {
           onExport={onExport} 
           timeRemaining={timeRemaining}
           timeSettings={timeSettings}
+          projectDescription={timeSettings?.description}
           onAddEmptyCard={addEmptyCard}
           onClearCanvas={handleClearCanvas}
         />
