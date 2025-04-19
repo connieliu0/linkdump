@@ -574,11 +574,11 @@ button:hover {
   display: flex;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 2s ease; /* Changed to 2s */
+  transition: opacity 2s ease;
 }
 
-/* Separate background layer */
-.inactivity-overlay::before {
+/* Remove the static background image styles */
+/* .inactivity-overlay::before {
   content: '';
   position: absolute;
   top: 0;
@@ -588,7 +588,20 @@ button:hover {
   background: url('../assets/timepasses/8am.jpg') center/cover;
   filter: blur(3px);
   opacity: 0;
-  transition: opacity 2s ease; /* Changed to 2s */
+  transition: opacity 2s ease;
+} */
+
+.animated-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(3px);
+  opacity: 0;
+  transition: opacity 2s ease;
 }
 
 /* Content layer */
@@ -601,7 +614,7 @@ button:hover {
   align-self: flex-start;
   opacity: 0;
   transform: translateY(-20px);
-  transition: all 2s ease; /* Changed to 2s */
+  transition: all 2s ease;
 }
 
 .inactivity-overlay.visible {
@@ -609,7 +622,7 @@ button:hover {
   pointer-events: auto;
 }
 
-.inactivity-overlay.visible::before {
+.inactivity-overlay.visible .animated-background {
   opacity: 1;
 }
 
@@ -618,14 +631,10 @@ button:hover {
   transform: translateY(0);
 }
 
-.overlay-content h1 {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
 .overlay-content p {
   font-size: 1.2rem;
   opacity: 0.8;
+  margin: 0.5rem 0;
 }
 
 .onboarding-content {
@@ -714,4 +723,24 @@ button:hover {
 .disappear {
   opacity: 0;
   transform: scale(0.8);
+}
+
+/* Add to the top of the file */
+.animated-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.3; /* Make it subtle */
+  transition: background-image 1s ease-in-out;
+}
+
+main {
+  position: relative;
+  min-height: 100vh;
+  z-index: 0;
 } 

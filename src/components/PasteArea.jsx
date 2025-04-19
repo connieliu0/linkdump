@@ -394,7 +394,7 @@ const handleTimeSet = async (settings) => {
     }
     inactivityTimer.current = setTimeout(() => {
       setIsInactive(true);
-    }, 180000); // 3 minutes = 3 * 60 * 1000 milliseconds
+    }, 5000); // Changed from 180000 to 5000 for testing
   }, []);
 
   useEffect(() => {
