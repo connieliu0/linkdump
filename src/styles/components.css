@@ -404,6 +404,7 @@ button:hover {
   display: flex;
   gap: 8px;
   justify-content: space-between;
+  width: 100%;
 }
 
 /* Input styles */
