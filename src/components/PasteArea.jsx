@@ -5,15 +5,15 @@ import { db, saveItem, loadItems } from '../utils/storage';
 import LinkCard from './LinkCard';
 import ImageCard from './ImageCard';
 import Toolbar from './Toolbar';
-import TimeInputDialog from './TimeInputDialog';
-import ExpiryDialog from './ExpiryDialog';
+import TimeInputDialog from './Dialog/TimeInputDialog';
+import ExpiryDialog from './Dialog/ExpiryDialog';
 import { saveTimeSettings, getTimeSettings, clearBoard } from '../utils/storage';
 import { useBackgroundAnimation } from '../hooks/useBackgroundAnimation';
 import { useAgingEffect } from '../hooks/useAgingEffect';
 import TextCard from './TextCard';
 import { useCards } from '../hooks/useCards';
 import InactivityOverlay from './InactivityOverlay';
-import OnboardingDialog from './OnboardingDialog';
+import OnboardingDialog from './Dialog/OnboardingDialog';
 
 
 const MAX_WIDTH = 800; // Maximum width for images

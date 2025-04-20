@@ -44,66 +44,110 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  /* background: rgba(255, 255, 255, 0.3); */
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 3000;
+  pointer-events: auto !important;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  visibility: hidden;
+}
+
+.dialog-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.dialog-overlay.with-overlay {
+  background: rgba(0, 0, 0, 0.5);
 }
 
 .dialog-content {
   width: 400px;
-  padding: 24px;
+  padding: 32px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 24px;
-  /* Glass effect with gradient */
   background: radial-gradient(100.4% 82.23% at 32.99% 26.35%, rgba(255, 255, 255, 0.90) 0%, rgba(255, 255, 255, 0.27) 100%);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
-  
-  /* Remove old styles */
   border: none;
   box-shadow: none;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 3001;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.soft-edge-blur {
-  position: relative;
+.dialog-overlay.visible .dialog-content {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dialog-content .dialog-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   width: 100%;
-  height: 100%;
-  overflow: hidden;
 }
 
-.soft-edge-blur::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: inherit;
-  filter: blur(40px);
-  mask-image: radial-gradient(circle at center, transparent 80%, rgb(255, 255, 255) 100%);
-  -webkit-mask-image: radial-gradient(circle at center, transparent 80%, rgb(255, 255, 255) 100%);
-  z-index: -1;
+.dialog-content .dialog-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.soft-edge-blur .content {
-  position: relative;
-  z-index: 1;
+/* Reset margins for direct children of dialog-body */
+.dialog-content .dialog-body > * {
+  margin: 0;
 }
+
+/* Ensure input fields don't have extra margins */
+.dialog-content .dialog-body .input-field {
+  margin: 0;
+  padding: 12px 8px;
+}
+
+/* Ensure consistent spacing in nested containers */
+.dialog-content .dialog-body .input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Style labels consistently */
+.dialog-content .dialog-body label {
+  color: #351C1C;
+  margin: 0;
+}
+
+/* Style paragraphs consistently */
+.dialog-content .dialog-body p {
+  color: #351C1C;
+  font-size: 1.1rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
 .dialog-content h2 {
   color: #351C1C;
   margin: 0;
   font-size: 1.2rem;
-  align-self: stretch;
+  font-weight: 500;
+  width: 100%;
 }
 
-.dialog-content p {
+.dialog-content .dialog-body p {
   color: #351C1C;
   margin: 0;
-  align-self: stretch;
+  font-size: 1.1rem;
+  line-height: 1.5;
+  text-align: left;
 }
 
 .dialog-content label {
@@ -123,53 +167,42 @@ body {
 
 .dialog-content .button-container {
   display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  margin-top: 0.5rem;
+  gap: 16px;
+  width: 100%;
+  margin-top: auto;
 }
 
-.dialog-content button {
-  display: flex;
-  padding: 16px;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  align-self: stretch;
+.dialog-content .button-container button {
+  flex: 1;
+  padding: 12px;
   border: 1px solid #351C1C;
   background: rgba(255, 255, 255, 0.20);
   cursor: pointer;
-  transition: background-color 0.2s ease;
-  font-family: var(--font-decomposition);
-  width: 100%;
+  transition: all 0.2s ease;
   border-radius: 0;
+  color: #351C1C;
+  font-family: 'Decompositionphase1';
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
 }
 
-.dialog-content button:hover {
+.dialog-content .button-container button:hover {
   background: rgba(255, 255, 255, 0.30);
-}
-
-/* Specific modal variations */
-.dialog-content.onboarding-content {
-  max-width: 350px;
+  transform: translateY(-1px);
 }
 
 .onboarding-steps {
   display: flex;
   flex-direction: column;
-  gap: 16px;
   align-self: stretch;
   width: 100%;
 }
 
 .step {
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.20);
-  border: 1px solid #351C1C;
   margin: 0;
-}
-
-.step:hover {
-  background: rgba(255, 255, 255, 0.30);
+  border-bottom: 1px dashed #351C1C;
 }
 
 .step p {
@@ -383,13 +416,13 @@ a.link-title:hover {
 /* Button styles */
 button {
   padding: 8px 16px;
-  background-color: white;
-  color: #4B5563;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
+  background: transparent;
+  color: #351C1C;
+  border: 1px solid #351C1C;
+  border-radius: 0;
   cursor: pointer;
-  transition: background-color 0.2s ease;
-  font-family: 'Decompositionphase1';
+  transition: all 0.2s ease;
+  font-family: var(--font-decomposition);
 }
 
 .dialog-content button {
@@ -397,7 +430,7 @@ button {
 }
 
 button:hover {
-  background-color: #ffedd2;
+  background: rgba(255, 255, 255, 0.30);
 }
 
 .button-container {
@@ -435,7 +468,7 @@ button:hover {
   justify-content: space-between;
   padding: 20px;
   z-index: 50;
-  pointer-events: none; /* Allow clicking through the toolbar container */
+  pointer-events: none;
 }
 
 .toolbar-section {
@@ -581,11 +614,6 @@ button:hover {
 
 .clear-button:hover {
   background-color: #FFE4D6;
-}
-
-.button-container {
-  display: flex;
-  gap: 8px;
 }
 
 .fade-out {
@@ -734,11 +762,8 @@ button:hover {
 
 .step {
   margin: 0.5rem 0;
-  background: rgba(255, 255, 255, 0.5);
   border-radius: 4px;
   transition: transform 0.2s ease;
-  background: rgba(255, 255, 255, 0.4);
-  padding: 0.5rem;
   border-radius: 0;
   transition: transform 0.2s ease;
 }

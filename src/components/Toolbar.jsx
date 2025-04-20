@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useExport } from '../hooks/useExport';
 import { clearBoard } from '../utils/storage';
-import RoadmapDialog from './RoadmapDialog';
+import RoadmapDialog from './Dialog/RoadmapDialog';
 
 const TimeDisplay = ({ timeRemaining, timeSettings }) => {
   const getMessage = () => {
