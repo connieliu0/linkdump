@@ -2,17 +2,10 @@ import React from 'react';
 import Modal from './Modal';
 
 const RoadmapDialog = ({ isOpen, onClose }) => {
-  console.log('RoadmapDialog rendered with isOpen:', isOpen);
-  
-  const handleClose = () => {
-    console.log('RoadmapDialog close handler called');
-    onClose();
-  };
-
   return (
     <Modal 
       isOpen={isOpen} 
-      onClose={handleClose}
+      onClose={onClose}
       title="Roadmap"
       preventBackdropClick={false}
       hasOverlay={true}

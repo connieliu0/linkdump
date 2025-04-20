@@ -14,6 +14,8 @@
 /* Fallback font stack */
 :root {
   --font-decomposition: 'Decompositionphase1', 'Courier New', monospace;
+  --primary-color: #351C1C;
+  --secondary-color: #726969; 
 }
 
 /* Update all Decompositionphase1 references to use the variable */
@@ -27,9 +29,7 @@ button,
 .text-content:not(.new-text) {
   font-family: var(--font-decomposition);
 }
-.dialog-content .input-field{
-  padding: 12px 8px;
-}
+
 
 /* Base styles */
 
@@ -47,7 +47,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 3000;
+  z-index: 9000;
   pointer-events: auto !important;
   opacity: 0;
   transition: opacity 0.3s ease-in-out;
@@ -60,7 +60,7 @@ body {
 }
 
 .dialog-overlay.with-overlay {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.25);
 }
 
 .dialog-content {
@@ -71,8 +71,8 @@ body {
   align-items: flex-start;
   gap: 24px;
   background: radial-gradient(100.4% 82.23% at 32.99% 26.35%, rgba(255, 255, 255, 0.90) 0%, rgba(255, 255, 255, 0.27) 100%);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
   border: none;
   box-shadow: none;
   pointer-events: auto !important;
@@ -107,11 +107,6 @@ body {
   margin: 0;
 }
 
-/* Ensure input fields don't have extra margins */
-.dialog-content .dialog-body .input-field {
-  margin: 0;
-  padding: 12px 8px;
-}
 
 /* Ensure consistent spacing in nested containers */
 .dialog-content .dialog-body .input-container {
@@ -122,47 +117,41 @@ body {
 
 /* Style labels consistently */
 .dialog-content .dialog-body label {
-  color: #351C1C;
+  color: var(--primary-color);
   margin: 0;
 }
 
 /* Style paragraphs consistently */
 .dialog-content .dialog-body p {
-  color: #351C1C;
+  color: var(--secondary-color);
   font-size: 1.1rem;
   line-height: 1.5;
   margin: 0;
+  text-align: left;
 }
 
 .dialog-content h2 {
-  color: #351C1C;
+  color: var(--primary-color);
   margin: 0;
   font-size: 1.2rem;
   font-weight: 500;
   width: 100%;
 }
 
-.dialog-content .dialog-body p {
-  color: #351C1C;
-  margin: 0;
-  font-size: 1.1rem;
-  line-height: 1.5;
-  text-align: left;
-}
-
 .dialog-content label {
-  color: #351C1C;
+  color: var(--primary-color);
   margin: 0;
   align-self: stretch;
 }
 
 .dialog-content .input-field {
   width: 100%;
-  border-bottom: 2px dashed #351C1C;
+  border-bottom: 2px dashed var(--secondary-color);
   background: rgba(255, 255, 255, 0.20);
   font-family: var(--font-decomposition);
-  color: #351C1C;
-  margin: 0;
+  color: var(--primary-color);
+  margin-bottom: 4px;
+  padding: 12px 8px;
 }
 
 .dialog-content .button-container {
@@ -175,12 +164,12 @@ body {
 .dialog-content .button-container button {
   flex: 1;
   padding: 12px;
-  border: 1px solid #351C1C;
+  border: 1px solid var(--primary-color);
   background: rgba(255, 255, 255, 0.20);
   cursor: pointer;
   transition: all 0.2s ease;
   border-radius: 0;
-  color: #351C1C;
+  color: var(--primary-color);
   font-family: 'Decompositionphase1';
   font-size: 1rem;
   font-style: normal;
@@ -219,14 +208,44 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 1;
 }
 
 .canvas-area__in {
   border: gray dashed 2px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   position: relative;
-  width: 200vw;  /* Make the canvas larger than viewport */
-  height: 200vh; /* Make the canvas larger than viewport */
-  transform: translate(-50%, -50%); /* Center the canvas */
+  width: 200vw;
+  height: 200vh;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.5);
+  isolation: isolate;
+  z-index: 2;
+}
+
+/* Paper texture layer */
+.canvas-area__in::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('../assets/crumpled-paper.png');
+  background-size: cover;
+  opacity: var(--texture-opacity, 0);
+  pointer-events: none;
+  z-index: 3;
+  transition: opacity 2s ease;
+}
+
+/* Paper aging overlay */
+#paper-aging-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  mix-blend-mode: soft-light;
+  transition: all 2s ease;
+  opacity: 0;
 }
 
 /* Image styles */
@@ -265,6 +284,7 @@ box-shadow: 0px 0px 22.2px 0px #FFCB7D;
   overflow: hidden;
   position: relative;
   transition: box-shadow 0.2s ease, outline 0.2s ease;
+  z-index: 2;
 }
 .paste-item.selected {
   outline: 3px solid #E49B3F;  /* Make outline thicker */
@@ -296,7 +316,7 @@ box-shadow: 0px 0px 22.2px 0px #FFCB7D;
 }
 
 .image-container .source-text {
-  color: #6B7280;
+  color: var(--secondary-color);
   font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -312,7 +332,7 @@ box-shadow: 0px 0px 22.2px 0px #FFCB7D;
   padding: 0;
   margin: 0;
   font-size: 12px;
-  color: #6B7280;
+  color: var(--secondary-color);
 }
 
 .text-content {
@@ -363,7 +383,7 @@ a.link-title:hover {
 }
 
 .link-domain {
-  color: #586069;
+  color: var(--secondary-color);
   font-size: 12px;
 }
 
@@ -376,7 +396,7 @@ a.link-title:hover {
 
 .link-description {
   margin: 0;
-  color: #24292e;
+  color: var(--secondary-color);
   font-size: 14px;
   line-height: 1.5;
   display: -webkit-box;
@@ -417,11 +437,11 @@ a.link-title:hover {
 button {
   padding: 8px 16px;
   background: transparent;
-  color: #351C1C;
-  border: 1px solid #351C1C;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
   border-radius: 0;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.5s ease;
   font-family: var(--font-decomposition);
 }
 
@@ -446,7 +466,7 @@ button:hover {
   width: 100%;
   margin-top: 8px;
   margin-bottom: 16px;
-  border: #cfcfcf solid 1px;
+  border: none;
   border-radius: 4px;
   background: linear-gradient(to top, #f5f5f5, white);
   font-family: 'Decompositionphase1';
@@ -454,8 +474,7 @@ button:hover {
 
 .input-field:focus {
   outline: none;
-  background: white;
-  border: 1px solid #c2c2c2;
+  background: linear-gradient(to top, rgba(211, 211, 211, 0.5), transparent);
 }
 
 /* Toolbar styles */
@@ -467,8 +486,16 @@ button:hover {
   display: flex;
   justify-content: space-between;
   padding: 20px;
-  z-index: 50;
+  z-index: 8000;
   pointer-events: none;
+  opacity: 0;
+  transform: translateY(100%);
+  transition: opacity 1s ease, transform 1s ease;
+}
+
+.toolbar.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .toolbar-section {
@@ -665,7 +692,7 @@ button:hover {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 2000;
+  z-index: 10000;
   cursor: pointer;
   display: flex;
   opacity: 0;

@@ -10,6 +10,7 @@ import ExpiryDialog from './Dialog/ExpiryDialog';
 import { saveTimeSettings, getTimeSettings, clearBoard } from '../utils/storage';
 import { useBackgroundAnimation } from '../hooks/useBackgroundAnimation';
 import { useAgingEffect } from '../hooks/useAgingEffect';
+import { usePaperAgingEffect } from '../hooks/usePaperAgingEffect';
 import TextCard from './TextCard';
 import { useCards } from '../hooks/useCards';
 import InactivityOverlay from './InactivityOverlay';
@@ -85,7 +86,7 @@ const PasteArea = ({ onExport }) => {
   const [isSelecting, setIsSelecting] = useState(false);
   const panzoomRef = useRef();
   const activeItemRef = useRef(null);
-  const [initialPosition, setInitialPosition] = useState({ x: 30, y: 30 });
+  const [initialPosition, setInitialPosition] = useState({ x: 100, y: 100 });
     // Add these new states
     const [timeSettings, setTimeSettings] = useState(null);
     const [isExpired, setIsExpired] = useState(false);
@@ -96,19 +97,6 @@ const PasteArea = ({ onExport }) => {
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [showTimeInput, setShowTimeInput] = useState(false);
 
-  // Calculate initial center position
-  useEffect(() => {
-    const calculateCenter = () => {
-      const zoomLevel = 0.9; // Match zoomInitial
-      // Position at 0,0 since the CSS will handle centering
-      setInitialPosition({ x: 0, y: 0 });
-    };
-
-    calculateCenter();
-    window.addEventListener('resize', calculateCenter);
-    
-    return () => window.removeEventListener('resize', calculateCenter);
-  }, []);
 
   // Define handlePaste first
   const handlePaste = useCallback(async (e) => {
@@ -254,6 +242,7 @@ const handleTimeSet = async (settings) => {
     fetchItems();
   }, []);
   useAgingEffect(timeSettings);
+  usePaperAgingEffect(timeSettings);
 
   // Track mouse position relative to panzoom
   const handleMouseMove = (e) => {
@@ -300,8 +289,6 @@ const handleTimeSet = async (settings) => {
     setIsExpired(false);
     setItems([]);
   };
-
-  useBackgroundAnimation(timeSettings);
 
   // Pass this to TextCard
   const handleInputActiveChange = (active) => {
@@ -424,10 +411,11 @@ const handleTimeSet = async (settings) => {
               projectDescription={timeSettings?.description}
               onAddEmptyCard={addEmptyCard}
               onClearCanvas={handleClearCanvas}
+              isExpired={isExpired}
             />
             <PanZoom 
               selecting={isSelecting}
-              zoomInitial={0.9}
+              zoomInitial={1}
               zoomMin={0.9}
               zoomMax={3}
               ref={panzoomRef}
@@ -435,8 +423,6 @@ const handleTimeSet = async (settings) => {
               style={{ width: '100%', height: '100%' }}
               onContainerClick={() => setSelectedId(null)}
               disabled={isInputActive}
-              initialX={initialPosition.x}
-              initialY={initialPosition.y}
               containerClassNames={{
                 outer: 'canvas-area',
                 inner: 'canvas-area__in'

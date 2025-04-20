@@ -19,25 +19,25 @@ const Modal = ({
   useEffect(() => {
     console.log('Modal effect triggered:', { isOpen, isClosing, shouldRender, isVisible });
     
-    if (isOpen) {
-      // Opening sequence
+    if (isOpen && !shouldRender) {
+      console.log('Opening modal...');
       setShouldRender(true);
-      // Wait for next frame to start animation
-      const openTimer = requestAnimationFrame(() => {
+      setIsClosing(false);
+      // Use animation frame to ensure proper timing
+      requestAnimationFrame(() => {
         setIsVisible(true);
       });
-      return () => cancelAnimationFrame(openTimer);
-    } else {
-      // Closing sequence
-      if (shouldRender) {
-        setIsVisible(false);
-        const closeTimer = setTimeout(() => {
-          setShouldRender(false);
-        }, 300);
-        return () => clearTimeout(closeTimer);
-      }
+    } else if (!isOpen && shouldRender && !isClosing) {
+      console.log('Closing modal...');
+      setIsVisible(false);
+      setIsClosing(true);
+      setTimeout(() => {
+        console.log('Cleanup after close animation');
+        setIsClosing(false);
+        setShouldRender(false);
+      }, 300);
     }
-  }, [isOpen]); // Only depend on isOpen
+  }, [isOpen, shouldRender]);
 
   const handleBackdropClick = (e) => {
     if (!preventBackdropClick && e.target === e.currentTarget) {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useExport } from '../hooks/useExport';
 import { clearBoard } from '../utils/storage';
 import RoadmapDialog from './Dialog/RoadmapDialog';
@@ -44,32 +44,23 @@ const ProjectSection = ({ projectDescription }) => (
   </div>
 );
 
-const ActionsMenu = ({ onClearCanvas, onAddEmptyCard }) => {
-  const [showRoadmap, setShowRoadmap] = useState(false);
-
+const ActionsMenu = ({ onClearCanvas, onAddEmptyCard, onShowRoadmap }) => {
   return (
-    <>
-      <div className="toolbar-section actions-section">
-        <div className="actions-header">Actions</div>
-        <div className="actions-menu">
-          <button onClick={onClearCanvas}>Clear canvas</button>
-          <button onClick={onAddEmptyCard}>Add card</button>
-          <a 
-            href="https://docs.google.com/forms/d/e/1FAIpQLScCG7CZkm6JVju3iHANitU1XkBrLCMZC066pjQN_HCYSuBXmg/viewform?usp=header"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <button>Give feedback</button>
-          </a>
-          <button onClick={() => setShowRoadmap(true)}>Roadmap</button>
-        </div>
+    <div className="toolbar-section actions-section">
+      <div className="actions-header">Actions</div>
+      <div className="actions-menu">
+        <button onClick={onClearCanvas}>Clear canvas</button>
+        <button onClick={onAddEmptyCard}>Add card</button>
+        <a 
+          href="https://docs.google.com/forms/d/e/1FAIpQLScCG7CZkm6JVju3iHANitU1XkBrLCMZC066pjQN_HCYSuBXmg/viewform?usp=header"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <button>Give feedback</button>
+        </a>
+        <button onClick={onShowRoadmap}>Roadmap</button>
       </div>
-      
-      <RoadmapDialog 
-        isOpen={showRoadmap} 
-        onClose={() => setShowRoadmap(false)} 
-      />
-    </>
+    </div>
   );
 };
 
@@ -78,8 +69,23 @@ const Toolbar = ({
   timeSettings,
   projectDescription,
   onAddEmptyCard,
-  onClearCanvas
+  onClearCanvas,
+  isExpired
 }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [showRoadmap, setShowRoadmap] = useState(false);
+
+  useEffect(() => {
+    // Small delay to ensure the initial render is complete
+    const timer = setTimeout(() => setIsVisible(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Reset roadmap dialog when timeSettings changes or when expired
+  useEffect(() => {
+    setShowRoadmap(false);
+  }, [timeSettings, isExpired]);
+
   const handleClear = async () => {
     if (window.confirm('Are you sure you want to clear the canvas? This cannot be undone.')) {
       await clearBoard();
@@ -88,17 +94,25 @@ const Toolbar = ({
   };
 
   return (
-    <div className="toolbar">
-      <TimeDisplay 
-        timeRemaining={timeRemaining} 
-        timeSettings={timeSettings} 
+    <>
+      <div className={`toolbar ${isVisible ? 'visible' : ''}`}>
+        <TimeDisplay 
+          timeRemaining={timeRemaining} 
+          timeSettings={timeSettings} 
+        />
+        <ProjectSection projectDescription={projectDescription} />
+        <ActionsMenu 
+          onClearCanvas={handleClear}
+          onAddEmptyCard={onAddEmptyCard}
+          onShowRoadmap={() => setShowRoadmap(true)}
+        />
+      </div>
+      
+      <RoadmapDialog 
+        isOpen={showRoadmap} 
+        onClose={() => setShowRoadmap(false)} 
       />
-      <ProjectSection projectDescription={projectDescription} />
-      <ActionsMenu 
-        onClearCanvas={handleClear}
-        onAddEmptyCard={onAddEmptyCard}
-      />
-    </div>
+    </>
   );
 };
 

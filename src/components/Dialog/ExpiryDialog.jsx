@@ -14,6 +14,7 @@ const ExpiryDialog = ({ onRestart, panzoomRef, isOpen }) => {
     <Modal 
       isOpen={isOpen} 
       preventBackdropClick={true}
+      hasOverlay={true}
       title="Time's Up!"
       description="The sun has set, your work has decayed. If you'd like to save, you can always export your work for local storage, or start anew..."
       primaryButton={{

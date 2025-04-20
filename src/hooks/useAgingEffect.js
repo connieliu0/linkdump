@@ -8,17 +8,6 @@ export const useAgingEffect = (timeSettings) => {
     const applyAgingEffects = () => {
       const now = Date.now();
       if (now >= timeSettings.endTime) return;
-
-      // Add debug logging
-    //   console.log('Time settings:', {
-    //     now,
-    //     start: timeSettings.startTime,
-    //     end: timeSettings.endTime,
-    //     elapsed: now - timeSettings.startTime,
-    //     total: timeSettings.endTime - timeSettings.startTime,
-    //     progress: Math.min((now - timeSettings.startTime) / (timeSettings.endTime - timeSettings.startTime), 1)
-    //   });
-
       // Calculate progress (0 to 1)
       const totalDuration = timeSettings.endTime - timeSettings.startTime;
       const elapsed = now - timeSettings.startTime;
