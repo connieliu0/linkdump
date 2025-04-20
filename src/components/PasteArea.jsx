@@ -8,7 +8,6 @@ import Toolbar from './Toolbar';
 import TimeInputDialog from './Dialog/TimeInputDialog';
 import ExpiryDialog from './Dialog/ExpiryDialog';
 import { saveTimeSettings, getTimeSettings, clearBoard } from '../utils/storage';
-import { useBackgroundAnimation } from '../hooks/useBackgroundAnimation';
 import { useAgingEffect } from '../hooks/useAgingEffect';
 import { usePaperAgingEffect } from '../hooks/usePaperAgingEffect';
 import TextCard from './TextCard';
