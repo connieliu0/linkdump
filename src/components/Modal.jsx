@@ -3,8 +3,7 @@ import React from 'react';
 const Modal = ({ 
   isOpen, 
   onClose, 
-  children, 
-  className = '',
+  children,
   preventBackdropClick = false
 }) => {
   if (!isOpen) return null;
@@ -19,8 +18,19 @@ const Modal = ({
     <div 
       className="dialog-overlay"
       onClick={handleBackdropClick}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000
+      }}
     >
-      <div className={`dialog-content ${className}`}>
+      <div className="dialog-content">
         {children}
       </div>
     </div>

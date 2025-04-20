@@ -85,6 +85,7 @@ const PasteArea = ({ onExport }) => {
   const [isSelecting, setIsSelecting] = useState(false);
   const panzoomRef = useRef();
   const activeItemRef = useRef(null);
+  const [initialPosition, setInitialPosition] = useState({ x: 30, y: 30 });
     // Add these new states
     const [timeSettings, setTimeSettings] = useState(null);
     const [isExpired, setIsExpired] = useState(false);
@@ -94,6 +95,20 @@ const PasteArea = ({ onExport }) => {
     let inactivityTimer = useRef(null);
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [showTimeInput, setShowTimeInput] = useState(false);
+
+  // Calculate initial center position
+  useEffect(() => {
+    const calculateCenter = () => {
+      const zoomLevel = 0.9; // Match zoomInitial
+      // Position at 0,0 since the CSS will handle centering
+      setInitialPosition({ x: 0, y: 0 });
+    };
+
+    calculateCenter();
+    window.addEventListener('resize', calculateCenter);
+    
+    return () => window.removeEventListener('resize', calculateCenter);
+  }, []);
 
   // Define handlePaste first
   const handlePaste = useCallback(async (e) => {
@@ -316,7 +331,7 @@ const handleTimeSet = async (settings) => {
     }
     inactivityTimer.current = setTimeout(() => {
       setIsInactive(true);
-    }, 180000); // 3 minutes = 3 * 60 * 1000 milliseconds
+    }, 3000); // Changed from 120000 to 3000 (3 seconds)
   }, []);
 
   useEffect(() => {
@@ -389,110 +404,116 @@ const handleTimeSet = async (settings) => {
           onRestart={handleRestart} 
         />
       )}
-      <InactivityOverlay 
-        isVisible={isInactive} 
-        onDismiss={handleDismissOverlay}
-      />
-      <div 
-        className="paste-container" 
-        onKeyDown={handleKeyDown} 
-        onMouseMove={handleMouseMove}
-        tabIndex={0}
-      >
-        <Toolbar 
-          panzoomRef={panzoomRef} 
-          onExport={onExport} 
-          timeRemaining={timeRemaining}
-          timeSettings={timeSettings}
-          projectDescription={timeSettings?.description}
-          onAddEmptyCard={addEmptyCard}
-          onClearCanvas={handleClearCanvas}
-        />
-        <PanZoom 
-          selecting={isSelecting}
-          zoomInitial={1.1}
-          zoomMin={0.9}
-          zoomMax={3}
-          ref={panzoomRef}
-          className="canvas-area"
-          style={{ width: '100%', height: '100%' }}
-          onContainerClick={() => setSelectedId(null)}
-          disabled={isInputActive} // Disable PanZoom when input is active
-          containerClassNames={{
-            outer: 'canvas-area',
-            inner: 'canvas-area__in'
-          }}
-          onElementsChange={(element) => {
-            if (!activeItemRef.current) return;
-            const elementData = element[activeItemRef.current];
-            if (elementData) {
-              db.items.update(activeItemRef.current, { 
-                position: { x: elementData.x, y: elementData.y } 
-              });
-            }
-          }}
-        >
-          <div style={{ 
-            position: 'fixed', 
-            top: '1rem', 
-            left: '50%', 
-            transform: 'translateX(-50%)',
-            color: 'rgb(58 67 84)',
-            pointerEvents: 'none'
-          }}>
-            Paste an image or link here; Hold down shift to drag and select multiple 
-          </div>
-          
-          {items.map(item => (
-            <Element
-              key={item.id}
-              id={item.id}
-              className={`paste-item ${selectedId === item.id ? 'selected' : ''}`}
-              onClick={(e) => {
-                // console.log('Setting active item:', item.id); // Debug click
-                setSelectedId(item.id);
-                activeItemRef.current = item.id; // Set the active item ref
+      {!(showOnboarding || showTimeInput) && (
+        <>
+          <InactivityOverlay 
+            isVisible={isInactive} 
+            onDismiss={handleDismissOverlay}
+          />
+          <div 
+            className="paste-container" 
+            onKeyDown={handleKeyDown} 
+            onMouseMove={handleMouseMove}
+            tabIndex={0}
+          >
+            <Toolbar 
+              panzoomRef={panzoomRef} 
+              onExport={onExport} 
+              timeRemaining={timeRemaining}
+              timeSettings={timeSettings}
+              projectDescription={timeSettings?.description}
+              onAddEmptyCard={addEmptyCard}
+              onClearCanvas={handleClearCanvas}
+            />
+            <PanZoom 
+              selecting={isSelecting}
+              zoomInitial={0.9}
+              zoomMin={0.9}
+              zoomMax={3}
+              ref={panzoomRef}
+              className="canvas-area"
+              style={{ width: '100%', height: '100%' }}
+              onContainerClick={() => setSelectedId(null)}
+              disabled={isInputActive}
+              initialX={initialPosition.x}
+              initialY={initialPosition.y}
+              containerClassNames={{
+                outer: 'canvas-area',
+                inner: 'canvas-area__in'
               }}
-              x={item.position?.x || 0}
-              y={item.position?.y || 0}
-       
+              onElementsChange={(element) => {
+                if (!activeItemRef.current) return;
+                const elementData = element[activeItemRef.current];
+                if (elementData) {
+                  db.items.update(activeItemRef.current, { 
+                    position: { x: elementData.x, y: elementData.y } 
+                  });
+                }
+              }}
             >
-              {item.type === 'image' ? (
-                <ImageCard 
-                  src={item.content} 
-                  itemId={item.id}
-                  sourceUrl={item.sourceUrl}
-                />
-              ) : item.type === 'link' ? (
-                <LinkCard 
-                  url={item.content} 
-                  itemId={item.id}
-                  initialMetadata={item.metadata}
-                />
-              ) : item.type === 'pastedText' ? (
-                <TextCard
-                  content={item.content}
-                  itemId={item.id}
-                  sourceUrl={item.sourceUrl}
-                  isEmpty={false}
-                  showSourceUrl={true}
-                  onInputActiveChange={handleInputActiveChange}
-                  type="pastedText"
-                />
-              ) : item.type === 'newText' ? (
-                <TextCard
-                  content={item.content}
-                  itemId={item.id}
-                  isEmpty={item.isEmpty}
-                  showSourceUrl={false}
-                  onInputActiveChange={handleInputActiveChange}
-                  type="newText"
-                />
-              ) : null}
-            </Element>
-          ))}
-        </PanZoom>
-      </div>
+              <div style={{ 
+                position: 'fixed', 
+                top: '1rem', 
+                left: '50%', 
+                transform: 'translateX(-50%)',
+                color: 'rgb(58 67 84)',
+                pointerEvents: 'none'
+              }}>
+                Paste an image or link here; Hold down shift to drag and select multiple 
+              </div>
+              
+              {items.map(item => (
+                <Element
+                  key={item.id}
+                  id={item.id}
+                  className={`paste-item ${selectedId === item.id ? 'selected' : ''}`}
+                  onClick={(e) => {
+                    // console.log('Setting active item:', item.id); // Debug click
+                    setSelectedId(item.id);
+                    activeItemRef.current = item.id; // Set the active item ref
+                  }}
+                  x={item.position?.x || 0}
+                  y={item.position?.y || 0}
+           
+                >
+                  {item.type === 'image' ? (
+                    <ImageCard 
+                      src={item.content} 
+                      itemId={item.id}
+                      sourceUrl={item.sourceUrl}
+                    />
+                  ) : item.type === 'link' ? (
+                    <LinkCard 
+                      url={item.content} 
+                      itemId={item.id}
+                      initialMetadata={item.metadata}
+                    />
+                  ) : item.type === 'pastedText' ? (
+                    <TextCard
+                      content={item.content}
+                      itemId={item.id}
+                      sourceUrl={item.sourceUrl}
+                      isEmpty={false}
+                      showSourceUrl={true}
+                      onInputActiveChange={handleInputActiveChange}
+                      type="pastedText"
+                    />
+                  ) : item.type === 'newText' ? (
+                    <TextCard
+                      content={item.content}
+                      itemId={item.id}
+                      isEmpty={item.isEmpty}
+                      showSourceUrl={false}
+                      onInputActiveChange={handleInputActiveChange}
+                      type="newText"
+                    />
+                  ) : null}
+                </Element>
+              ))}
+            </PanZoom>
+          </div>
+        </>
+      )}
     </>
   );
 };

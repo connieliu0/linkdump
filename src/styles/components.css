@@ -20,14 +20,15 @@
 .dialog-content h2,
 .dialog-content p,
 .dialog-content label,
-.dialog-content .input-field,
 .dialog-content button,
 button,
-.input-field,
 .text-content .editable.pasted-text,
 .text-content .content-input.pasted-text,
 .text-content:not(.new-text) {
   font-family: var(--font-decomposition);
+}
+.dialog-content .input-field{
+  padding: 12px 8px;
 }
 
 /* Base styles */
@@ -51,60 +52,73 @@ body {
 }
 
 .dialog-content {
-  /* Base styling */
-  padding: 20px;
-  width: 300px;
-  border-radius: 12px;
+  width: 400px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  /* Glass effect with gradient */
+  background: radial-gradient(100.4% 82.23% at 32.99% 26.35%, rgba(255, 255, 255, 0.90) 0%, rgba(255, 255, 255, 0.27) 100%);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
   
-  /* Glass effect with neutral gradient */
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
-  
-  /* Blur effect */
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  
-  /* Soft edges with shadow */
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.1),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
-  
-  /* Optional: subtle inner glow for depth */
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  
-  /* Ensure content is readable */
-  color: rgba(0, 0, 0, 0.8);
-  /* Add gradient transparency at the edges */
-  mask-image: radial-gradient(circle at center, black 30%, transparent 100%);
-  -webkit-mask-image: radial-gradient(circle at center, black 30%, transparent 100%);
+  /* Remove old styles */
+  border: none;
+  box-shadow: none;
 }
 
+.soft-edge-blur {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.soft-edge-blur::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: inherit;
+  filter: blur(40px);
+  mask-image: radial-gradient(circle at center, transparent 80%, rgb(255, 255, 255) 100%);
+  -webkit-mask-image: radial-gradient(circle at center, transparent 80%, rgb(255, 255, 255) 100%);
+  z-index: -1;
+}
+
+.soft-edge-blur .content {
+  position: relative;
+  z-index: 1;
+}
 .dialog-content h2 {
-  font-size: 1.25rem;
+  color: #351C1C;
   margin: 0;
-  color: #4B5563;
+  font-size: 1.2rem;
+  align-self: stretch;
 }
 
 .dialog-content p {
-  font-size: 1rem;
-  line-height: 1.5;
-  color: #6B7280;
+  color: #351C1C;
   margin: 0;
+  align-self: stretch;
 }
 
 .dialog-content label {
-  color: #4B5563;
-  display: block;
-  margin-bottom: 0.5rem;
+  color: #351C1C;
+  margin: 0;
+  align-self: stretch;
 }
 
 .dialog-content .input-field {
   width: 100%;
-  padding: 0.75rem;
+  border-bottom: 2px dashed #351C1C;
+  background: rgba(255, 255, 255, 0.20);
+  font-family: var(--font-decomposition);
+  color: #351C1C;
   margin: 0;
-  border: 1px solid #E5E7EB;
-  border-radius: 0;
-  background: rgba(255, 255, 255, 0.8);
-  font-size: 1rem;
 }
 
 .dialog-content .button-container {
@@ -115,17 +129,23 @@ body {
 }
 
 .dialog-content button {
-  padding: 0.75rem 1.5rem;
-  background: white;
-  border: 1px solid #E5E7EB;
-  color: #4B5563;
+  display: flex;
+  padding: 16px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  align-self: stretch;
+  border: 1px solid #351C1C;
+  background: rgba(255, 255, 255, 0.20);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease;
+  font-family: var(--font-decomposition);
+  width: 100%;
+  border-radius: 0;
 }
 
 .dialog-content button:hover {
-  background: #ffedd2;
-  border-color: #FFD5C2;
+  background: rgba(255, 255, 255, 0.30);
 }
 
 /* Specific modal variations */
@@ -136,12 +156,20 @@ body {
 .onboarding-steps {
   display: flex;
   flex-direction: column;
-  text-align: left;
+  gap: 16px;
+  align-self: stretch;
+  width: 100%;
 }
 
+.step {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.20);
+  border: 1px solid #351C1C;
+  margin: 0;
+}
 
 .step:hover {
-  transform: translateX(5px);
+  background: rgba(255, 255, 255, 0.30);
 }
 
 .step p {
@@ -151,8 +179,21 @@ body {
 
 /* Content styles */
 .canvas-area {
-  transition: box-shadow 3s ease;
-  
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.canvas-area__in {
+  border: gray dashed 2px;
+  position: relative;
+  width: 200vw;  /* Make the canvas larger than viewport */
+  height: 200vh; /* Make the canvas larger than viewport */
+  transform: translate(-50%, -50%); /* Center the canvas */
 }
 
 /* Image styles */
@@ -369,7 +410,6 @@ button:hover {
 .input-field {
   box-sizing: border-box;
   width: 100%;
-  padding: 8px;
   margin-top: 8px;
   margin-bottom: 16px;
   border: #cfcfcf solid 1px;
@@ -577,6 +617,19 @@ button:hover {
   pointer-events: none;
 }
 
+.animated-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;  /* Back to -1 to stay behind content */
+  background-size: cover;
+  background-position: center;
+  opacity: 0.3;
+  transition: background-image 0.5s ease-in-out;
+}
+
 .inactivity-overlay {
   position: fixed;
   top: 0;
@@ -588,34 +641,9 @@ button:hover {
   display: flex;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 2s ease; /* Changed to 2s */
-}
-
-/* Separate background layer */
-.inactivity-overlay::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('../assets/timepasses/8am.jpg') center/cover;
-  filter: blur(3px);
-  opacity: 0;
-  transition: opacity 2s ease; /* Changed to 2s */
-}
-
-/* Content layer */
-.overlay-content {
-  position: relative;
-  color: rgb(255, 234, 0);
-  text-align: left;
-  z-index: 1;
-  padding: 2rem;
-  align-self: flex-start;
-  opacity: 0;
-  transform: translateY(-20px);
-  transition: all 2s ease; /* Changed to 2s */
+  transition: opacity 2s ease;
+  overflow: hidden;
+  background: white;
 }
 
 .inactivity-overlay.visible {
@@ -623,23 +651,79 @@ button:hover {
   pointer-events: auto;
 }
 
-.inactivity-overlay.visible::before {
+/* The animated background within the overlay */
+.inactivity-overlay .animated-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
   opacity: 1;
+  background-size: cover;
+  background-position: center;
+}
+
+/* Radial blur effect applied directly to animated background */
+.inactivity-overlay .animated-background::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2001;
+  backdrop-filter: blur(100px);
+  -webkit-backdrop-filter: blur(100px);
+  mask-image: radial-gradient(
+    ellipse at center,
+    transparent 20%,
+    rgba(0, 0, 0, 0.2) 30%,
+    rgba(0, 0, 0, 0.6) 50%,
+    black 70%
+  ),
+  linear-gradient(
+    to bottom,
+    black 0%,
+    transparent 30%,
+    transparent 70%,
+    black 100%
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse at center,
+    transparent 20%,
+    rgba(0, 0, 0, 0.2) 30%,
+    rgba(0, 0, 0, 0.6) 50%,
+    black 70%
+  ),
+  linear-gradient(
+    to bottom,
+    black 0%,
+    transparent 30%,
+    transparent 70%,
+    black 100%
+  );
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
+}
+
+/* The text content */
+.inactivity-overlay .overlay-content {
+  position: relative;
+  color: rgb(255, 234, 0);
+  text-align: center;
+  z-index: 2002;
+  padding: 2rem;
+  align-self: flex-end;
+  margin-bottom: 2rem;
+  opacity: 0;
+  letter-spacing: 0.07em;
+  transform: translateY(20px);
+  transition: all 2s ease;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .inactivity-overlay.visible .overlay-content {
   opacity: 1;
   transform: translateY(0);
-}
-
-.overlay-content h1 {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.overlay-content p {
-  font-size: 1.2rem;
-  opacity: 0.8;
 }
 
 .onboarding-content {
@@ -728,20 +812,6 @@ button:hover {
 .disappear {
   opacity: 0;
   transform: scale(0.8);
-}
-
-/* Add to the top of the file */
-.animated-background {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: -1;
-  background-size: cover;
-  background-position: center;
-  opacity: 0.3; /* Make it subtle */
-  transition: background-image 1s ease-in-out;
 }
 
 main {

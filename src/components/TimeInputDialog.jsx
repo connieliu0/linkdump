@@ -1,123 +1,123 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
 
-const TimeInputDialog = ({ onTimeSet, isOpen, onClose }) => {
-  const [days, setDays] = useState('');
+const TimeInputDialog = ({ isOpen, onClose, onTimeSet }) => {
+  const [description, setDescription] = useState('');
+  const [hours, setHours] = useState('');
   const [minutes, setMinutes] = useState('');
   const [seconds, setSeconds] = useState('');
-  const [description, setDescription] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = () => {
-    // Clear any previous error
-    setError('');
+    if (!description.trim()) {
+      setError('Please enter a project description');
+      return;
+    }
 
     // Convert empty strings to 0
-    const daysValue = days === '' ? 0 : parseInt(days, 10);
+    const hoursValue = hours === '' ? 0 : parseInt(hours, 10);
     const minutesValue = minutes === '' ? 0 : parseInt(minutes, 10);
     const secondsValue = seconds === '' ? 0 : parseInt(seconds, 10);
 
     // Check if at least one field has a non-zero value
-    if (daysValue === 0 && minutesValue === 0 && secondsValue === 0) {
+    if (hoursValue === 0 && minutesValue === 0 && secondsValue === 0) {
       setError('Please specify at least one time unit');
       return;
     }
 
-    const daysInSeconds = daysValue * 24 * 60 * 60;
-    const minutesInSeconds = minutesValue * 60;
-    const totalSeconds = daysInSeconds + minutesInSeconds + secondsValue;
+    const totalMilliseconds = 
+      (hoursValue * 60 * 60 * 1000) + 
+      (minutesValue * 60 * 1000) + 
+      (secondsValue * 1000);
 
     const startTime = Date.now();
-    const durationMs = totalSeconds * 1000;
-    
+    const endTime = startTime + totalMilliseconds;
+
     onTimeSet({
+      description: description.trim(),
       startTime,
-      endTime: startTime + durationMs,
-      halfwayPoint: startTime + (durationMs / 2),
-      totalSeconds,
-      duration: durationMs,
-      description: description
+      endTime,
+      duration: totalMilliseconds / (60 * 60 * 1000) // Convert to hours for consistency
     });
+
     onClose();
   };
 
   const handleInputChange = (setter) => (e) => {
     const value = e.target.value;
-    if (value === '' || /^\d*$/.test(value)) { // Only allow empty string or numbers
+    if (value === '' || /^\d*$/.test(value)) {
       setter(value);
-      setError(''); // Clear error when user makes changes
+      setError('');
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} preventBackdropClick>
-      <h2>Set Project Details</h2>
-      <div>
-        <label>Project Description</label>
+    <Modal isOpen={isOpen} onClose={onClose}>
+      <h2>Set project details</h2>
+      
+      <div style={{ width: '100%' }}>
+        <label>Project description</label>
         <input
           type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Enter project description"
           className="input-field"
+          placeholder="Enter project description"
         />
       </div>
-      <div>
+
+      <div style={{ width: '100%' }}>
         <label>Duration</label>
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
+        <div style={{ 
+          display: 'flex', 
+          gap: '16px',
+          width: '100%'
+        }}>
           <div style={{ flex: 1 }}>
             <input
               type="text"
-              value={days}
-              onChange={handleInputChange(setDays)}
-              className={`input-field ${error ? 'error' : ''}`}
-              min="0"
+              value={hours}
+              onChange={handleInputChange(setHours)}
+              className="input-field"
               placeholder="0"
-              style={{ marginBottom: '4px' }}
             />
-            <label style={{ fontSize: '0.8em', color: '#666' }}>Days</label>
+            <label style={{ fontSize: '0.8em', color: '#351C1C' }}>Hours</label>
           </div>
           <div style={{ flex: 1 }}>
             <input
               type="text"
               value={minutes}
               onChange={handleInputChange(setMinutes)}
-              className={`input-field ${error ? 'error' : ''}`}
-              min="0"
+              className="input-field"
               placeholder="0"
-              style={{ marginBottom: '4px' }}
             />
-            <label style={{ fontSize: '0.8em', color: '#666' }}>Minutes</label>
+            <label style={{ fontSize: '0.8em', color: '#351C1C' }}>Minutes</label>
           </div>
           <div style={{ flex: 1 }}>
             <input
               type="text"
               value={seconds}
               onChange={handleInputChange(setSeconds)}
-              className={`input-field ${error ? 'error' : ''}`}
-              min="0"
+              className="input-field"
               placeholder="0"
-              style={{ marginBottom: '4px' }}
             />
-            <label style={{ fontSize: '0.8em', color: '#666' }}>Seconds</label>
+            <label style={{ fontSize: '0.8em', color: '#351C1C' }}>Seconds</label>
           </div>
         </div>
-        {error && (
-          <div style={{ 
-            color: '#C45C3E', 
-            fontSize: '0.85em', 
-            marginTop: '4px',
-            marginBottom: '8px'
-          }}>
-            {error}
-          </div>
-        )}
       </div>
-      <div className="button-container">
-        <button onClick={handleSubmit}>
-          Start
-        </button>
-      </div>
+
+      {error && (
+        <div style={{ 
+          color: '#351C1C',
+          alignSelf: 'stretch'
+        }}>
+          {error}
+        </div>
+      )}
+
+      <button onClick={handleSubmit}>
+        Start project
+      </button>
     </Modal>
   );
 };
