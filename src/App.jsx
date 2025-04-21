@@ -7,7 +7,6 @@ import './styles/components.css';
 function App() {
   return (
     <main>
-      <AnimatedBackground />
       <PasteArea />
     </main>
   );

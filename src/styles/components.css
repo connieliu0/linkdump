@@ -14,21 +14,22 @@
 /* Fallback font stack */
 :root {
   --font-decomposition: 'Decompositionphase1', 'Courier New', monospace;
+  --primary-color: #351C1C;
+  --secondary-color: #726969; 
 }
 
 /* Update all Decompositionphase1 references to use the variable */
 .dialog-content h2,
 .dialog-content p,
 .dialog-content label,
-.dialog-content .input-field,
 .dialog-content button,
 button,
-.input-field,
 .text-content .editable.pasted-text,
 .text-content .content-input.pasted-text,
 .text-content:not(.new-text) {
   font-family: var(--font-decomposition);
 }
+
 
 /* Base styles */
 
@@ -43,91 +44,154 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(to top, rgba(255, 233, 180, 0.7), rgba(255, 255, 247, 0.8));
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9000;
+  pointer-events: auto !important;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  visibility: hidden;
+}
+
+.dialog-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.dialog-overlay.with-overlay {
+  background: rgba(0, 0, 0, 0.25);
 }
 
 .dialog-content {
-  background-color: rgba(255, 255, 255, 0.57);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  padding: 2rem;
-  border-radius: 0;
-  width: 90%;
-  max-width: 300px;
-  border: 1px solid rgba(224, 224, 224, 0.8);
+  width: 400px;
+  padding: 32px;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  align-items: flex-start;
+  gap: 24px;
+  background: radial-gradient(100.4% 82.23% at 32.99% 26.35%, rgba(255, 255, 255, 0.90) 0%, rgba(255, 255, 255, 0.27) 100%);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: none;
+  box-shadow: none;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 3001;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dialog-overlay.visible .dialog-content {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dialog-content .dialog-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.dialog-content .dialog-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Reset margins for direct children of dialog-body */
+.dialog-content .dialog-body > * {
+  margin: 0;
+}
+
+
+/* Ensure consistent spacing in nested containers */
+.dialog-content .dialog-body .input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Style labels consistently */
+.dialog-content .dialog-body label {
+  color: var(--primary-color);
+  margin: 0;
+}
+
+/* Style paragraphs consistently */
+.dialog-content .dialog-body p {
+  color: var(--secondary-color);
+  font-size: 1.1rem;
+  line-height: 1.5;
+  margin: 0;
+  text-align: left;
 }
 
 .dialog-content h2 {
-  font-size: 1.25rem;
+  color: var(--primary-color);
   margin: 0;
-  color: #4B5563;
-}
-
-.dialog-content p {
-  font-size: 1rem;
-  line-height: 1.5;
-  color: #6B7280;
-  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 500;
+  width: 100%;
 }
 
 .dialog-content label {
-  color: #4B5563;
-  display: block;
-  margin-bottom: 0.5rem;
+  color: var(--primary-color);
+  margin: 0;
+  align-self: stretch;
 }
 
 .dialog-content .input-field {
   width: 100%;
-  padding: 0.75rem;
-  margin: 0;
-  border: 1px solid #E5E7EB;
-  border-radius: 0;
-  background: rgba(255, 255, 255, 0.8);
-  font-size: 1rem;
+  border-bottom: 2px dashed var(--secondary-color);
+  background: rgba(255, 255, 255, 0.20);
+  font-family: var(--font-decomposition);
+  color: var(--primary-color);
+  margin-bottom: 4px;
+  padding: 12px 8px;
 }
 
 .dialog-content .button-container {
   display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  margin-top: 0.5rem;
+  gap: 16px;
+  width: 100%;
+  margin-top: auto;
 }
 
-.dialog-content button {
-  padding: 0.75rem 1.5rem;
-  background: white;
-  border: 1px solid #E5E7EB;
-  color: #4B5563;
+.dialog-content .button-container button {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid var(--primary-color);
+  background: rgba(255, 255, 255, 0.20);
   cursor: pointer;
   transition: all 0.2s ease;
+  border-radius: 0;
+  color: var(--primary-color);
+  font-family: 'Decompositionphase1';
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
 }
 
-.dialog-content button:hover {
-  background: #ffedd2;
-  border-color: #FFD5C2;
-}
-
-/* Specific modal variations */
-.dialog-content.onboarding-content {
-  max-width: 350px;
+.dialog-content .button-container button:hover {
+  background: rgba(255, 255, 255, 0.30);
+  transform: translateY(-1px);
 }
 
 .onboarding-steps {
   display: flex;
   flex-direction: column;
-  text-align: left;
+  align-self: stretch;
+  width: 100%;
 }
 
-
-.step:hover {
-  transform: translateX(5px);
+.step {
+  margin: 0;
+  border-bottom: 1px dashed #351C1C;
 }
 
 .step p {
@@ -137,8 +201,51 @@ body {
 
 /* Content styles */
 .canvas-area {
-  transition: box-shadow 3s ease;
-  
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.canvas-area__in {
+  border: gray dashed 2px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  position: relative;
+  width: 200vw;
+  height: 200vh;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.5);
+  isolation: isolate;
+  z-index: 2;
+}
+
+/* Paper texture layer */
+.canvas-area__in::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('../assets/crumpled-paper.png');
+  background-size: cover;
+  opacity: var(--texture-opacity, 0);
+  pointer-events: none;
+  z-index: 3;
+  transition: opacity 2s ease;
+}
+
+/* Paper aging overlay */
+#paper-aging-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  mix-blend-mode: soft-light;
+  transition: all 2s ease;
+  opacity: 0;
 }
 
 /* Image styles */
@@ -177,6 +284,7 @@ box-shadow: 0px 0px 22.2px 0px #FFCB7D;
   overflow: hidden;
   position: relative;
   transition: box-shadow 0.2s ease, outline 0.2s ease;
+  z-index: 2;
 }
 .paste-item.selected {
   outline: 3px solid #E49B3F;  /* Make outline thicker */
@@ -208,7 +316,7 @@ box-shadow: 0px 0px 22.2px 0px #FFCB7D;
 }
 
 .image-container .source-text {
-  color: #6B7280;
+  color: var(--secondary-color);
   font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -224,7 +332,7 @@ box-shadow: 0px 0px 22.2px 0px #FFCB7D;
   padding: 0;
   margin: 0;
   font-size: 12px;
-  color: #6B7280;
+  color: var(--secondary-color);
 }
 
 .text-content {
@@ -275,7 +383,7 @@ a.link-title:hover {
 }
 
 .link-domain {
-  color: #586069;
+  color: var(--secondary-color);
   font-size: 12px;
 }
 
@@ -288,7 +396,7 @@ a.link-title:hover {
 
 .link-description {
   margin: 0;
-  color: #24292e;
+  color: var(--secondary-color);
   font-size: 14px;
   line-height: 1.5;
   display: -webkit-box;
@@ -328,13 +436,13 @@ a.link-title:hover {
 /* Button styles */
 button {
   padding: 8px 16px;
-  background-color: white;
-  color: #4B5563;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
+  background: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  border-radius: 0;
   cursor: pointer;
-  transition: background-color 0.2s ease;
-  font-family: 'Decompositionphase1';
+  transition: all 0.5s ease;
+  font-family: var(--font-decomposition);
 }
 
 .dialog-content button {
@@ -342,23 +450,23 @@ button {
 }
 
 button:hover {
-  background-color: #ffedd2;
+  background: rgba(255, 255, 255, 0.30);
 }
 
 .button-container {
   display: flex;
   gap: 8px;
   justify-content: space-between;
+  width: 100%;
 }
 
 /* Input styles */
 .input-field {
   box-sizing: border-box;
   width: 100%;
-  padding: 8px;
   margin-top: 8px;
   margin-bottom: 16px;
-  border: #cfcfcf solid 1px;
+  border: none;
   border-radius: 4px;
   background: linear-gradient(to top, #f5f5f5, white);
   font-family: 'Decompositionphase1';
@@ -366,8 +474,7 @@ button:hover {
 
 .input-field:focus {
   outline: none;
-  background: white;
-  border: 1px solid #c2c2c2;
+  background: linear-gradient(to top, rgba(211, 211, 211, 0.5), transparent);
 }
 
 /* Toolbar styles */
@@ -379,8 +486,16 @@ button:hover {
   display: flex;
   justify-content: space-between;
   padding: 20px;
-  z-index: 50;
-  pointer-events: none; /* Allow clicking through the toolbar container */
+  z-index: 8000;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(100%);
+  transition: opacity 1s ease, transform 1s ease;
+}
+
+.toolbar.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .toolbar-section {
@@ -528,11 +643,6 @@ button:hover {
   background-color: #FFE4D6;
 }
 
-.button-container {
-  display: flex;
-  gap: 8px;
-}
-
 .fade-out {
   opacity: 0;
   transform: scale(0.9);
@@ -563,35 +673,38 @@ button:hover {
   pointer-events: none;
 }
 
+.animated-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;  /* Back to -1 to stay behind content */
+  background-size: cover;
+  background-position: center;
+  opacity: 0.3;
+  transition: background-image 0.5s ease-in-out;
+}
+
 .inactivity-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 2000;
-  cursor: pointer;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9000;
+  background: rgba(0, 0, 0, 0.85);
   opacity: 0;
-  pointer-events: none;
-  transition: opacity 2s ease;
 }
 
-/* Remove the static background image styles */
-/* .inactivity-overlay::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('../assets/timepasses/8am.jpg') center/cover;
-  filter: blur(3px);
-  opacity: 0;
-  transition: opacity 2s ease;
-} */
+.inactivity-overlay.visible {
+  opacity: 1;
+}
 
-.animated-background {
+.inactivity-overlay .animated-background {
   position: absolute;
   top: 0;
   left: 0;
@@ -599,42 +712,24 @@ button:hover {
   bottom: 0;
   background-size: cover;
   background-position: center;
-  filter: blur(3px);
-  opacity: 0;
-  transition: opacity 2s ease;
+  opacity: 0.7;
 }
 
-/* Content layer */
-.overlay-content {
+.inactivity-overlay .overlay-content {
   position: relative;
-  color: rgb(255, 234, 0);
-  text-align: left;
   z-index: 1;
-  padding: 2rem;
-  align-self: flex-start;
+  text-align: center;
+  color: white;
+  font-size: 2rem;
+  font-family: var(--font-decomposition);
   opacity: 0;
-  transform: translateY(-20px);
-  transition: all 2s ease;
-}
-
-.inactivity-overlay.visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.inactivity-overlay.visible .animated-background {
-  opacity: 1;
+  transform: translateY(20px);
+  transition: all 0.5s ease-out 0.3s;
 }
 
 .inactivity-overlay.visible .overlay-content {
   opacity: 1;
   transform: translateY(0);
-}
-
-.overlay-content p {
-  font-size: 1.2rem;
-  opacity: 0.8;
-  margin: 0.5rem 0;
 }
 
 .onboarding-content {
@@ -644,11 +739,8 @@ button:hover {
 
 .step {
   margin: 0.5rem 0;
-  background: rgba(255, 255, 255, 0.5);
   border-radius: 4px;
   transition: transform 0.2s ease;
-  background: rgba(255, 255, 255, 0.4);
-  padding: 0.5rem;
   border-radius: 0;
   transition: transform 0.2s ease;
 }
@@ -723,20 +815,6 @@ button:hover {
 .disappear {
   opacity: 0;
   transform: scale(0.8);
-}
-
-/* Add to the top of the file */
-.animated-background {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: -1;
-  background-size: cover;
-  background-position: center;
-  opacity: 0.3; /* Make it subtle */
-  transition: background-image 1s ease-in-out;
 }
 
 main {

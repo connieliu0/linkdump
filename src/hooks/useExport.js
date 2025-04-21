@@ -7,7 +7,9 @@ export const useExport = (panzoomRef) => {
   const handleExport = async () => {
     try {
       // Get all items from the database
-      const allItems = await loadItems();
+      const allItems = await new Promise((resolve) => {
+        loadItems((items) => resolve(items));
+      });
       
       // Only export items that have a valid position
       const itemsOnCanvas = allItems.filter(item => 
