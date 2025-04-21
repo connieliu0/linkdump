@@ -240,7 +240,7 @@ const handleTimeSet = async (settings) => {
     };
     fetchItems();
   }, []);
-  useAgingEffect(timeSettings);
+  useAgingEffect(timeSettings, items);
   usePaperAgingEffect(timeSettings);
 
   // Track mouse position relative to panzoom
@@ -315,10 +315,12 @@ const handleTimeSet = async (settings) => {
     if (inactivityTimer.current) {
       clearTimeout(inactivityTimer.current);
     }
-    inactivityTimer.current = setTimeout(() => {
-      setIsInactive(true);
-    }, 180000); // Changed from 3000 to 180000 (3 minutes)
-  }, []);
+    if (!showTimeInput) {
+      inactivityTimer.current = setTimeout(() => {
+        setIsInactive(true);
+      }, 180000); // 3 minutes
+    }
+  }, [showTimeInput]);
 
   useEffect(() => {
     // Set up event listeners for user activity
@@ -367,6 +369,12 @@ const handleTimeSet = async (settings) => {
     localStorage.setItem('hasVisitedBefore', 'true');
     setShowTimeInput(true); // Show time input after onboarding
   };
+
+  useEffect(() => {
+    if (showTimeInput) {
+      setIsInactive(false);
+    }
+  }, [showTimeInput]);
 
   return (
     <>

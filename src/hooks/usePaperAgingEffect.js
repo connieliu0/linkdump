@@ -151,5 +151,5 @@ export const usePaperAgingEffect = (timeSettings) => {
       const paperOverlay = document.getElementById('paper-aging-overlay');
       if (paperOverlay) paperOverlay.remove();
     };
-  }, [timeSettings]);
+  }, [timeSettings?.startTime, timeSettings?.endTime]); // Only depend on the specific properties we use
 };
