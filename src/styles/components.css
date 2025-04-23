@@ -534,7 +534,7 @@ button:hover {
 .time-section {
   left: 20px;
   line-height: 1.4;
-  transform: translateY(calc(100% - 40px));
+  transform: translateY(calc(100% - 60px));
   transition: transform 0.3s ease;
   rotate: -2deg;
 }
@@ -550,7 +550,7 @@ button:hover {
   min-width: 200px;
   max-width: 300px;
   height: 120px; /* Make it taller */
-  transform: translateX(-50%) translateY(calc(100% - 60px));
+  transform: translateX(-50%) translateY(calc(100% - 40px));
   display: flex;
   align-items: flex-start; /* Align content to top */
   justify-content: center;
