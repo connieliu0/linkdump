@@ -5,14 +5,42 @@ import frame3 from '../assets/timepasses/frame 3.jpg';
 import frame4 from '../assets/timepasses/frame 4.jpg';
 
 const FRAME_DURATION = 700; // 2 seconds per frame
+const frames = [frame1, frame2, frame3, frame4];
+
+// Preload images
+const preloadImages = () => {
+  frames.forEach(src => {
+    const img = new Image();
+    img.src = src;
+  });
+};
 
 const AnimatedBackground = () => {
   const [currentFrame, setCurrentFrame] = useState(0);
   const [repeatCount, setRepeatCount] = useState(0);
   const [isForward, setIsForward] = useState(true);
-  const frames = [frame1, frame2, frame3, frame4];
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+
+  // Preload images on mount
+  useEffect(() => {
+    let loadedCount = 0;
+    const totalImages = frames.length;
+
+    frames.forEach(src => {
+      const img = new Image();
+      img.onload = () => {
+        loadedCount++;
+        if (loadedCount === totalImages) {
+          setImagesLoaded(true);
+        }
+      };
+      img.src = src;
+    });
+  }, []);
 
   useEffect(() => {
+    if (!imagesLoaded) return; // Don't start animation until images are loaded
+
     const interval = setInterval(() => {
       setCurrentFrame((prev) => {
         // If we're on frame 1 and haven't repeated 3 times yet
@@ -44,7 +72,12 @@ const AnimatedBackground = () => {
     }, FRAME_DURATION);
 
     return () => clearInterval(interval);
-  }, [repeatCount, isForward, frames.length]);
+  }, [repeatCount, isForward, imagesLoaded]);
+
+  // Show nothing or loading state until images are loaded
+  if (!imagesLoaded) {
+    return <div className="animated-background soft-edge-blur" />;
+  }
 
   return (
     <div
