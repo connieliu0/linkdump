@@ -4,7 +4,7 @@ import frame2 from '../assets/timepasses/frame 2.jpg';
 import frame3 from '../assets/timepasses/frame 3.jpg';
 import frame4 from '../assets/timepasses/frame 4.jpg';
 
-const FRAME_DURATION = 1000; // 2 seconds per frame
+const FRAME_DURATION = 700; // 2 seconds per frame
 
 const AnimatedBackground = () => {
   const [currentFrame, setCurrentFrame] = useState(0);
