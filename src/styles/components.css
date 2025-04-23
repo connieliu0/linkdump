@@ -103,6 +103,9 @@ body {
   opacity: 0;
   transform: translateY(20px);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 16px;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
 }
 
 .dialog-overlay.visible .dialog-content {
@@ -890,4 +893,29 @@ main {
   position: relative;
   min-height: 100vh;
   z-index: 0;
+}
+
+/* Add responsive styles for mobile */
+@media screen and (max-width: 480px) {
+  .dialog-content {
+    width: 300px;
+    padding: 24px;
+    gap: 16px;
+  }
+
+  .dialog-content h2 {
+    font-size: 1.1rem;
+  }
+
+  .dialog-content .dialog-body p {
+    font-size: 1rem;
+  }
+
+  .dialog-content .button-container {
+    flex-direction: column;
+  }
+
+  .dialog-content .input-field {
+    padding: 8px 6px;
+  }
 } 
