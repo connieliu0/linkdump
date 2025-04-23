@@ -9,8 +9,9 @@ const OnboardingDialog = ({ isOpen, onClose }) => {
       className="onboarding-content"
       title="Welcome to the Link Dump"
       primaryButton={{
-        label: "Begin"
-            }}
+        label: "Begin",
+        onClick: onClose
+      }}
     >
       <div className="dialog-body">
         <div className="onboarding-steps">

@@ -20,19 +20,15 @@ const Modal = ({
     console.log('Modal effect triggered:', { isOpen, isClosing, shouldRender, isVisible });
     
     if (isOpen && !shouldRender) {
-      console.log('Opening modal...');
       setShouldRender(true);
       setIsClosing(false);
-      // Use animation frame to ensure proper timing
       requestAnimationFrame(() => {
         setIsVisible(true);
       });
     } else if (!isOpen && shouldRender && !isClosing) {
-      console.log('Closing modal...');
       setIsVisible(false);
       setIsClosing(true);
       setTimeout(() => {
-        console.log('Cleanup after close animation');
         setIsClosing(false);
         setShouldRender(false);
       }, 300);

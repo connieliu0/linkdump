@@ -15,9 +15,31 @@
 :root {
   --font-decomposition: 'Decompositionphase1', 'Courier New', monospace;
   --primary-color: #351C1C;
-  --secondary-color: #726969; 
+  --secondary-color: #645a5a; 
+  --tertiary-color: #8f8989;
+
+}
+/* random leaves */
+/* Add this to your components.css file */
+.leaf-shadows-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none; /* Makes it non-interactive */
+  z-index: 5; /* Above canvas, below interactive elements */
+  overflow: hidden;
+  filter: blur(8px);
+  opacity: 0.2;
+  animation: sway1 10s ease-in-out infinite alternate;
 }
 
+@keyframes sway1 {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0.2; }
+  50% { transform: translate(20px, 10px) rotate(2deg); opacity: 0.25; }
+  100% { transform: translate(-15px, 15px) rotate(-3deg); opacity: 0.25; }
+}
 /* Update all Decompositionphase1 references to use the variable */
 .dialog-content h2,
 .dialog-content p,
@@ -123,7 +145,7 @@ body {
 
 /* Style paragraphs consistently */
 .dialog-content .dialog-body p {
-  color: var(--secondary-color);
+  color: var(--primary-color);
   font-size: 1.1rem;
   line-height: 1.5;
   margin: 0;
@@ -136,24 +158,21 @@ body {
   font-size: 1.2rem;
   font-weight: 500;
   width: 100%;
-}
-
-.dialog-content label {
-  color: var(--primary-color);
-  margin: 0;
-  align-self: stretch;
+  text-align: left;
 }
 
 .dialog-content .input-field {
   width: 100%;
-  border-bottom: 2px dashed var(--secondary-color);
+  border-bottom: 2px dashed var(--tertiary-color);
   background: rgba(255, 255, 255, 0.20);
   font-family: var(--font-decomposition);
   color: var(--primary-color);
   margin-bottom: 4px;
   padding: 12px 8px;
 }
-
+.dialog-content .input-field::placeholder {
+  color: var(--secondary-color);
+}
 .dialog-content .button-container {
   display: flex;
   gap: 16px;
@@ -191,7 +210,7 @@ body {
 
 .step {
   margin: 0;
-  border-bottom: 1px dashed #351C1C;
+  border-bottom: 1px dashed var(--tertiary-color);
 }
 
 .step p {
@@ -212,7 +231,7 @@ body {
 }
 
 .canvas-area__in {
-  border: gray dashed 2px;
+  border: var(--tertiary-color) dashed 2px;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   position: relative;
@@ -515,7 +534,7 @@ button:hover {
 .time-section {
   left: 20px;
   line-height: 1.4;
-  transform: translateY(calc(100% - 60px));
+  transform: translateY(calc(100% - 40px));
   transition: transform 0.3s ease;
   rotate: -2deg;
 }

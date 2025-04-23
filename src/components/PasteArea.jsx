@@ -14,6 +14,7 @@ import TextCard from './TextCard';
 import { useCards } from '../hooks/useCards';
 import InactivityOverlay from './InactivityOverlay';
 import OnboardingDialog from './Dialog/OnboardingDialog';
+import shadowSvg from '../assets/timepasses/shadow.svg';
 
 
 const MAX_WIDTH = 800; // Maximum width for images
@@ -95,6 +96,7 @@ const PasteArea = ({ onExport }) => {
     let inactivityTimer = useRef(null);
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [showTimeInput, setShowTimeInput] = useState(false);
+    const [isTransitioning, setIsTransitioning] = useState(false);
 
 
   // Define handlePaste first
@@ -315,14 +317,22 @@ const handleTimeSet = async (settings) => {
     if (inactivityTimer.current) {
       clearTimeout(inactivityTimer.current);
     }
-    if (!showTimeInput) {
+    if (timeSettings) {
       inactivityTimer.current = setTimeout(() => {
         setIsInactive(true);
-      }, 180000); // 3 minutes
+      }, 10000); // 3 minutes
     }
-  }, [showTimeInput]);
+  }, [timeSettings]);
 
   useEffect(() => {
+    // Only set up inactivity tracking if we have timeSettings
+    if (!timeSettings) {
+      if (inactivityTimer.current) {
+        clearTimeout(inactivityTimer.current);
+      }
+      return;
+    }
+
     // Set up event listeners for user activity
     const activityEvents = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
     
@@ -346,28 +356,24 @@ const handleTimeSet = async (settings) => {
         document.removeEventListener(event, handleActivity);
       });
     };
-  }, [resetInactivityTimer]);
+  }, [resetInactivityTimer, timeSettings]);
 
   const handleDismissOverlay = () => {
     setIsInactive(false);
     resetInactivityTimer();
   };
 
-  // Check for first visit and manage dialog sequence
+  // Check for first visit
   useEffect(() => {
     const hasVisited = localStorage.getItem('hasVisitedBefore');
     if (!hasVisited) {
       setShowOnboarding(true);
-      setShowTimeInput(false); // Ensure time input is hidden initially
-    } else {
-      setShowTimeInput(!timeSettings); // Show time input only if no time settings
     }
-  }, [timeSettings]);
+  }, []);
 
   const handleOnboardingClose = () => {
     setShowOnboarding(false);
     localStorage.setItem('hasVisitedBefore', 'true');
-    setShowTimeInput(true); // Show time input after onboarding
   };
 
   useEffect(() => {
@@ -378,27 +384,25 @@ const handleTimeSet = async (settings) => {
 
   return (
     <>
+      {/* First time visit - show onboarding */}
       {showOnboarding && (
         <OnboardingDialog 
           isOpen={showOnboarding}
           onClose={handleOnboardingClose} 
         />
       )}
-      {!showOnboarding && showTimeInput && (
+
+      {/* No time settings yet - show time input */}
+      {!showOnboarding && !timeSettings && (
         <TimeInputDialog 
-          isOpen={showTimeInput}
+          isOpen={true}
           onClose={() => setShowTimeInput(false)}
           onTimeSet={handleTimeSet} 
         />
       )}
-      {isExpired && (
-        <ExpiryDialog 
-          isOpen={isExpired}
-          panzoomRef={panzoomRef}
-          onRestart={handleRestart} 
-        />
-      )}
-      {!(showOnboarding || showTimeInput) && (
+
+      {/* Show canvas once we have time settings */}
+      {timeSettings && (
         <>
           <InactivityOverlay 
             isVisible={isInactive} 
@@ -410,6 +414,15 @@ const handleTimeSet = async (settings) => {
             onMouseMove={handleMouseMove}
             tabIndex={0}
           >
+            <div 
+  className="leaf-shadows-container"
+  style={{
+    backgroundImage: `url(${shadowSvg})`,
+    backgroundSize: 'cover',
+    backgroundRepeat: 'no-repeat',
+    rotate: '180deg'
+  }}
+></div>
             <Toolbar 
               panzoomRef={panzoomRef} 
               onExport={onExport} 
@@ -429,7 +442,7 @@ const handleTimeSet = async (settings) => {
               className="canvas-area"
               style={{ width: '100%', height: '100%' }}
               onContainerClick={() => setSelectedId(null)}
-              disabled={isInputActive}
+              disabled={isInputActive || isExpired}
               containerClassNames={{
                 outer: 'canvas-area',
                 inner: 'canvas-area__in'
@@ -444,16 +457,18 @@ const handleTimeSet = async (settings) => {
                 }
               }}
             >
-              <div style={{ 
-                position: 'fixed', 
-                top: '1rem', 
-                left: '50%', 
-                transform: 'translateX(-50%)',
-                color: 'rgb(58 67 84)',
-                pointerEvents: 'none'
-              }}>
-                Paste an image or link here; Hold down shift to drag and select multiple 
-              </div>
+              {!isExpired && (
+                <div style={{ 
+                  position: 'fixed', 
+                  top: '1rem', 
+                  left: '50%', 
+                  transform: 'translateX(-50%)',
+                  color: 'black',
+                  pointerEvents: 'none'
+                }}>
+                  Paste an image or link here; Hold down shift to drag and select multiple 
+                </div>
+              )}
               
               {items.map(item => (
                 <Element
@@ -461,13 +476,13 @@ const handleTimeSet = async (settings) => {
                   id={item.id}
                   className={`paste-item ${selectedId === item.id ? 'selected' : ''}`}
                   onClick={(e) => {
-                    // console.log('Setting active item:', item.id); // Debug click
-                    setSelectedId(item.id);
-                    activeItemRef.current = item.id; // Set the active item ref
+                    if (!isExpired) {
+                      setSelectedId(item.id);
+                      activeItemRef.current = item.id;
+                    }
                   }}
                   x={item.position?.x || 0}
                   y={item.position?.y || 0}
-           
                 >
                   {item.type === 'image' ? (
                     <ImageCard 
@@ -506,6 +521,15 @@ const handleTimeSet = async (settings) => {
             </PanZoom>
           </div>
         </>
+      )}
+
+      {/* Show expiry dialog on top of canvas when time is up */}
+      {isExpired && (
+        <ExpiryDialog 
+          isOpen={isExpired}
+          panzoomRef={panzoomRef}
+          onRestart={handleRestart} 
+        />
       )}
     </>
   );
