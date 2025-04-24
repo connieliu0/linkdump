@@ -10,7 +10,10 @@ const RoadmapDialog = ({ isOpen, onClose }) => {
       preventBackdropClick={false}
       hasOverlay={true}
     >
-      <div className="step" style={{ transform: 'rotate(-1deg)' }}>
+        <p>Stay connected by filling out this <a href="https://docs.google.com/forms/d/e/1FAIpQLScCG7CZkm6JVju3iHANitU1XkBrLCMZC066pjQN_HCYSuBXmg/viewform?usp=header" target="_blank" rel="noopener noreferrer">
+           form
+        </a></p>
+        <div className="step" style={{ transform: 'rotate(-1deg)' }}>
         <p>Coming Soon</p>
         <ul>
           <li>More details in the decay</li>

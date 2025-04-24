@@ -30,15 +30,15 @@
   pointer-events: none; /* Makes it non-interactive */
   z-index: 5; /* Above canvas, below interactive elements */
   overflow: hidden;
-  filter: blur(8px);
-  opacity: 0.2;
+  filter: blur(4px);
+  opacity: 0.1;
   animation: sway1 10s ease-in-out infinite alternate;
 }
 
 @keyframes sway1 {
-  0% { transform: translate(0, 0) rotate(0deg); opacity: 0.2; }
-  50% { transform: translate(20px, 10px) rotate(2deg); opacity: 0.25; }
-  100% { transform: translate(-15px, 15px) rotate(-3deg); opacity: 0.25; }
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0.1; }
+  50% { transform: translate(20px, 10px) rotate(2deg); opacity: 0.12; }
+  100% { transform: translate(-15px, 15px) rotate(-3deg); opacity: 0.1; }
 }
 /* Update all Decompositionphase1 references to use the variable */
 .dialog-content h2,
@@ -215,6 +215,10 @@ body {
   margin: 0;
   border-bottom: 1px dashed var(--tertiary-color);
 }
+.step li{
+  color: var(--secondary-color);
+
+}
 
 .step p {
   margin: 0;
@@ -251,7 +255,7 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: url('../assets/crumpled-paper.png');
+  background-image: url('../assets/crumpled-paper.webp');
   background-size: cover;
   opacity: var(--texture-opacity, 0);
   pointer-events: none;
@@ -513,6 +517,7 @@ button:hover {
   opacity: 0;
   transform: translateY(100%);
   transition: opacity 1s ease, transform 1s ease;
+  color: var(--primary-color);
 }
 
 .toolbar.visible {
@@ -521,7 +526,7 @@ button:hover {
 }
 
 .toolbar-section {
-  background-image: url('../assets/crumpled-paper.png');
+  background-image: url('../assets/crumpled-paper.webp');
   background-size: cover;
   background-position: center;
   padding: 20px;

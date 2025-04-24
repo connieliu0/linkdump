@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import frame1 from '../assets/timepasses/frame 1.jpg';
-import frame2 from '../assets/timepasses/frame 2.jpg';
-import frame3 from '../assets/timepasses/frame 3.jpg';
-import frame4 from '../assets/timepasses/frame 4.jpg';
+import frame1 from '../assets/timepasses/frame 1.webp';
+import frame2 from '../assets/timepasses/frame 2.webp';
+import frame3 from '../assets/timepasses/frame 3.webp';
+import frame4 from '../assets/timepasses/frame 4.webp';
 
 const FRAME_DURATION = 700; // 2 seconds per frame
 const frames = [frame1, frame2, frame3, frame4];

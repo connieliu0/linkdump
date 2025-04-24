@@ -15,6 +15,7 @@ import { useCards } from '../hooks/useCards';
 import InactivityOverlay from './InactivityOverlay';
 import OnboardingDialog from './Dialog/OnboardingDialog';
 import shadowSvg from '../assets/timepasses/shadow.svg';
+import shadowSvg2 from '../assets/timepasses/shadow2.svg';
 
 
 const MAX_WIDTH = 800; // Maximum width for images
@@ -320,7 +321,7 @@ const handleTimeSet = async (settings) => {
     if (timeSettings) {
       inactivityTimer.current = setTimeout(() => {
         setIsInactive(true);
-      }, 10000); // 3 minutes
+      }, 180000); // 3 minutes
     }
   }, [timeSettings]);
 
@@ -415,12 +416,21 @@ const handleTimeSet = async (settings) => {
             tabIndex={0}
           >
             <div 
-  className="leaf-shadows-container"
+  className="leaf-shadows-container sway1"
   style={{
     backgroundImage: `url(${shadowSvg})`,
     backgroundSize: 'cover',
     backgroundRepeat: 'no-repeat',
-    rotate: '180deg'
+    rotate: '180deg',
+  }}
+></div>
+<div 
+  className="leaf-shadows-container sway2"
+  style={{
+    backgroundImage: `url(${shadowSvg2})`,
+    backgroundSize: 'cover',
+    backgroundRepeat: 'no-repeat',
+    rotate: '180deg',
   }}
 ></div>
             <Toolbar 
