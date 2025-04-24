@@ -15,9 +15,31 @@
 :root {
   --font-decomposition: 'Decompositionphase1', 'Courier New', monospace;
   --primary-color: #351C1C;
-  --secondary-color: #726969; 
+  --secondary-color: #645a5a; 
+  --tertiary-color: #8f8989;
+
+}
+/* random leaves */
+/* Add this to your components.css file */
+.leaf-shadows-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none; /* Makes it non-interactive */
+  z-index: 5; /* Above canvas, below interactive elements */
+  overflow: hidden;
+  filter: blur(4px);
+  opacity: 0.1;
+  animation: sway1 10s ease-in-out infinite alternate;
 }
 
+@keyframes sway1 {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0.1; }
+  50% { transform: translate(20px, 10px) rotate(2deg); opacity: 0.12; }
+  100% { transform: translate(-15px, 15px) rotate(-3deg); opacity: 0.1; }
+}
 /* Update all Decompositionphase1 references to use the variable */
 .dialog-content h2,
 .dialog-content p,
@@ -81,6 +103,9 @@ body {
   opacity: 0;
   transform: translateY(20px);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 16px;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
 }
 
 .dialog-overlay.visible .dialog-content {
@@ -123,7 +148,7 @@ body {
 
 /* Style paragraphs consistently */
 .dialog-content .dialog-body p {
-  color: var(--secondary-color);
+  color: var(--primary-color);
   font-size: 1.1rem;
   line-height: 1.5;
   margin: 0;
@@ -136,24 +161,21 @@ body {
   font-size: 1.2rem;
   font-weight: 500;
   width: 100%;
-}
-
-.dialog-content label {
-  color: var(--primary-color);
-  margin: 0;
-  align-self: stretch;
+  text-align: left;
 }
 
 .dialog-content .input-field {
   width: 100%;
-  border-bottom: 2px dashed var(--secondary-color);
+  border-bottom: 2px dashed var(--tertiary-color);
   background: rgba(255, 255, 255, 0.20);
   font-family: var(--font-decomposition);
   color: var(--primary-color);
   margin-bottom: 4px;
   padding: 12px 8px;
 }
-
+.dialog-content .input-field::placeholder {
+  color: var(--secondary-color);
+}
 .dialog-content .button-container {
   display: flex;
   gap: 16px;
@@ -191,7 +213,11 @@ body {
 
 .step {
   margin: 0;
-  border-bottom: 1px dashed #351C1C;
+  border-bottom: 1px dashed var(--tertiary-color);
+}
+.step li{
+  color: var(--secondary-color);
+
 }
 
 .step p {
@@ -200,6 +226,20 @@ body {
 }
 
 /* Content styles */
+.paste-area {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.canvas-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
 .canvas-area {
   position: relative;
   width: 100vw;
@@ -209,10 +249,11 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 1;
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .canvas-area__in {
-  border: gray dashed 2px;
+  border: var(--tertiary-color) dashed 2px;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   position: relative;
@@ -222,6 +263,7 @@ body {
   background: rgba(255, 255, 255, 0.5);
   isolation: isolate;
   z-index: 2;
+  pointer-events: auto;
 }
 
 /* Paper texture layer */
@@ -229,7 +271,7 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: url('../assets/crumpled-paper.png');
+  background-image: url('../assets/crumpled-paper.webp');
   background-size: cover;
   opacity: var(--texture-opacity, 0);
   pointer-events: none;
@@ -491,6 +533,7 @@ button:hover {
   opacity: 0;
   transform: translateY(100%);
   transition: opacity 1s ease, transform 1s ease;
+  color: var(--primary-color);
 }
 
 .toolbar.visible {
@@ -499,7 +542,7 @@ button:hover {
 }
 
 .toolbar-section {
-  background-image: url('../assets/crumpled-paper.png');
+  background-image: url('../assets/crumpled-paper.webp');
   background-size: cover;
   background-position: center;
   padding: 20px;
@@ -531,7 +574,7 @@ button:hover {
   min-width: 200px;
   max-width: 300px;
   height: 120px; /* Make it taller */
-  transform: translateX(-50%) translateY(calc(100% - 60px));
+  transform: translateX(-50%) translateY(calc(100% - 40px));
   display: flex;
   align-items: flex-start; /* Align content to top */
   justify-content: center;
@@ -821,4 +864,29 @@ main {
   position: relative;
   min-height: 100vh;
   z-index: 0;
+}
+
+/* Add responsive styles for mobile */
+@media screen and (max-width: 480px) {
+  .dialog-content {
+    width: 300px;
+    padding: 24px;
+    gap: 16px;
+  }
+
+  .dialog-content h2 {
+    font-size: 1.1rem;
+  }
+
+  .dialog-content .dialog-body p {
+    font-size: 1rem;
+  }
+
+  .dialog-content .button-container {
+    flex-direction: column;
+  }
+
+  .dialog-content .input-field {
+    padding: 8px 6px;
+  }
 } 

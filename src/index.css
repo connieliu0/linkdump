@@ -2,7 +2,7 @@ body{
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  background-image: url('./assets/background.png');
+  background-image: url('./assets/background.webp');
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;

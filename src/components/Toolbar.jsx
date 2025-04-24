@@ -9,8 +9,8 @@ const TimeDisplay = ({ timeRemaining, timeSettings }) => {
     const now = Date.now();
     const isBeforeHalfway = now < timeSettings.halfwayPoint;
     return isBeforeHalfway 
-      ? "The sun is shining, grow your files"
-      : "The sun is setting, process your files before they decay";
+      ? "the sun is shining, grow your files"
+      : "the sun is setting, process your files before they decay";
   };
 
   const formatTimeRemaining = (seconds) => {
@@ -51,8 +51,6 @@ const ActionsMenu = ({ onClearCanvas, onAddEmptyCard, onShowRoadmap, onOpenAddCo
       
       <div className="actions-menu">
       <button onClick={onOpenAddContentModal}>Add Content</button>
-
-        <button onClick={onClearCanvas}>Clear canvas</button>
         <a 
           href="https://docs.google.com/forms/d/e/1FAIpQLScCG7CZkm6JVju3iHANitU1XkBrLCMZC066pjQN_HCYSuBXmg/viewform?usp=header"
           target="_blank"
@@ -61,6 +59,7 @@ const ActionsMenu = ({ onClearCanvas, onAddEmptyCard, onShowRoadmap, onOpenAddCo
           <button>Give feedback</button>
         </a>
         <button onClick={onShowRoadmap}>Roadmap</button>
+        <button onClick={onClearCanvas}>Clear canvas</button>
       </div>
     </div>
   );

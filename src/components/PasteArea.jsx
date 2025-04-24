@@ -15,6 +15,8 @@ import TextCard from './TextCard';
 import { useCards } from '../hooks/useCards';
 import InactivityOverlay from './InactivityOverlay';
 import OnboardingDialog from './Dialog/OnboardingDialog';
+import shadowSvg from '../assets/timepasses/shadow.svg';
+import shadowSvg2 from '../assets/timepasses/shadow2.svg';
 
 
 const MAX_WIDTH = 800; // Maximum width for images
@@ -77,8 +79,8 @@ const PasteArea = ({ onExport }) => {
   } = useCards();
 
   useEffect(() => {
-    // console.log('PasteArea component mounted');
-  }, []); // Empty dependency array means this only runs once on mount
+    console.log('PasteArea mounted');
+  }, []);
 
   const [selectedId, setSelectedId] = useState(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -97,6 +99,7 @@ const PasteArea = ({ onExport }) => {
     const [showTimeInput, setShowTimeInput] = useState(false);
     const [showAddContentDialog, setShowAddContentDialog] = useState(false);
     const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, itemId: null });
+    const [isTransitioning, setIsTransitioning] = useState(false);
 
 
   // Define handlePaste first
@@ -194,7 +197,9 @@ const PasteArea = ({ onExport }) => {
 // Add this effect for time management
 useEffect(() => {
   const loadTimeSettings = async () => {
+    console.log('Loading time settings...');
     const settings = await getTimeSettings();
+    console.log('Time settings loaded:', settings);
     if (settings) {
       setTimeSettings(settings);
     }
@@ -202,11 +207,13 @@ useEffect(() => {
   loadTimeSettings();
 }, []);
 useEffect(() => {
+  console.log('Time settings changed:', timeSettings);
   if (!timeSettings) return;
 
   const interval = setInterval(() => {
     const now = Date.now();
     if (now >= timeSettings.endTime) {
+      console.log('Time expired');
       setIsExpired(true);
       clearInterval(interval);
       // Clear the board when time expires
@@ -219,14 +226,16 @@ useEffect(() => {
 }, [timeSettings]);
 
 const handleTimeSet = async (settings) => {
+  console.log('Setting time with:', settings);
   try {
     await saveTimeSettings(settings);
-      setTimeSettings({
+    setTimeSettings({
       ...settings,
       description: settings.description // Make sure to include the description
     });
+    console.log('Time settings saved successfully');
   } catch (error) {
-    console.error('Error saving time settings:', error);
+    console.error('Error in handleTimeSet:', error);
   }
 };
   // Then add the global paste handler
@@ -242,12 +251,15 @@ const handleTimeSet = async (settings) => {
 
   // Load items on mount
   useEffect(() => {
+    console.log('Setting up items subscription');
     const unsubscribe = loadItems((loadedItems) => {
+      console.log('Items loaded:', loadedItems);
       setItems(loadedItems);
     });
 
     // Cleanup subscription on unmount
     return () => {
+      console.log('Cleaning up items subscription');
       if (unsubscribe) {
         unsubscribe();
       }
@@ -268,8 +280,8 @@ const handleTimeSet = async (settings) => {
     if (id) {
       try {
         console.log('Deleting item with ID:', id);
-        await deleteCard(id);
-        setSelectedId(null);
+      await deleteCard(id);
+      setSelectedId(null);
       } catch (error) {
         console.error('Error deleting card:', error);
       }
@@ -281,7 +293,7 @@ const handleTimeSet = async (settings) => {
     if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
       if (!isInputActive) {
         e.preventDefault(); // Prevent browser back navigation
-        handleDelete(selectedId);
+      handleDelete(selectedId);
       }
     }
   };
@@ -356,9 +368,9 @@ const handleTimeSet = async (settings) => {
   const handleRestart = async () => {
     try {
       await clearBoard(); // This will clear both items and settings
-      setTimeSettings(null);
-      setIsExpired(false);
-      setItems([]);
+    setTimeSettings(null);
+    setIsExpired(false);
+    setItems([]);
       setShowTimeInput(true); // Show time input dialog again
     } catch (error) {
       console.error('Error restarting board:', error);
@@ -384,7 +396,7 @@ const handleTimeSet = async (settings) => {
     setTimeout(async () => {
       try {
         await clearBoard();
-        setItems([]);
+      setItems([]);
       } catch (error) {
         console.error('Error clearing canvas:', error);
       }
@@ -395,14 +407,22 @@ const handleTimeSet = async (settings) => {
     if (inactivityTimer.current) {
       clearTimeout(inactivityTimer.current);
     }
-    if (!showTimeInput) {
+    if (timeSettings) {
       inactivityTimer.current = setTimeout(() => {
         setIsInactive(true);
       }, 120000); // 2 minutes
     }
-  }, [showTimeInput]);
+  }, [timeSettings]);
 
   useEffect(() => {
+    // Only set up inactivity tracking if we have timeSettings
+    if (!timeSettings) {
+      if (inactivityTimer.current) {
+        clearTimeout(inactivityTimer.current);
+      }
+      return;
+    }
+
     // Set up event listeners for user activity
     const activityEvents = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
     
@@ -426,14 +446,14 @@ const handleTimeSet = async (settings) => {
         document.removeEventListener(event, handleActivity);
       });
     };
-  }, [resetInactivityTimer]);
+  }, [resetInactivityTimer, timeSettings]);
 
   const handleDismissOverlay = () => {
     setIsInactive(false);
     resetInactivityTimer();
   };
 
-  // Check for first visit and manage dialog sequence
+  // Check for first visit
   useEffect(() => {
     const hasVisited = localStorage.getItem('hasVisitedBefore');
     const now = Date.now();
@@ -442,18 +462,12 @@ const handleTimeSet = async (settings) => {
     if (!hasVisited && !hasActiveTimeSettings) {
       // Only show onboarding for first visit if there are no active time settings
       setShowOnboarding(true);
-      setShowTimeInput(false);
-    } else {
-      // For returning visitors or if there are active time settings
-      setShowOnboarding(false);
-      setShowTimeInput(!hasActiveTimeSettings);
     }
-  }, [timeSettings]);
+  }, []);
 
   const handleOnboardingClose = () => {
     setShowOnboarding(false);
     localStorage.setItem('hasVisitedBefore', 'true');
-    setShowTimeInput(true); // Show time input after onboarding
   };
 
   // Add container click handler that's not in the original code
@@ -591,65 +605,157 @@ const handleTimeSet = async (settings) => {
       setIsInactive(false);
     }
   }, [showTimeInput]);
-
   return (
     <>
-      {/* Context Menu */}
-      {contextMenu.visible && (
-        <div 
-          className="context-menu"
-          style={{
-            position: 'fixed',
-            top: `${contextMenu.y}px`,
-            left: `${contextMenu.x}px`,
-            background: 'white',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
-            padding: '5px 0',
-            zIndex: 1000,
-            borderRadius: '3px'
-          }}
-        >
-          <div 
-            style={{
-              padding: '8px 12px',
-              cursor: 'pointer',
-              hoverBackground: '#f5f5f5'
-            }}
-            onClick={handleDeleteFromMenu}
-          >
-            Delete
-          </div>
-        </div>
-      )}
-
-      {/* Click catcher for context menu */}
-      {contextMenu.visible && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 999
-          }}
-          onClick={handleCloseContextMenu}
-        />
-      )}
-
+      {/* First time visit - show onboarding */}
       {showOnboarding && (
         <OnboardingDialog 
           isOpen={showOnboarding}
           onClose={handleOnboardingClose} 
         />
       )}
-      {!showOnboarding && showTimeInput && (
+
+      {/* No time settings yet - show time input */}
+      {!showOnboarding && !timeSettings && (
         <TimeInputDialog 
-          isOpen={showTimeInput}
+          isOpen={true}
           onClose={() => setShowTimeInput(false)}
           onTimeSet={handleTimeSet} 
         />
       )}
+
+      {/* Show canvas once we have time settings */}
+      {timeSettings && (
+        <>
+          <InactivityOverlay 
+            isVisible={isInactive} 
+            onDismiss={handleDismissOverlay}
+          />
+          <div 
+            className="paste-container" 
+            onKeyDown={handleKeyDown} 
+            onMouseMove={handleMouseMove}
+            tabIndex={0}
+          >
+            <div 
+  className="leaf-shadows-container sway1"
+  style={{
+    backgroundImage: `url(${shadowSvg})`,
+    backgroundSize: 'cover',
+    backgroundRepeat: 'no-repeat',
+    rotate: '180deg',
+  }}
+></div>
+<div 
+  className="leaf-shadows-container sway2"
+  style={{
+    backgroundImage: `url(${shadowSvg2})`,
+    backgroundSize: 'cover',
+    backgroundRepeat: 'no-repeat',
+    rotate: '180deg',
+  }}
+></div>
+            <Toolbar 
+              panzoomRef={panzoomRef} 
+              onExport={onExport} 
+              timeRemaining={timeRemaining}
+              timeSettings={timeSettings}
+              projectDescription={timeSettings?.description}
+              onOpenAddContentModal={() => setShowAddContentDialog(true)}
+              onClearCanvas={handleClearCanvas}
+              isExpired={isExpired}
+            />
+            <PanZoom 
+              selecting={isSelecting}
+              zoomInitial={1}
+              zoomMin={0.9}
+              zoomMax={3}
+              ref={panzoomRef}
+              className="canvas-area"
+              style={{ width: '100%', height: '100%' }}
+              onContainerClick={() => setSelectedId(null)}
+              disabled={isInputActive || isExpired}
+              containerClassNames={{
+                outer: 'canvas-area',
+                inner: 'canvas-area__in'
+              }}
+              onElementsChange={(element) => {
+                if (!activeItemRef.current) return;
+                const elementData = element[activeItemRef.current];
+                if (elementData) {
+                  db.items.update(activeItemRef.current, { 
+                    position: { x: elementData.x, y: elementData.y } 
+                  });
+                }
+              }}
+            >
+              {!isExpired && (
+                <div style={{ 
+                  position: 'fixed', 
+                  top: '1rem', 
+                  left: '50%', 
+                  transform: 'translateX(-50%)',
+                  color: 'black',
+                  pointerEvents: 'none'
+                }}>
+                  Paste an image or link here; Hold down shift to drag and select multiple 
+                </div>
+              )}
+              
+              {items.map(item => (
+                <Element
+                  key={item.id}
+                  id={item.id}
+                  className={`paste-item ${selectedId === item.id ? 'selected' : ''}`}
+                  onClick={(e) => {
+                    if (!isExpired) {
+                      setSelectedId(item.id);
+                      activeItemRef.current = item.id;
+                    }
+                  }}
+                  x={item.position?.x || 0}
+                  y={item.position?.y || 0}
+                >
+                  {item.type === 'image' ? (
+                    <ImageCard 
+                      src={item.content} 
+                      itemId={item.id}
+                      sourceUrl={item.sourceUrl}
+                    />
+                  ) : item.type === 'link' ? (
+                    <LinkCard 
+                      url={item.content} 
+                      itemId={item.id}
+                      initialMetadata={item.metadata}
+                    />
+                  ) : item.type === 'pastedText' ? (
+                    <TextCard
+                      content={item.content}
+                      itemId={item.id}
+                      sourceUrl={item.sourceUrl}
+                      isEmpty={false}
+                      showSourceUrl={true}
+                      onInputActiveChange={handleInputActiveChange}
+                      type="pastedText"
+                    />
+                  ) : item.type === 'newText' ? (
+                    <TextCard
+                      content={item.content}
+                      itemId={item.id}
+                      isEmpty={item.isEmpty}
+                      showSourceUrl={false}
+                      onInputActiveChange={handleInputActiveChange}
+                      type="newText"
+                    />
+                  ) : null}
+                </Element>
+              ))}
+            </PanZoom>
+          </div>
+        </>
+      )}
+
+      {/* Show expiry dialog on top of canvas when time is up */}
       {isExpired && (
         <ExpiryDialog 
           isOpen={isExpired}
@@ -657,145 +763,13 @@ const handleTimeSet = async (settings) => {
           onRestart={handleRestart} 
         />
       )}
-      {showAddContentDialog && (
-        <AddContentDialog
-          isOpen={showAddContentDialog}
-          onClose={() => setShowAddContentDialog(false)}
-          onAddContent={handleAddNewContent}
-        />
-      )}
-      {/* Only render InactivityOverlay when conditions are met */}
-      {!(showOnboarding || showTimeInput) && 
-        timeSettings && 
-        !isExpired && 
-        isInactive && (
-        <InactivityOverlay 
-          isVisible={isInactive} 
-          onDismiss={handleDismissOverlay}
-        />
-      )}
-      {!(showOnboarding || showTimeInput) && (
-        <div 
-          className="paste-container" 
-          onKeyDown={(e) => {
-            console.log('Container key pressed:', e.key, 'Selected ID:', selectedId);
-            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && !isInputActive) {
-              e.preventDefault();
-              handleDelete(selectedId);
-            } else if (e.key === 'Escape') {
-              setSelectedId(null);
-              handleCloseContextMenu();
-            }
-          }}
-          onMouseMove={handleMouseMove}
-          onClick={(e) => {
-            handleContainerClick(e);
-            handleCloseContextMenu();
-          }}
-          tabIndex={0}
-          style={{ outline: 'none' }}
-        >
-          <Toolbar 
-            panzoomRef={panzoomRef} 
-            onExport={onExport} 
-            timeRemaining={timeRemaining}
-            timeSettings={timeSettings}
-            projectDescription={timeSettings?.description}
-            onClearCanvas={handleClearCanvas}
-            isExpired={isExpired}
-            onOpenAddContentModal={() => setShowAddContentDialog(true)}
-          />
-          <PanZoom 
-            selecting={isSelecting}
-            zoomInitial={1.1}
-            zoomMin={0.9}
-            zoomMax={3}
-            ref={panzoomRef}
-            className="canvas-area"
-            style={{ width: '100%', height: '100%' }}
-            onContainerClick={() => {
-              requestAnimationFrame(() => {
-                console.log('PanZoom container clicked');
-                setSelectedId(null); 
-                handleCloseContextMenu();
-              });
-            }}
-            disabled={isInputActive}
-            containerClassNames={{
-              outer: 'canvas-area',
-              inner: 'canvas-area__in'
-            }}
-            onElementsChange={(element) => {
-              if (!activeItemRef.current) return;
-              const elementData = element[activeItemRef.current];
-              if (elementData) {
-                updateItemPosition(activeItemRef.current, { 
-                  x: elementData.x, 
-                  y: elementData.y 
-                });
-              }
-            }}
-          >
-            <div style={{ 
-              position: 'fixed', 
-              top: '1rem', 
-              left: '50%', 
-              transform: 'translateX(-50%)',
-              color: 'rgb(58 67 84)',
-              pointerEvents: 'none'
-            }}>
-              Paste an image or link here; Hold down shift to drag and select multiple 
-            </div>
-            
-            {items.map(item => {
-              return (
-                <Element
-                  key={item.id}
-                  id={item.id}
-                  data-id={item.id}
-                  className={`paste-item ${selectedId === item.id ? 'selected' : ''}`}
-                  onClick={() => {
-                    console.log('Item clicked:', item.id);
-                    setSelectedId(item.id);
-                    activeItemRef.current = item.id;
-                  }}
-                  x={item.position?.x || 0}
-                  y={item.position?.y || 0}
-                >
-                  <div 
-                    onContextMenu={(e) => handleContextMenu(e, item.id)}
-                    style={{ width: '100%', height: '100%' }}
-                  >
-                    {item.type === 'image' ? (
-                      <ImageCard 
-                        src={item.content} 
-                        itemId={item.id}
-                        sourceUrl={item.sourceUrl}
-                      />
-                    ) : item.type === 'link' ? (
-                      <LinkCard 
-                        url={item.content} 
-                        itemId={item.id}
-                        initialMetadata={item.metadata}
-                      />
-                    ) : (
-                      <TextCard
-                        content={item.content}
-                        itemId={item.id}
-                        sourceUrl={item.sourceUrl}
-                        isEmpty={item.isEmpty || false}
-                        showSourceUrl={item.type === 'pastedText'}
-                        onInputActiveChange={handleInputActiveChange}
-                        type={item.type}
-                      />
-                    )}
-                  </div>
-                </Element>
-              );
-            })}
-          </PanZoom>
-        </div>
-      )}
+
+      {/* Add Content Dialog */}
+      <AddContentDialog
+        isOpen={showAddContentDialog}
+        onClose={() => setShowAddContentDialog(false)}
+        onAddContent={handleAddNewContent}
+      />
     </>
   );
 };

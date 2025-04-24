@@ -32,14 +32,14 @@ const TimeInputDialog = ({ isOpen, onClose, onTimeSet }) => {
 
     const startTime = Date.now();
     const endTime = startTime + totalMilliseconds;
-    const halfwayPoint = startTime + (totalMilliseconds / 2);
+    const halfwayPoint = startTime + (totalMilliseconds / 2); // Calculate halfway point
 
     onTimeSet({
       description: description.trim(),
       startTime,
       endTime,
       halfwayPoint,
-      totalSeconds: totalMilliseconds / 1000,
+      totalSeconds: totalMilliseconds / 1000, // Add total seconds
       duration: totalMilliseconds / (60 * 60 * 1000) // Convert to hours for consistency
     });
 
