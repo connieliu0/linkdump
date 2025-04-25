@@ -410,7 +410,7 @@ const handleTimeSet = async (settings) => {
     if (timeSettings) {
       inactivityTimer.current = setTimeout(() => {
         setIsInactive(true);
-      }, 120000); // 2 minutes
+      }, 600000); // 10 minutes
     }
   }, [timeSettings]);
 
