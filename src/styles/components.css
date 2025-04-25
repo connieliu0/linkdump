@@ -586,7 +586,7 @@ button:hover {
   right: 20px;
   min-width: 200px;
   text-align: left;
-  transform: translateY(calc(100% - 120px)); /* Show more of the buttons */
+  transform: translateY(calc(100% - 200px)); /* Show more of the buttons */
   transition: transform 0.3s ease;
   padding: 15px;
   overflow: visible; /* Allow content to be visible outside */
