@@ -1,22 +1,19 @@
 // src/components/PasteArea.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import PanZoom, { Element } from '@sasza/react-panzoom';
-import { db, saveItem, loadItems } from '../utils/storage';
+import { getStorageAdapter } from '../utils/storage/StorageAdapter';
 import LinkCard from './LinkCard';
 import ImageCard from './ImageCard';
 import Toolbar from './Toolbar';
 import TimeInputDialog from './Dialog/TimeInputDialog';
 import ExpiryDialog from './Dialog/ExpiryDialog';
-import { saveTimeSettings, getTimeSettings, clearBoard } from '../utils/storage';
 import { useAgingEffect } from '../hooks/useAgingEffect';
 import { usePaperAgingEffect } from '../hooks/usePaperAgingEffect';
 import TextCard from './TextCard';
-import { useCards } from '../hooks/useCards';
 import InactivityOverlay from './InactivityOverlay';
 import OnboardingDialog from './Dialog/OnboardingDialog';
 import shadowSvg from '../assets/timepasses/shadow.svg';
 import shadowSvg2 from '../assets/timepasses/shadow2.svg';
-
 
 const MAX_WIDTH = 800; // Maximum width for images
 const COMPRESSION_QUALITY = 0.7; // 0 = max compression, 1 = max quality
@@ -69,55 +66,86 @@ const detectImageSource = async (clipboardData, file) => {
 };
 
 const PasteArea = ({ onExport }) => {
-  const { 
-    items, 
-    setItems, 
-    addEmptyCard, 
-    addCard, 
-    updateCard, 
-    deleteCard 
-  } = useCards();
-
-  useEffect(() => {
-    // console.log('PasteArea component mounted');
-  }, []); // Empty dependency array means this only runs once on mount
-
+  const [storageMode, setStorageMode] = useState('local');
+  const [storage, setStorage] = useState(() => getStorageAdapter('local'));
+  const [items, setItems] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isSelecting, setIsSelecting] = useState(false);
   const panzoomRef = useRef();
   const activeItemRef = useRef(null);
   const [initialPosition, setInitialPosition] = useState({ x: 100, y: 100 });
-    // Add these new states
-    const [timeSettings, setTimeSettings] = useState(null);
-    const [isExpired, setIsExpired] = useState(false);
-    const [timeRemaining, setTimeRemaining] = useState(null);
-    const [isInputActive, setIsInputActive] = useState(false);
-    const [isInactive, setIsInactive] = useState(false);
-    let inactivityTimer = useRef(null);
-    const [showOnboarding, setShowOnboarding] = useState(false);
-    const [showTimeInput, setShowTimeInput] = useState(false);
-    const [isTransitioning, setIsTransitioning] = useState(false);
+  const [timeSettings, setTimeSettings] = useState(null);
+  const [isExpired, setIsExpired] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(null);
+  const [isInputActive, setIsInputActive] = useState(false);
+  const [isInactive, setIsInactive] = useState(false);
+  let inactivityTimer = useRef(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showTimeInput, setShowTimeInput] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
+  // When mode changes, update the storage adapter
+  useEffect(() => {
+    setStorage(getStorageAdapter(storageMode));
+  }, [storageMode]);
 
-  // Define handlePaste first
+  // Define addEmptyCard function
+  const addEmptyCard = async (position = { x: 100, y: 100 }) => {
+    const cardPosition = position && typeof position === 'object' 
+      ? { x: position.x || 100, y: position.y || 100 }
+      : { x: 100, y: 100 };
+
+    const newItem = {
+      type: 'newText',
+      content: '',
+      position: cardPosition,
+      sourceUrl: '',
+      isEmpty: true,
+      timestamp: Date.now()
+    };
+
+    try {
+      const id = await storage.saveItem(newItem);
+      setItems(prev => [...prev, { ...newItem, id }]);
+    } catch (error) {
+      console.error('Error adding empty card:', error);
+    }
+  };
+
+  // Define addCard function
+  const addCard = async (cardData) => {
+    const id = await storage.saveItem(cardData);
+    setItems(prev => [...prev, { ...cardData, id }]);
+  };
+
+  // Define updateCard function
+  const updateCard = async (id, updates) => {
+    await storage.updateItem(id, updates);
+    setItems(prev => prev.map(item => 
+      item.id === id ? { ...item, ...updates } : item
+    ));
+  };
+
+  // Define deleteCard function
+  const deleteCard = async (id) => {
+    await storage.deleteItem(id);
+    setItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  // Handle paste events
   const handlePaste = useCallback(async (e) => {
-    // Check if the active element is an input or textarea
     if (document.activeElement.tagName === 'TEXTAREA' || 
         document.activeElement.tagName === 'INPUT' ||
         document.activeElement.classList.contains('content-input')) {
-      // Let the default paste behavior happen in the input
       return;
     }
 
     e.preventDefault();
     const clipboardData = e.clipboardData;
-    
-    // Use tracked mouse position
     const { x, y } = mousePosition;
     
     try {
-      // Handle pasted images
       const imageItem = [...clipboardData.items].find(
         item => item.type.indexOf('image') !== -1
       );
@@ -126,21 +154,13 @@ const PasteArea = ({ onExport }) => {
         const file = imageItem.getAsFile();
         const sourceUrl = await detectImageSource(clipboardData, file);
         
-        // Create an image to get dimensions
         const img = new Image();
         img.onload = async () => {
-          // Create canvas
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
-          
-          // Set dimensions
           canvas.width = img.width;
           canvas.height = img.height;
-          
-          // Draw image
           ctx.drawImage(img, 0, 0);
-          
-          // Get as data URL with high quality (0.85)
           const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
           
           const newItem = {
@@ -150,11 +170,11 @@ const PasteArea = ({ onExport }) => {
             sourceUrl,
             timestamp: Date.now()
           };
-          const id = await db.items.add(newItem);
+          
+          const id = await storage.saveItem(newItem);
           setItems(prev => [...prev, { ...newItem, id }]);
         };
         
-        // Load the image from the file
         const reader = new FileReader();
         reader.onload = (e) => {
           img.src = e.target.result;
@@ -163,7 +183,6 @@ const PasteArea = ({ onExport }) => {
         return;
       }
 
-      // Handle pasted text/links
       const text = clipboardData.getData('text');
       if (text) {
         const isUrl = text.startsWith('http://') || text.startsWith('https://');
@@ -175,66 +194,44 @@ const PasteArea = ({ onExport }) => {
           timestamp: Date.now(),
           isEmpty: false
         };
-        const id = await db.items.add(newItem);
+        
+        const id = await storage.saveItem(newItem);
         setItems(prev => [...prev, { ...newItem, id }]);
       }
     } catch (error) {
       console.error('Error saving item:', error);
     }
-  }, [mousePosition]);
-// Add this effect for time management
-useEffect(() => {
-  const loadTimeSettings = async () => {
-    const settings = await getTimeSettings();
-    if (settings) {
-      setTimeSettings(settings);
+  }, [mousePosition, storage]);
+
+  // Load time settings
+  useEffect(() => {
+    const loadTimeSettings = async () => {
+      const settings = await storage.getTimeSettings();
+      if (settings) {
+        setTimeSettings(settings);
+      }
+    };
+    loadTimeSettings();
+  }, [storage]);
+
+  // Handle time settings
+  const handleTimeSet = async (settings) => {
+    try {
+      await storage.saveTimeSettings(settings);
+      setTimeSettings({
+        ...settings,
+        description: settings.description
+      });
+    } catch (error) {
+      console.error('Error saving time settings:', error);
     }
   };
-  loadTimeSettings();
-}, []);
-useEffect(() => {
-  if (!timeSettings) return;
-
-  const interval = setInterval(() => {
-    const now = Date.now();
-    if (now >= timeSettings.endTime) {
-      setIsExpired(true);
-      clearInterval(interval);
-    } else {
-      setTimeRemaining(Math.ceil((timeSettings.endTime - now) / 1000));
-    }
-  }, 1000);
-  return () => clearInterval(interval);
-}, [timeSettings]);
-
-const handleTimeSet = async (settings) => {
-  try {
-    await saveTimeSettings(settings);
-    setTimeSettings({
-      ...settings,
-      description: settings.description // Make sure to include the description
-    });
-  } catch (error) {
-    console.error('Error saving time settings:', error);
-  }
-};
-  // Then add the global paste handler
-  useEffect(() => {
-    const handleGlobalPaste = (e) => {
-      console.log('Global paste event triggered');
-      handlePaste(e);
-    };
-    
-    document.addEventListener('paste', handleGlobalPaste);
-    return () => document.removeEventListener('paste', handleGlobalPaste);
-  }, [handlePaste]); // Only need handlePaste as dependency since it includes mousePosition
 
   // Load items on mount
   useEffect(() => {
-    // console.log('Loading items effect running');
     const fetchItems = async () => {
       try {
-        const savedItems = await loadItems();
+        const savedItems = await storage.loadItems();
         console.log('Loaded items with positions:', savedItems);
         setItems(savedItems || []);
       } catch (error) {
@@ -242,22 +239,21 @@ const handleTimeSet = async (settings) => {
       }
     };
     fetchItems();
-  }, []);
-  useAgingEffect(timeSettings, items);
-  usePaperAgingEffect(timeSettings);
+  }, [storage]);
+
+  // Handle board restart
+  const handleRestart = async () => {
+    await storage.clearBoard();
+    setTimeSettings(null);
+    setIsExpired(false);
+    setItems([]);
+  };
 
   // Track mouse position relative to panzoom
   const handleMouseMove = (e) => {
     if (panzoomRef.current) {
       const { x, y } = panzoomRef.current.getPosition(e);
       setMousePosition({ x, y });
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (id) {
-      await deleteCard(id);
-      setSelectedId(null);
     }
   };
 
@@ -285,14 +281,7 @@ const handleTimeSet = async (settings) => {
       window.removeEventListener('keyup', handleKeyUp);
     };
   }, []);
-  const handleRestart = async () => {
-    await clearBoard();
-    setTimeSettings(null);
-    setIsExpired(false);
-    setItems([]);
-  };
 
-  // Pass this to TextCard
   const handleInputActiveChange = (active) => {
     setIsInputActive(active);
   };
@@ -385,7 +374,6 @@ const handleTimeSet = async (settings) => {
 
   return (
     <>
-      {/* First time visit - show onboarding */}
       {showOnboarding && (
         <OnboardingDialog 
           isOpen={showOnboarding}
@@ -393,16 +381,15 @@ const handleTimeSet = async (settings) => {
         />
       )}
 
-      {/* No time settings yet - show time input */}
       {!showOnboarding && !timeSettings && (
         <TimeInputDialog 
           isOpen={true}
           onClose={() => setShowTimeInput(false)}
-          onTimeSet={handleTimeSet} 
+          onTimeSet={handleTimeSet}
+          onStorageModeSelect={setStorageMode}
         />
       )}
 
-      {/* Show canvas once we have time settings */}
       {timeSettings && (
         <>
           <InactivityOverlay 
@@ -416,23 +403,23 @@ const handleTimeSet = async (settings) => {
             tabIndex={0}
           >
             <div 
-  className="leaf-shadows-container sway1"
-  style={{
-    backgroundImage: `url(${shadowSvg})`,
-    backgroundSize: 'cover',
-    backgroundRepeat: 'no-repeat',
-    rotate: '180deg',
-  }}
-></div>
-<div 
-  className="leaf-shadows-container sway2"
-  style={{
-    backgroundImage: `url(${shadowSvg2})`,
-    backgroundSize: 'cover',
-    backgroundRepeat: 'no-repeat',
-    rotate: '180deg',
-  }}
-></div>
+              className="leaf-shadows-container sway1"
+              style={{
+                backgroundImage: `url(${shadowSvg})`,
+                backgroundSize: 'cover',
+                backgroundRepeat: 'no-repeat',
+                rotate: '180deg',
+              }}
+            ></div>
+            <div 
+              className="leaf-shadows-container sway2"
+              style={{
+                backgroundImage: `url(${shadowSvg2})`,
+                backgroundSize: 'cover',
+                backgroundRepeat: 'no-repeat',
+                rotate: '180deg',
+              }}
+            ></div>
             <Toolbar 
               panzoomRef={panzoomRef} 
               onExport={onExport} 
@@ -461,7 +448,7 @@ const handleTimeSet = async (settings) => {
                 if (!activeItemRef.current) return;
                 const elementData = element[activeItemRef.current];
                 if (elementData) {
-                  db.items.update(activeItemRef.current, { 
+                  updateCard(activeItemRef.current, { 
                     position: { x: elementData.x, y: elementData.y } 
                   });
                 }
@@ -533,7 +520,6 @@ const handleTimeSet = async (settings) => {
         </>
       )}
 
-      {/* Show expiry dialog on top of canvas when time is up */}
       {isExpired && (
         <ExpiryDialog 
           isOpen={isExpired}

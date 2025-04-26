@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
 
-const TimeInputDialog = ({ isOpen, onClose, onTimeSet }) => {
+const TimeInputDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) => {
   const [description, setDescription] = useState('');
   const [hours, setHours] = useState('');
   const [minutes, setMinutes] = useState('');
   const [seconds, setSeconds] = useState('');
   const [error, setError] = useState('');
+  const [storageMode, setStorageMode] = useState('local');
 
   const handleSubmit = () => {
     if (!description.trim()) {
@@ -32,14 +33,15 @@ const TimeInputDialog = ({ isOpen, onClose, onTimeSet }) => {
 
     const startTime = Date.now();
     const endTime = startTime + totalMilliseconds;
-    const halfwayPoint = startTime + (totalMilliseconds / 2); // Calculate halfway point
+    const halfwayPoint = startTime + (totalMilliseconds / 2);
 
+    onStorageModeSelect(storageMode);
     onTimeSet({
       description: description.trim(),
       startTime,
       endTime,
-      halfwayPoint, // Add halfway point to time settings
-      duration: totalMilliseconds / (60 * 60 * 1000) // Convert to hours for consistency
+      halfwayPoint,
+      duration: totalMilliseconds / (60 * 60 * 1000)
     });
 
     onClose();
@@ -116,11 +118,69 @@ const TimeInputDialog = ({ isOpen, onClose, onTimeSet }) => {
           </div>
         </div>
 
+        <div>
+          <label>Storage Mode</label>
+          <div className="storage-mode-selector">
+            <button
+              className={`mode-button ${storageMode === 'local' ? 'active' : ''}`}
+              onClick={() => setStorageMode('local')}
+            >
+              🖥️ Local Storage
+              <span className="mode-description">Store data on this device only</span>
+            </button>
+            <button
+              className={`mode-button ${storageMode === 'collaborative' ? 'active' : ''}`}
+              onClick={() => setStorageMode('collaborative')}
+            >
+              🌐 Collaborative
+              <span className="mode-description">Share and collaborate in real-time</span>
+            </button>
+          </div>
+        </div>
+
         {error && (
           <div style={{ color: '#351C1C' }}>
             {error}
           </div>
         )}
+
+        <style jsx>{`
+          .storage-mode-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+          }
+          
+          .mode-button {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 12px;
+            border: 2px solid #E0E0E0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            text-align: left;
+          }
+          
+          .mode-button.active {
+            border-color: #351C1C;
+            background: #FFF8F0;
+          }
+          
+          .mode-button:hover {
+            border-color: #351C1C;
+          }
+          
+          .mode-description {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 4px;
+          }
+        `}</style>
       </div>
     </Modal>
   );
