@@ -182,6 +182,10 @@ const PasteArea = ({ onExport }) => {
         console.log('Loaded time settings:', settings);
         if (settings) {
           setTimeSettings(settings);
+          // Check if expired
+          const now = Date.now();
+          const expiryTime = settings.startTime + (settings.duration * 60 * 1000);
+          setIsExpired(now >= expiryTime);
           // Reset inactivity timer when time settings are loaded
           resetInactivityTimer();
         }
@@ -359,6 +363,7 @@ const PasteArea = ({ onExport }) => {
     setTimeSettings(null);
     setIsExpired(false);
     setItems([]);
+    setShowTimeInput(true); // Show time input dialog for new session
   };
 
   // Track mouse position relative to panzoom
@@ -369,8 +374,18 @@ const PasteArea = ({ onExport }) => {
     }
   };
 
+  const handleDelete = async (id) => {
+    if (!storage) return;
+    try {
+      await deleteCard(id);
+      setSelectedId(null);
+    } catch (error) {
+      console.error('Error deleting item:', error);
+    }
+  };
+
   const handleKeyDown = (e) => {
-    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
+    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && !isInputActive) {
       handleDelete(selectedId);
     }
   };

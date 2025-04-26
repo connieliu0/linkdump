@@ -12,7 +12,8 @@ const getElementSeed = (element) => {
       grayscaleVariation: random(0.5, 1.5),
       blurVariation: random(0.8, 1.2),
       agingStyle: Math.random() > 0.5 ? 'blur' : 'shadow',
-      shadowColor: `rgba(${Math.floor(random(30, 70))}, ${Math.floor(random(20, 50))}, 0, 0.8)`
+      shadowColor: `rgba(${Math.floor(random(30, 70))}, ${Math.floor(random(20, 50))}, 0, 0.8)`,
+      hasVignette: Math.random() > 0.5 // 50% chance of having vignette
     };
   }
   return element._agingSeed;
@@ -25,11 +26,11 @@ export const useAgingEffect = (timeSettings) => {
     const applyAgingEffects = () => {
       const now = Date.now();
       const endTime = timeSettings.startTime + (timeSettings.duration * 60 * 1000); // Convert minutes to milliseconds
-      if (now >= endTime) return;
       
+      // Instead of returning, use maximum progress when expired
       const totalDuration = endTime - timeSettings.startTime;
       const elapsed = now - timeSettings.startTime;
-      const progress = Math.min(elapsed / totalDuration, 1);
+      const progress = now >= endTime ? 1 : Math.min(elapsed / totalDuration, 1);
 
       // Apply effects to images
       const images = document.querySelectorAll('.pasted-image');
@@ -59,7 +60,7 @@ export const useAgingEffect = (timeSettings) => {
       });
 
       // Apply effects to text content and links
-      const elements = document.querySelectorAll('.text-content, .link-preview');
+      const elements = document.querySelectorAll('.text-content, .link-preview, .source-input, .source-text');
       elements.forEach(element => {
         const seed = getElementSeed(element);
         
@@ -73,6 +74,22 @@ export const useAgingEffect = (timeSettings) => {
           element.style.filter = 'none';
           const shadowIntensity = Math.min(progress * 15 * seed.blurVariation, 15);
           element.style.textShadow = `0px 0px ${shadowIntensity}px ${seed.shadowColor}`;
+        }
+
+        // Apply vignette effect for selected cards
+        if (seed.hasVignette) {
+          const vignetteIntensity = Math.min(progress * 0.3, 0.3);
+          element.style.boxShadow = `inset 0 0 ${Math.min(progress * 60, 60)}px rgba(0, 0, 0, ${vignetteIntensity})`;
+          element.style.position = 'relative';
+          element.style.isolation = 'isolate';
+        }
+
+        // For source inputs, use a more subtle color change
+        if (element.classList.contains('source-input') || element.classList.contains('source-text')) {
+          const colorProgress = progress * seed.sepiaVariation;
+          element.style.color = `rgb(${Math.min(100 + colorProgress * 50, 150)}, ${Math.min(90 + colorProgress * 30, 120)}, ${Math.min(20 + colorProgress * 20, 40)})`;
+          // Don't change the background for source inputs
+          return;
         }
 
         element.style.backgroundColor = `rgba(255, 255, ${Math.max(255 - progress * 60, 200)}, ${Math.max(1 - progress * 0.3, 0.7)})`;
