@@ -1,0 +1,60 @@
+.input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.duration-inputs {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+}
+
+.duration-input {
+  flex: 1;
+}
+
+.duration-label {
+  font-size: 0.8em;
+  color: #351C1C;
+}
+
+.storage-mode-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.mode-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.mode-button.active {
+  border-color: #351C1C;
+  background: #FFF8F0;
+}
+
+.mode-button:hover {
+  border-color: #351C1C;
+}
+
+.mode-description {
+  font-size: 0.8em;
+  color: #666;
+  margin-top: 4px;
+}
+
+.error-message {
+  color: #351C1C;
+} 

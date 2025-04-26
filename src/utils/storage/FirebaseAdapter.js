@@ -22,8 +22,9 @@ import { StorageAdapter } from './StorageAdapter';
 export class FirebaseAdapter extends StorageAdapter {
   constructor(boardId = null) {
     super();
-    this.boardId = boardId;
-    this.boardRef = boardId ? ref(db, `boards/${boardId}`) : null;
+    if (boardId) {
+      this.setBoardId(boardId);
+    }
   }
 
   generateBoardId() {
@@ -35,12 +36,17 @@ export class FirebaseAdapter extends StorageAdapter {
     this.setBoardId(newId);
     
     // Initialize the board with empty structure
-    set(this.boardRef, { items: {}, timeSettings: null });
+    set(ref(db, `boards/${newId}`), { items: {}, timeSettings: null });
     
     return newId;
   }
 
   setBoardId(id) {
+    if (!id) {
+      console.error('Attempted to set null boardId');
+      return null;
+    }
+    console.log('Setting boardId to:', id);
     this.boardId = id;
     this.boardRef = ref(db, `boards/${id}`);
     return id;
@@ -69,9 +75,12 @@ export class FirebaseAdapter extends StorageAdapter {
   }
 
   async loadItems() {
-    console.log('Loading items from Firebase');
+    console.log('Loading items from Firebase, boardId:', this.boardId);
     try {
-      if (!this.boardId) return [];
+      if (!this.boardId) {
+        console.error('No boardId set when trying to load items');
+        return [];
+      }
       
       const snapshot = await get(ref(db, `boards/${this.boardId}/items`));
       
@@ -124,9 +133,8 @@ export class FirebaseAdapter extends StorageAdapter {
         id: 'timeSettings',
         description: settings.description,
         startTime: Number(settings.startTime),
-        endTime: Number(settings.endTime),
-        halfwayPoint: Number(settings.halfwayPoint),
-        totalSeconds: Number(settings.totalSeconds)
+        duration: Number(settings.duration), // Duration in minutes
+        halfwayPoint: Number(settings.halfwayPoint)
       };
       
       // Validate that all numeric values are valid

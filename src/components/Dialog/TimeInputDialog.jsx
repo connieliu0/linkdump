@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
+import './TimeInputDialog.css';
 
 const TimeInputDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) => {
   const [description, setDescription] = useState('');
@@ -7,7 +8,21 @@ const TimeInputDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) =>
   const [minutes, setMinutes] = useState('');
   const [seconds, setSeconds] = useState('');
   const [error, setError] = useState('');
-  const [storageMode, setStorageMode] = useState('local');
+  const [storageMode, setStorageMode] = useState(() => {
+    // Try to restore storage mode from localStorage
+    return localStorage.getItem('storageMode') || 'local';
+  });
+
+  // Initialize storage mode on mount
+  useEffect(() => {
+    onStorageModeSelect(storageMode);
+  }, []);
+
+  const handleStorageModeSelect = (mode) => {
+    console.log('Selecting storage mode:', mode);
+    setStorageMode(mode);
+    onStorageModeSelect(mode);
+  };
 
   const handleSubmit = () => {
     if (!description.trim()) {
@@ -26,22 +41,20 @@ const TimeInputDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) =>
       return;
     }
 
-    const totalMilliseconds = 
-      (hoursValue * 60 * 60 * 1000) + 
-      (minutesValue * 60 * 1000) + 
-      (secondsValue * 1000);
+    const totalMinutes = 
+      (hoursValue * 60) + 
+      minutesValue + 
+      (secondsValue / 60);
 
     const startTime = Date.now();
-    const endTime = startTime + totalMilliseconds;
-    const halfwayPoint = startTime + (totalMilliseconds / 2);
+    const halfwayPoint = startTime + ((totalMinutes * 60 * 1000) / 2);
 
-    onStorageModeSelect(storageMode);
+    // Set the time settings
     onTimeSet({
       description: description.trim(),
       startTime,
-      endTime,
-      halfwayPoint,
-      duration: totalMilliseconds / (60 * 60 * 1000)
+      duration: totalMinutes,
+      halfwayPoint
     });
 
     onClose();
@@ -80,12 +93,8 @@ const TimeInputDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) =>
 
         <div>
           <label>Duration</label>
-          <div style={{ 
-            display: 'flex', 
-            gap: '16px',
-            width: '100%'
-          }}>
-            <div style={{ flex: 1 }}>
+          <div className="duration-inputs">
+            <div className="duration-input">
               <input
                 type="text"
                 value={hours}
@@ -93,9 +102,9 @@ const TimeInputDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) =>
                 className="input-field"
                 placeholder="0"
               />
-              <label style={{ fontSize: '0.8em', color: '#351C1C' }}>Hours</label>
+              <label className="duration-label">Hours</label>
             </div>
-            <div style={{ flex: 1 }}>
+            <div className="duration-input">
               <input
                 type="text"
                 value={minutes}
@@ -103,9 +112,9 @@ const TimeInputDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) =>
                 className="input-field"
                 placeholder="0"
               />
-              <label style={{ fontSize: '0.8em', color: '#351C1C' }}>Minutes</label>
+              <label className="duration-label">Minutes</label>
             </div>
-            <div style={{ flex: 1 }}>
+            <div className="duration-input">
               <input
                 type="text"
                 value={seconds}
@@ -113,7 +122,7 @@ const TimeInputDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) =>
                 className="input-field"
                 placeholder="0"
               />
-              <label style={{ fontSize: '0.8em', color: '#351C1C' }}>Seconds</label>
+              <label className="duration-label">Seconds</label>
             </div>
           </div>
         </div>
@@ -122,15 +131,17 @@ const TimeInputDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) =>
           <label>Storage Mode</label>
           <div className="storage-mode-selector">
             <button
+              type="button"
               className={`mode-button ${storageMode === 'local' ? 'active' : ''}`}
-              onClick={() => setStorageMode('local')}
+              onClick={() => handleStorageModeSelect('local')}
             >
               🖥️ Local Storage
               <span className="mode-description">Store data on this device only</span>
             </button>
             <button
+              type="button"
               className={`mode-button ${storageMode === 'collaborative' ? 'active' : ''}`}
-              onClick={() => setStorageMode('collaborative')}
+              onClick={() => handleStorageModeSelect('collaborative')}
             >
               🌐 Collaborative
               <span className="mode-description">Share and collaborate in real-time</span>
@@ -139,48 +150,10 @@ const TimeInputDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) =>
         </div>
 
         {error && (
-          <div style={{ color: '#351C1C' }}>
+          <div className="error-message">
             {error}
           </div>
         )}
-
-        <style jsx>{`
-          .storage-mode-selector {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 8px;
-          }
-          
-          .mode-button {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            padding: 12px;
-            border: 2px solid #E0E0E0;
-            border-radius: 8px;
-            background: white;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            width: 100%;
-            text-align: left;
-          }
-          
-          .mode-button.active {
-            border-color: #351C1C;
-            background: #FFF8F0;
-          }
-          
-          .mode-button:hover {
-            border-color: #351C1C;
-          }
-          
-          .mode-description {
-            font-size: 0.8em;
-            color: #666;
-            margin-top: 4px;
-          }
-        `}</style>
       </div>
     </Modal>
   );

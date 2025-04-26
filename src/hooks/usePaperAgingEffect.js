@@ -42,10 +42,11 @@ export const usePaperAgingEffect = (timeSettings) => {
     // Apply paper aging effects
     const applyPaperAgingEffects = () => {
       const now = Date.now();
-      if (now >= timeSettings.endTime) return;
+      const endTime = timeSettings.startTime + (timeSettings.duration * 60 * 1000); // Convert minutes to milliseconds
+      if (now >= endTime) return;
       
       // Calculate progress (0 to 1)
-      const totalDuration = timeSettings.endTime - timeSettings.startTime;
+      const totalDuration = endTime - timeSettings.startTime;
       const elapsed = now - timeSettings.startTime;
       const progress = Math.min(elapsed / totalDuration, 1);
       
@@ -151,5 +152,5 @@ export const usePaperAgingEffect = (timeSettings) => {
       const paperOverlay = document.getElementById('paper-aging-overlay');
       if (paperOverlay) paperOverlay.remove();
     };
-  }, [timeSettings?.startTime, timeSettings?.endTime]); // Only depend on the specific properties we use
+  }, [timeSettings]); // Only depend on timeSettings since we calculate endTime inside
 };

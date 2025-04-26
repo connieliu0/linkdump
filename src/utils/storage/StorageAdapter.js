@@ -1,6 +1,4 @@
 // src/utils/storage/StorageAdapter.js
-import { FirebaseAdapter } from './FirebaseAdapter.js';
-import { IndexedDBAdapter } from './IndexDBAdapter.js';
 
 // Abstract base class that defines the interface
 export class StorageAdapter {
@@ -16,14 +14,6 @@ export class StorageAdapter {
     
     // Board operations
     async clearBoard() { throw new Error("Method not implemented"); }
-  }
-  
-  // Factory function to get the appropriate adapter
-  export function getStorageAdapter(mode = 'local') {
-    if (mode === 'collaborative') {
-      return new FirebaseAdapter();
-    } else {
-      return new IndexedDBAdapter();
-    }
-  }
-  
+}
+
+// Factory function will be moved to a separate file to avoid circular dependencies

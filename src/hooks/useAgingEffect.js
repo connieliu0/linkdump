@@ -24,9 +24,10 @@ export const useAgingEffect = (timeSettings) => {
 
     const applyAgingEffects = () => {
       const now = Date.now();
-      if (now >= timeSettings.endTime) return;
+      const endTime = timeSettings.startTime + (timeSettings.duration * 60 * 1000); // Convert minutes to milliseconds
+      if (now >= endTime) return;
       
-      const totalDuration = timeSettings.endTime - timeSettings.startTime;
+      const totalDuration = endTime - timeSettings.startTime;
       const elapsed = now - timeSettings.startTime;
       const progress = Math.min(elapsed / totalDuration, 1);
 
@@ -103,5 +104,5 @@ export const useAgingEffect = (timeSettings) => {
     const interval = setInterval(applyAgingEffects, 100);
     
     return () => clearInterval(interval);
-  }, [timeSettings?.startTime, timeSettings?.endTime]);
+  }, [timeSettings]);
 };

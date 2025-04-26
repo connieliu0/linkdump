@@ -1,11 +1,12 @@
 // src/utils/storage/IndexedDBAdapter.js
 import Dexie from 'dexie';
+import { StorageAdapter } from './StorageAdapter';
 
 export class IndexedDBAdapter extends StorageAdapter {
   constructor() {
     super();
     this.db = null;
-    this.initDB();
+    this.dbReady = this.initDB();
   }
   
   async initDB() {
@@ -15,59 +16,83 @@ export class IndexedDBAdapter extends StorageAdapter {
       items: '++id,type,content,position,sourceUrl',
       settings: 'id,endTime,halfwayPoint,totalSeconds,description'
     });
+    await this.db.open();
+  }
+
+  async ensureDB() {
+    if (!this.db) {
+      await this.dbReady;
+    }
   }
   
   async saveItem(item) {
     try {
+      await this.ensureDB();
       // Ensure timestamp is set
       if (!item.timestamp) {
         item.timestamp = Date.now();
       }
-      await db.items.add(item);
+      const id = await this.db.items.add(item);
+      return id;
     } catch (error) {
       console.error('Error saving to IndexDB:', error);
+      throw error;
     }
-  };
+  }
   
-  async loadItems()  {
+  async loadItems() {
     try {
-      return await db.items.toArray();
+      await this.ensureDB();
+      return await this.db.items.toArray();
     } catch (error) {
       console.error('Error loading from IndexDB:', error);
       return [];
     }
-  };
+  }
   
   async updateItem(id, updates) {
     try {
+      await this.ensureDB();
       await this.db.items.update(id, updates);
+      return true;
     } catch (error) {
       console.error('Error updating item in IndexDB:', error);
+      throw error;
     }
   }
 
   async deleteItem(id) {
     try {
+      await this.ensureDB();
       await this.db.items.delete(id);
+      return true;
     } catch (error) {
       console.error('Error deleting from IndexDB:', error);
+      throw error;
     }
   }
 
-  async saveTimeSettings(timeSettings) {
+  async saveTimeSettings(settings) {
     try {
-      await this.db.settings.put({ 
-        id: 1, 
-        ...timeSettings,
-        description: timeSettings.description || ''
-      });
+      await this.ensureDB();
+      const timeSettings = {
+        id: 1,
+        description: settings.description || '',
+        startTime: Number(settings.startTime),
+        duration: Number(settings.duration), // Duration in minutes
+        halfwayPoint: Number(settings.halfwayPoint)
+      };
+      await this.db.settings.put(timeSettings);
+      return true;
     } catch (error) {
       console.error('Error saving time settings to IndexDB:', error);
+      throw error;
     }
   }
 
   async getTimeSettings() {
     try {
+      await this.ensureDB();
       return await this.db.settings.get(1);
     } catch (error) {
       console.error('Error getting time settings from IndexDB:', error);
@@ -77,10 +102,13 @@ export class IndexedDBAdapter extends StorageAdapter {
 
   async clearBoard() {
     try {
+      await this.ensureDB();
       await this.db.items.clear();
       await this.db.settings.clear();
+      return true;
     } catch (error) {
       console.error('Error clearing board in IndexDB:', error);
+      throw error;
     }
   }
 }

@@ -1,7 +1,7 @@
 // src/components/PasteArea.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import PanZoom, { Element } from '@sasza/react-panzoom';
-import { getStorageAdapter } from '../utils/storage/StorageAdapter';
+import { getStorageAdapter } from '../utils/storage/StorageFactory';
 import LinkCard from './LinkCard';
 import ImageCard from './ImageCard';
 import Toolbar from './Toolbar';
@@ -14,6 +14,8 @@ import InactivityOverlay from './InactivityOverlay';
 import OnboardingDialog from './Dialog/OnboardingDialog';
 import shadowSvg from '../assets/timepasses/shadow.svg';
 import shadowSvg2 from '../assets/timepasses/shadow2.svg';
+import { FirebaseAdapter } from '../utils/storage/FirebaseAdapter';
+import CollaborativeLink from './CollaborativeLink';
 
 const MAX_WIDTH = 800; // Maximum width for images
 const COMPRESSION_QUALITY = 0.7; // 0 = max compression, 1 = max quality
@@ -66,8 +68,21 @@ const detectImageSource = async (clipboardData, file) => {
 };
 
 const PasteArea = ({ onExport }) => {
-  const [storageMode, setStorageMode] = useState('local');
-  const [storage, setStorage] = useState(() => getStorageAdapter('local'));
+  // Get boardId from URL if present
+  const [storageMode, setStorageMode] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlBoardId = urlParams.get('board');
+    // If we have a board ID in the URL, we're in collaborative mode
+    return urlBoardId ? 'collaborative' : (localStorage.getItem('storageMode') || 'local');
+  });
+
+  const [boardId, setBoardId] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlBoardId = urlParams.get('board');
+    return urlBoardId || localStorage.getItem('boardId') || null;
+  });
+
+  const [storage, setStorage] = useState(null);
   const [items, setItems] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -82,13 +97,131 @@ const PasteArea = ({ onExport }) => {
   const [isInactive, setIsInactive] = useState(false);
   let inactivityTimer = useRef(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showTimeInput, setShowTimeInput] = useState(false);
+  const [showTimeInput, setShowTimeInput] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // When mode changes, update the storage adapter
+  // Initialize storage based on mode and boardId
   useEffect(() => {
-    setStorage(getStorageAdapter(storageMode));
-  }, [storageMode]);
+    console.log('Storage mode changed to:', storageMode);
+    const { adapter, boardId: newBoardId } = getStorageAdapter(storageMode, boardId);
+    console.log('Storage adapter:', adapter.constructor.name);
+    console.log('Got new boardId:', newBoardId);
+    
+    // Update URL if we're in collaborative mode
+    if (storageMode === 'collaborative' && newBoardId) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('board', newBoardId);
+      window.history.replaceState({}, '', url);
+    } else {
+      // Remove board parameter from URL if we're in local mode
+      const url = new URL(window.location.href);
+      url.searchParams.delete('board');
+      window.history.replaceState({}, '', url);
+    }
+
+    setStorage(adapter);
+    setBoardId(newBoardId);
+
+    // Save to localStorage
+    localStorage.setItem('storageMode', storageMode);
+    if (newBoardId) {
+      localStorage.setItem('boardId', newBoardId);
+    } else {
+      localStorage.removeItem('boardId');
+    }
+
+    // If we're in collaborative mode, initialize the board
+    if (storageMode === 'collaborative' && adapter instanceof FirebaseAdapter) {
+      console.log('Initializing collaborative board');
+      const unsubscribe = adapter.setupRealtimeListener((items) => {
+        console.log('Realtime update received:', items);
+        setItems(items);
+      });
+      return () => unsubscribe();
+    }
+  }, [storageMode, boardId]);
+
+  const handleStorageModeChange = (mode) => {
+    console.log('Handling storage mode change:', mode);
+    setStorageMode(mode);
+    // Clear boardId when switching modes
+    if (mode === 'local') {
+      setBoardId(null);
+      localStorage.removeItem('boardId');
+    }
+  };
+
+  const handleTimeSet = async (settings) => {
+    console.log('Handling time set:', settings);
+    if (storage) {
+      try {
+        // Ensure we have all the required fields
+        const timeSettings = {
+          description: settings.description,
+          startTime: settings.startTime,
+          duration: settings.duration, // Duration in minutes
+          halfwayPoint: settings.halfwayPoint
+        };
+        
+        await storage.saveTimeSettings(timeSettings);
+        setTimeSettings(timeSettings);
+        resetInactivityTimer();
+      } catch (error) {
+        console.error('Error saving time settings:', error);
+      }
+    } else {
+      console.error('No storage adapter available');
+    }
+  };
+
+  const loadTimeSettings = async () => {
+    console.log('Loading time settings with storage:', storage);
+    if (storage) {
+      try {
+        const settings = await storage.getTimeSettings();
+        console.log('Loaded time settings:', settings);
+        if (settings) {
+          setTimeSettings(settings);
+          // Reset inactivity timer when time settings are loaded
+          resetInactivityTimer();
+        }
+      } catch (error) {
+        console.error('Error loading time settings:', error);
+      }
+    }
+  };
+
+  // Load time settings when storage changes
+  useEffect(() => {
+    if (!storage) return;
+    console.log('Loading time settings with storage:', storage.constructor.name);
+    loadTimeSettings();
+  }, [storage]);
+
+  // Add aging effects
+  useAgingEffect(timeSettings);
+  usePaperAgingEffect(timeSettings);
+
+  // Add effect to handle time settings expiry
+  useEffect(() => {
+    if (!timeSettings) return;
+
+    const checkExpiry = () => {
+      const now = Date.now();
+      const expiryTime = timeSettings.startTime + (timeSettings.duration * 60 * 1000); // Convert minutes to milliseconds
+      if (now >= expiryTime) {
+        setIsExpired(true);
+      } else {
+        const remainingMs = expiryTime - now;
+        setTimeRemaining(Math.floor(remainingMs / 1000)); // Convert to seconds for display
+      }
+    };
+
+    const timer = setInterval(checkExpiry, 1000);
+    checkExpiry(); // Check immediately
+
+    return () => clearInterval(timer);
+  }, [timeSettings]);
 
   // Define addEmptyCard function
   const addEmptyCard = async (position = { x: 100, y: 100 }) => {
@@ -133,8 +266,25 @@ const PasteArea = ({ onExport }) => {
     setItems(prev => prev.filter(item => item.id !== id));
   };
 
+  // Load items when storage is ready
+  useEffect(() => {
+    const fetchItems = async () => {
+      if (!storage) return;
+      console.log('Fetching items with storage:', storage.constructor.name);
+      try {
+        const savedItems = await storage.loadItems();
+        console.log('Loaded items with positions:', savedItems);
+        setItems(savedItems || []);
+      } catch (error) {
+        console.error('Error loading items:', error);
+      }
+    };
+    fetchItems();
+  }, [storage]);
+
   // Handle paste events
   const handlePaste = useCallback(async (e) => {
+    if (!storage) return;
     if (document.activeElement.tagName === 'TEXTAREA' || 
         document.activeElement.tagName === 'INPUT' ||
         document.activeElement.classList.contains('content-input')) {
@@ -202,44 +352,6 @@ const PasteArea = ({ onExport }) => {
       console.error('Error saving item:', error);
     }
   }, [mousePosition, storage]);
-
-  // Load time settings
-  useEffect(() => {
-    const loadTimeSettings = async () => {
-      const settings = await storage.getTimeSettings();
-      if (settings) {
-        setTimeSettings(settings);
-      }
-    };
-    loadTimeSettings();
-  }, [storage]);
-
-  // Handle time settings
-  const handleTimeSet = async (settings) => {
-    try {
-      await storage.saveTimeSettings(settings);
-      setTimeSettings({
-        ...settings,
-        description: settings.description
-      });
-    } catch (error) {
-      console.error('Error saving time settings:', error);
-    }
-  };
-
-  // Load items on mount
-  useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        const savedItems = await storage.loadItems();
-        console.log('Loaded items with positions:', savedItems);
-        setItems(savedItems || []);
-      } catch (error) {
-        console.error('Error loading items:', error);
-      }
-    };
-    fetchItems();
-  }, [storage]);
 
   // Handle board restart
   const handleRestart = async () => {
@@ -358,35 +470,42 @@ const PasteArea = ({ onExport }) => {
     const hasVisited = localStorage.getItem('hasVisitedBefore');
     if (!hasVisited) {
       setShowOnboarding(true);
+      setShowTimeInput(false);
     }
   }, []);
 
-  const handleOnboardingClose = () => {
-    setShowOnboarding(false);
-    localStorage.setItem('hasVisitedBefore', 'true');
-  };
-
   useEffect(() => {
-    if (showTimeInput) {
-      setIsInactive(false);
-    }
-  }, [showTimeInput]);
+    // Add paste event listener to the window
+    window.addEventListener('paste', handlePaste);
+    
+    return () => {
+      window.removeEventListener('paste', handlePaste);
+    };
+  }, [handlePaste]);
 
   return (
     <>
       {showOnboarding && (
         <OnboardingDialog 
           isOpen={showOnboarding}
-          onClose={handleOnboardingClose} 
+          onClose={() => {
+            setShowOnboarding(false);
+            setShowTimeInput(true);
+            localStorage.setItem('hasVisitedBefore', 'true');
+          }}
         />
       )}
 
-      {!showOnboarding && !timeSettings && (
+      {!showOnboarding && showTimeInput && !timeSettings && (
         <TimeInputDialog 
           isOpen={true}
           onClose={() => setShowTimeInput(false)}
-          onTimeSet={handleTimeSet}
-          onStorageModeSelect={setStorageMode}
+          onTimeSet={(settings) => {
+            console.log('Setting time settings:', settings);
+            handleTimeSet(settings);
+            setShowTimeInput(false);
+          }}
+          onStorageModeSelect={handleStorageModeChange}
         />
       )}
 
@@ -396,6 +515,9 @@ const PasteArea = ({ onExport }) => {
             isVisible={isInactive} 
             onDismiss={handleDismissOverlay}
           />
+          {storageMode === 'collaborative' && boardId && (
+            <CollaborativeLink boardId={boardId} />
+          )}
           <div 
             className="paste-container" 
             onKeyDown={handleKeyDown} 
