@@ -7,14 +7,6 @@ import frame4 from '../assets/timepasses/frame 4.webp';
 const FRAME_DURATION = 700; // 2 seconds per frame
 const frames = [frame1, frame2, frame3, frame4];
 
-// Preload images
-const preloadImages = () => {
-  frames.forEach(src => {
-    const img = new Image();
-    img.src = src;
-  });
-};
-
 const AnimatedBackground = () => {
   const [currentFrame, setCurrentFrame] = useState(0);
   const [repeatCount, setRepeatCount] = useState(0);

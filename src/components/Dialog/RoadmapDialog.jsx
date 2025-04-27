@@ -25,7 +25,7 @@ const RoadmapDialog = ({ isOpen, onClose }) => {
         <p>Future Features</p>
         <ul>
           <li>Chrome extension for adding pages more easily</li>
-          <li>Optional user accounts for cross device syncing</li>
+          <li>Javascript bookmarklet (?) for adding screenshots with source</li>
           <li>Areas to group cards</li>
         </ul>
       </div>

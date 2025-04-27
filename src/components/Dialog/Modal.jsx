@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo, useCallback } from 'react';
 
-const Modal = ({ 
+const Modal = memo(({ 
   isOpen, 
   onClose, 
   children,
@@ -17,44 +17,41 @@ const Modal = ({
   const [shouldRender, setShouldRender] = useState(false);
 
   useEffect(() => {
-    console.log('Modal effect triggered:', { isOpen, isClosing, shouldRender, isVisible });
-    
     if (isOpen && !shouldRender) {
       setShouldRender(true);
       setIsClosing(false);
+      // Use RAF to ensure state updates are batched
       requestAnimationFrame(() => {
-        setIsVisible(true);
+        requestAnimationFrame(() => {
+          setIsVisible(true);
+        });
       });
     } else if (!isOpen && shouldRender && !isClosing) {
       setIsVisible(false);
       setIsClosing(true);
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         setIsClosing(false);
         setShouldRender(false);
       }, 300);
+      return () => clearTimeout(timer);
     }
   }, [isOpen, shouldRender]);
 
-  const handleBackdropClick = (e) => {
+  const handleBackdropClick = useCallback((e) => {
     if (!preventBackdropClick && e.target === e.currentTarget) {
       onClose();
     }
-  };
+  }, [preventBackdropClick, onClose]);
 
-  const handleContentClick = (e) => {
+  const handleContentClick = useCallback((e) => {
     e.stopPropagation();
-  };
+  }, []);
 
   if (!shouldRender) return null;
 
   const hasButtons = primaryButton || secondaryButton;
   
-  console.log('Rendering modal with classes:', {
-    isClosing,
-    hasOverlay,
-    isVisible,
-    shouldRender
-  });
+
 
   return (
     <div 
@@ -98,6 +95,8 @@ const Modal = ({
       </div>
     </div>
   );
-};
+});
+
+Modal.displayName = 'Modal';
 
 export default Modal; 

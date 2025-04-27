@@ -13,7 +13,9 @@ const getElementSeed = (element) => {
       blurVariation: random(0.8, 1.2),
       agingStyle: Math.random() > 0.5 ? 'blur' : 'shadow',
       shadowColor: `rgba(${Math.floor(random(30, 70))}, ${Math.floor(random(20, 50))}, 0, 0.8)`,
-      hasVignette: Math.random() > 0.5 // 50% chance of having vignette
+      hasVignette: Math.random() > 0.5, // 50% chance of having vignette
+      opacityFade: Math.random() > 0.4, // 60% chance of having opacity fade
+      minOpacity: random(0.6, 0.8) // Random minimum opacity between 0.4 and 0.7
     };
   }
   return element._agingSeed;
@@ -55,6 +57,13 @@ export const useAgingEffect = (timeSettings) => {
 
         const sepiaValue = Math.min(progress * 100 * seed.sepiaVariation, 80);
         const grayscaleValue = Math.min(progress * 50 * seed.grayscaleVariation, 40);
+        
+        // Apply opacity fade if the seed indicates it
+        if (seed.opacityFade) {
+          const opacity = 1 - (progress * (1 - seed.minOpacity));
+          img.style.opacity = opacity.toFixed(2);
+        }
+        
         img.style.filter = `sepia(${sepiaValue}%) grayscale(${grayscaleValue}%) brightness(1.1)`;
         img.style.borderRadius = `${progress * 8}px`;
       });
@@ -74,6 +83,12 @@ export const useAgingEffect = (timeSettings) => {
           element.style.filter = 'none';
           const shadowIntensity = Math.min(progress * 15 * seed.blurVariation, 15);
           element.style.textShadow = `0px 0px ${shadowIntensity}px ${seed.shadowColor}`;
+        }
+
+        // Apply opacity fade if the seed indicates it
+        if (seed.opacityFade) {
+          const opacity = 1 - (progress * (1 - seed.minOpacity));
+          element.style.opacity = opacity.toFixed(2);
         }
 
         // Apply vignette effect for selected cards

@@ -1,30 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, memo, useMemo } from 'react';
 import Modal from './Modal';
 import './TimeInputDialog.css';
 
-const TimeInputDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) => {
+const TimeInputDialog = memo(({ isOpen, onClose, onTimeSet, onStorageModeSelect }) => {
   const [description, setDescription] = useState('');
   const [hours, setHours] = useState('');
   const [minutes, setMinutes] = useState('');
   const [seconds, setSeconds] = useState('');
   const [error, setError] = useState('');
   const [storageMode, setStorageMode] = useState(() => {
-    // Try to restore storage mode from localStorage
-    return localStorage.getItem('storageMode') || 'local';
+    const mode = localStorage.getItem('storageMode') || 'local';
+    return mode;
   });
 
-  // Initialize storage mode on mount
-  useEffect(() => {
-    onStorageModeSelect(storageMode);
-  }, []);
-
-  const handleStorageModeSelect = (mode) => {
-    console.log('Selecting storage mode:', mode);
+  const handleStorageModeSelect = useCallback((mode) => {
+    if (mode === storageMode) return; // Prevent unnecessary updates
     setStorageMode(mode);
     onStorageModeSelect(mode);
-  };
+  }, [storageMode, onStorageModeSelect]);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (!description.trim()) {
       setError('Please enter a project description');
       return;
@@ -41,44 +36,55 @@ const TimeInputDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) =>
       return;
     }
 
-    const totalMinutes = 
-      (hoursValue * 60) + 
-      minutesValue + 
-      (secondsValue / 60);
-
+    const totalSeconds = (hoursValue * 3600) + (minutesValue * 60) + secondsValue;
     const startTime = Date.now();
-    const halfwayPoint = startTime + ((totalMinutes * 60 * 1000) / 2);
 
     // Set the time settings
     onTimeSet({
       description: description.trim(),
       startTime,
-      duration: totalMinutes,
-      halfwayPoint
+      endTime: startTime + (totalSeconds * 1000),
+      halfwayPoint: startTime + (totalSeconds * 500),
+      duration: totalSeconds / 60 // Keep duration in minutes for compatibility
     });
 
     onClose();
-  };
+  }, [description, hours, minutes, seconds, onTimeSet, onClose]);
 
-  const handleInputChange = (setter) => (e) => {
+  const handleInputChange = useCallback((setter) => (e) => {
     const value = e.target.value;
     if (value === '' || /^\d*$/.test(value)) {
       setter(value);
       setError('');
     }
-  };
+  }, []);
+
+  const modalProps = useMemo(() => ({
+    isOpen,
+    onClose,
+    title: "Set project details",
+    preventBackdropClick: true,
+    primaryButton: {
+      label: "Start project",
+      onClick: handleSubmit
+    }
+  }), [isOpen, onClose, handleSubmit]);
+
+  const storageModeButtons = useMemo(() => [
+    {
+      mode: 'local',
+      label: '🖥️ Local Storage',
+      description: 'Store data on this device only'
+    },
+    {
+      mode: 'collaborative',
+      label: '🌐 Collaborative',
+      description: 'Share and collaborate in real-time'
+    }
+  ], []);
 
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose}
-      title="Set project details"
-      preventBackdropClick={true}
-      primaryButton={{
-        label: "Start project",
-        onClick: handleSubmit
-      }}
-    >
+    <Modal {...modalProps}>
       <div className="input-container">
         <div>
           <label>Project description</label>
@@ -130,22 +136,17 @@ const TimeInputDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) =>
         <div>
           <label>Storage Mode</label>
           <div className="storage-mode-selector">
-            <button
-              type="button"
-              className={`mode-button ${storageMode === 'local' ? 'active' : ''}`}
-              onClick={() => handleStorageModeSelect('local')}
-            >
-              🖥️ Local Storage
-              <span className="mode-description">Store data on this device only</span>
-            </button>
-            <button
-              type="button"
-              className={`mode-button ${storageMode === 'collaborative' ? 'active' : ''}`}
-              onClick={() => handleStorageModeSelect('collaborative')}
-            >
-              🌐 Collaborative
-              <span className="mode-description">Share and collaborate in real-time</span>
-            </button>
+            {storageModeButtons.map(({ mode, label, description }) => (
+              <button
+                key={mode}
+                type="button"
+                className={`mode-button ${storageMode === mode ? 'active' : ''}`}
+                onClick={() => handleStorageModeSelect(mode)}
+              >
+                {label}
+                <span className="mode-description">{description}</span>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -157,6 +158,8 @@ const TimeInputDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) =>
       </div>
     </Modal>
   );
-};
+});
+
+TimeInputDialog.displayName = 'TimeInputDialog';
 
 export default TimeInputDialog;

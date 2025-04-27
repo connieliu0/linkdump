@@ -1,7 +1,7 @@
 // src/components/PasteArea.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import PanZoom, { Element } from '@sasza/react-panzoom';
-import { getStorageAdapter } from '../utils/storage/StorageFactory';
+import { getStorageAdapter, getExistingBoardAdapter } from '../utils/storage/StorageFactory';
 import LinkCard from './LinkCard';
 import ImageCard from './ImageCard';
 import Toolbar from './Toolbar';
@@ -17,7 +17,7 @@ import shadowSvg2 from '../assets/timepasses/shadow2.svg';
 import { FirebaseAdapter } from '../utils/storage/FirebaseAdapter';
 import CollaborativeLink from './CollaborativeLink';
 
-const MAX_WIDTH = 800; // Maximum width for images
+const MAX_WIDTH = 300; // Maximum width for images
 const COMPRESSION_QUALITY = 0.7; // 0 = max compression, 1 = max quality
 
 const extractSourceFromHtml = (html) => {
@@ -72,16 +72,16 @@ const PasteArea = ({ onExport }) => {
   const [storageMode, setStorageMode] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const urlBoardId = urlParams.get('board');
-    // If we have a board ID in the URL, we're in collaborative mode
-    return urlBoardId ? 'collaborative' : (localStorage.getItem('storageMode') || 'local');
+    // Only use collaborative mode if board ID is in URL
+    return urlBoardId ? 'collaborative' : 'local';
   });
 
   const [boardId, setBoardId] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const urlBoardId = urlParams.get('board');
-    return urlBoardId || localStorage.getItem('boardId') || null;
+    return urlParams.get('board') || null;
   });
 
+  const [isTimeSettingsLoading, setIsTimeSettingsLoading] = useState(true);
   const [storage, setStorage] = useState(null);
   const [items, setItems] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -89,93 +89,198 @@ const PasteArea = ({ onExport }) => {
   const [isSelecting, setIsSelecting] = useState(false);
   const panzoomRef = useRef();
   const activeItemRef = useRef(null);
-  const [initialPosition, setInitialPosition] = useState({ x: 100, y: 100 });
   const [timeSettings, setTimeSettings] = useState(null);
-  const [isExpired, setIsExpired] = useState(false);
+  const [isExpired, setIsExpired] = useState(() => {
+    // Check if there's an expired state in localStorage
+    const savedExpiredState = localStorage.getItem('expiredState');
+    if (savedExpiredState) {
+      const { isExpired, items, timeSettings } = JSON.parse(savedExpiredState);
+      if (isExpired) {
+        // We'll set these in useEffect to avoid state updates during render
+        return true;
+      }
+    }
+    return false;
+  });
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [isInputActive, setIsInputActive] = useState(false);
   const [isInactive, setIsInactive] = useState(false);
   let inactivityTimer = useRef(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showTimeInput, setShowTimeInput] = useState(true);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Load expired state from localStorage
+  useEffect(() => {
+    const savedExpiredState = localStorage.getItem('expiredState');
+    if (savedExpiredState) {
+      const { isExpired: wasExpired, items: savedItems, timeSettings: savedSettings } = JSON.parse(savedExpiredState);
+      if (wasExpired) {
+        setItems(savedItems || []);
+        setTimeSettings(savedSettings);
+        setIsExpired(true);
+        setShowTimeInput(false);
+      }
+    }
+  }, []);
+
+  // Save expired state to localStorage
+  useEffect(() => {
+    if (isExpired) {
+      const stateToSave = {
+        isExpired: true,
+        items,
+        timeSettings
+      };
+      localStorage.setItem('expiredState', JSON.stringify(stateToSave));
+    }
+  }, [isExpired, items, timeSettings]);
 
   // Initialize storage based on mode and boardId
   useEffect(() => {
-    console.log('Storage mode changed to:', storageMode);
-    const { adapter, boardId: newBoardId } = getStorageAdapter(storageMode, boardId);
-    console.log('Storage adapter:', adapter.constructor.name);
-    console.log('Got new boardId:', newBoardId);
+    const initializeStorage = async () => {
+      // Initialize storage adapter first
+      const { adapter } = getStorageAdapter(storageMode, boardId);
+      console.log('[Storage Init] Created new adapter:', adapter.constructor.name);
+      setStorage(adapter);
+
+      // Try to load existing time settings
+      try {
+        const existingSettings = await adapter.getTimeSettings();
+        if (existingSettings) {
+          console.log('[Storage Init] Found existing settings');
+          // Check if the settings are still valid
+          const now = Date.now();
+          const expiryTime = existingSettings.startTime + (existingSettings.duration * 60 * 1000);
+          
+          if (now < expiryTime) {
+            // Settings are still valid
+            setTimeSettings(existingSettings);
+            setShowTimeInput(false);
+            setIsTimeSettingsLoading(false);
+            return;
+          } else {
+            // Settings have expired, clear them
+            await adapter.clearBoard();
+          }
+        }
+      } catch (error) {
+        console.error('[Storage Init] Error loading settings:', error);
+      }
+
+      // If we get here, either no settings exist or they've expired
+      if (storageMode === 'collaborative' && boardId) {
+        const { adapter: collabAdapter } = getExistingBoardAdapter(boardId);
+        if (collabAdapter) {
+          setStorage(collabAdapter);
+          const settings = await collabAdapter.getTimeSettings();
+          if (settings) {
+            setTimeSettings(settings);
+            setShowTimeInput(false);
+          }
+        }
+      } else {
+        // For local mode or no valid settings
+        setTimeSettings(null);
+        setShowTimeInput(true);
+      }
+      
+      setIsTimeSettingsLoading(false);
+    };
+
+    setIsTimeSettingsLoading(true);
+    initializeStorage();
+  }, [storageMode, boardId]);
+
+  const handleStorageModeChange = (mode, newBoardId = null) => {
+    // Only update if the mode is actually different
+    if (mode === storageMode) return;
+
+    console.log('[Mode Change] Current:', storageMode, '-> New:', mode);
+    console.log('[Mode Change] State:', { 
+      timeSettings: !!timeSettings,
+      showTimeInput,
+      isTimeSettingsLoading
+    });
     
-    // Update URL if we're in collaborative mode
-    if (storageMode === 'collaborative' && newBoardId) {
+    // For local mode, we don't need to clear boardId during time input
+    if (mode === 'local' && timeSettings) {
+      console.log('[Mode Change] Clearing boardId for local mode');
+      setBoardId(null);
+    }
+    setStorageMode(mode);
+    localStorage.setItem('storageMode', mode);
+  };
+
+  const handleTimeSet = async (settings) => {
+    console.log('[Time Set] Initializing with mode:', storageMode);
+    
+    let currentStorage = storage;
+    
+    // Initialize storage adapter based on mode
+    if (storageMode === 'collaborative') {
+      const { adapter, boardId: newBoardId } = getStorageAdapter('collaborative');
+      if (!adapter) {
+        console.error('[Time Set] Failed to initialize collaborative adapter');
+        return;
+      }
+      
+      setBoardId(newBoardId);
+      setStorage(adapter);
+      currentStorage = adapter;
+      
+      // Update URL with new board ID
       const url = new URL(window.location.href);
       url.searchParams.set('board', newBoardId);
       window.history.replaceState({}, '', url);
     } else {
-      // Remove board parameter from URL if we're in local mode
-      const url = new URL(window.location.href);
-      url.searchParams.delete('board');
-      window.history.replaceState({}, '', url);
-    }
-
-    setStorage(adapter);
-    setBoardId(newBoardId);
-
-    // Save to localStorage
-    localStorage.setItem('storageMode', storageMode);
-    if (newBoardId) {
-      localStorage.setItem('boardId', newBoardId);
-    } else {
-      localStorage.removeItem('boardId');
-    }
-
-    // If we're in collaborative mode, initialize the board
-    if (storageMode === 'collaborative' && adapter instanceof FirebaseAdapter) {
-      console.log('Initializing collaborative board');
-      const unsubscribe = adapter.setupRealtimeListener((items) => {
-        console.log('Realtime update received:', items);
-        setItems(items);
-      });
-      return () => unsubscribe();
-    }
-  }, [storageMode, boardId]);
-
-  const handleStorageModeChange = (mode) => {
-    console.log('Handling storage mode change:', mode);
-    setStorageMode(mode);
-    // Clear boardId when switching modes
-    if (mode === 'local') {
-      setBoardId(null);
-      localStorage.removeItem('boardId');
-    }
-  };
-
-  const handleTimeSet = async (settings) => {
-    console.log('Handling time set:', settings);
-    if (storage) {
-      try {
-        // Ensure we have all the required fields
-        const timeSettings = {
-          description: settings.description,
-          startTime: settings.startTime,
-          duration: settings.duration, // Duration in minutes
-          halfwayPoint: settings.halfwayPoint
-        };
-        
-        await storage.saveTimeSettings(timeSettings);
-        setTimeSettings(timeSettings);
-        resetInactivityTimer();
-      } catch (error) {
-        console.error('Error saving time settings:', error);
+      // Initialize local storage adapter
+      const { adapter } = getStorageAdapter('local');
+      if (!adapter) {
+        console.error('[Time Set] Failed to initialize local adapter');
+        return;
       }
-    } else {
-      console.error('No storage adapter available');
+      
+      setStorage(adapter);
+      currentStorage = adapter;
+      // Clear boardId for local mode
+      setBoardId(null);
+      
+      // Remove board parameter from URL if it exists
+      if (window.location.search.includes('board=')) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('board');
+        window.history.replaceState({}, '', url);
+      }
+    }
+
+    // Verify we have a valid storage adapter before proceeding
+    if (!currentStorage) {
+      console.error('[Time Set] No storage adapter available');
+      return;
+    }
+
+    try {
+      console.log('[Time Set] Saving settings');
+      // Ensure we have all the required fields
+      const timeSettings = {
+        description: settings.description,
+        startTime: settings.startTime,
+        duration: settings.duration,
+        halfwayPoint: settings.halfwayPoint,
+        endTime: settings.endTime
+      };
+      
+      await currentStorage.saveTimeSettings(timeSettings);
+      setTimeSettings(timeSettings);
+      resetInactivityTimer();
+    } catch (error) {
+      console.error('[Time Set] Error saving settings:', error);
     }
   };
 
   const loadTimeSettings = async () => {
     console.log('Loading time settings with storage:', storage);
+    setIsTimeSettingsLoading(true);
     if (storage) {
       try {
         const settings = await storage.getTimeSettings();
@@ -193,11 +298,15 @@ const PasteArea = ({ onExport }) => {
         console.error('Error loading time settings:', error);
       }
     }
+    setIsTimeSettingsLoading(false);
   };
 
   // Load time settings when storage changes
   useEffect(() => {
-    if (!storage) return;
+    if (!storage) {
+      setIsTimeSettingsLoading(false);
+      return;
+    }
     console.log('Loading time settings with storage:', storage.constructor.name);
     loadTimeSettings();
   }, [storage]);
@@ -272,19 +381,37 @@ const PasteArea = ({ onExport }) => {
 
   // Load items when storage is ready
   useEffect(() => {
-    const fetchItems = async () => {
-      if (!storage) return;
-      console.log('Fetching items with storage:', storage.constructor.name);
-      try {
-        const savedItems = await storage.loadItems();
-        console.log('Loaded items with positions:', savedItems);
-        setItems(savedItems || []);
-      } catch (error) {
-        console.error('Error loading items:', error);
-      }
-    };
-    fetchItems();
-  }, [storage]);
+    if (!storage) return;
+    console.log('Setting up items loading with storage:', storage.constructor.name);
+
+    // For collaborative mode, use realtime listener
+    if (storageMode === 'collaborative' && storage instanceof FirebaseAdapter) {
+      console.log('Setting up realtime listener for collaborative mode');
+      const unsubscribe = storage.setupRealtimeListener((updatedItems) => {
+        console.log('Realtime update received:', updatedItems);
+        setItems(updatedItems || []);
+      });
+      
+      // Cleanup listener on unmount or storage change
+      return () => {
+        console.log('Cleaning up realtime listener');
+        unsubscribe();
+      };
+    } 
+    // For local mode, just fetch once
+    else {
+      const fetchItems = async () => {
+        try {
+          const savedItems = await storage.loadItems();
+          console.log('Loaded items for local mode:', savedItems);
+          setItems(savedItems || []);
+        } catch (error) {
+          console.error('Error loading items:', error);
+        }
+      };
+      fetchItems();
+    }
+  }, [storage, storageMode]);
 
   // Handle paste events
   const handlePaste = useCallback(async (e) => {
@@ -312,10 +439,23 @@ const PasteArea = ({ onExport }) => {
         img.onload = async () => {
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          
+          // Calculate new dimensions
+          let newWidth = img.width;
+          let newHeight = img.height;
+          
+          if (newWidth > MAX_WIDTH) {
+            const ratio = MAX_WIDTH / newWidth;
+            newWidth = MAX_WIDTH;
+            newHeight = img.height * ratio;
+          }
+          
+          canvas.width = newWidth;
+          canvas.height = newHeight;
+          
+          // Draw resized image
+          ctx.drawImage(img, 0, 0, newWidth, newHeight);
+          const dataUrl = canvas.toDataURL('image/jpeg', COMPRESSION_QUALITY);
           
           const newItem = {
             type: 'image',
@@ -359,11 +499,27 @@ const PasteArea = ({ onExport }) => {
 
   // Handle board restart
   const handleRestart = async () => {
-    await storage.clearBoard();
+    // Clear expired state from localStorage
+    localStorage.removeItem('expiredState');
+    
+    // Clear URL parameters
+    const url = new URL(window.location.href);
+    url.searchParams.delete('board');
+    window.history.replaceState({}, '', url.pathname);
+    
+    // Reset storage mode to local for new session
+    setStorageMode('local');
+    setBoardId(null);
+    
+    if (storage) {
+      await storage.clearBoard();
+    }
     setTimeSettings(null);
     setIsExpired(false);
     setItems([]);
-    setShowTimeInput(true); // Show time input dialog for new session
+
+    // Show time input dialog for new session
+    setShowTimeInput(true);
   };
 
   // Track mouse position relative to panzoom
@@ -483,10 +639,22 @@ const PasteArea = ({ onExport }) => {
   // Check for first visit
   useEffect(() => {
     const hasVisited = localStorage.getItem('hasVisitedBefore');
+    console.log('Debug visibility:', {
+      showOnboarding,
+      showTimeInput,
+      timeSettings,
+      isTimeSettingsLoading,
+      hasVisited
+    });
     if (!hasVisited) {
       setShowOnboarding(true);
       setShowTimeInput(false);
     }
+  }, [showOnboarding, showTimeInput, timeSettings, isTimeSettingsLoading]);
+
+  // Initialize showTimeInput to true
+  useEffect(() => {
+    setShowTimeInput(true);
   }, []);
 
   useEffect(() => {
@@ -505,13 +673,13 @@ const PasteArea = ({ onExport }) => {
           isOpen={showOnboarding}
           onClose={() => {
             setShowOnboarding(false);
-            setShowTimeInput(true);
+            setShowTimeInput(!isExpired); // Only show time input if not expired
             localStorage.setItem('hasVisitedBefore', 'true');
           }}
         />
       )}
 
-      {!showOnboarding && showTimeInput && !timeSettings && (
+      {!showOnboarding && showTimeInput && !timeSettings && !isTimeSettingsLoading && !isExpired && (
         <TimeInputDialog 
           isOpen={true}
           onClose={() => setShowTimeInput(false)}
@@ -524,13 +692,13 @@ const PasteArea = ({ onExport }) => {
         />
       )}
 
-      {timeSettings && (
+      {(timeSettings || isExpired) && (
         <>
           <InactivityOverlay 
             isVisible={isInactive} 
             onDismiss={handleDismissOverlay}
           />
-          {storageMode === 'collaborative' && boardId && (
+          {storageMode === 'collaborative' && boardId && !isExpired && (
             <CollaborativeLink boardId={boardId} />
           )}
           <div 
@@ -655,6 +823,15 @@ const PasteArea = ({ onExport }) => {
             </PanZoom>
           </div>
         </>
+      )}
+
+      {isTimeSettingsLoading && !isExpired && (
+        <div className="loading-overlay">
+          <div className="loading-content">
+            <div className="loading-spinner"></div>
+            <p>Connecting to board... please wait</p>
+          </div>
+        </div>
       )}
 
       {isExpired && (

@@ -22,6 +22,15 @@ import { StorageAdapter } from './StorageAdapter';
 export class FirebaseAdapter extends StorageAdapter {
   constructor(boardId = null) {
     super();
+    this.connected = false;
+    
+    // Monitor connection state
+    const connectedRef = ref(db, '.info/connected');
+    onValue(connectedRef, (snap) => {
+      this.connected = snap.val();
+      console.log('Firebase connection state:', this.connected);
+    });
+    
     if (boardId) {
       this.setBoardId(boardId);
     }
@@ -56,6 +65,9 @@ export class FirebaseAdapter extends StorageAdapter {
     console.log('Saving item to Firebase:', item);
     try {
       if (!this.boardId) throw new Error("No board ID set");
+      if (!this.connected) {
+        console.warn('Firebase not connected when trying to save item');
+      }
       
       // Generate a key if none provided
       const itemId = item.id || push(ref(db, `boards/${this.boardId}/items`)).key;
@@ -70,6 +82,11 @@ export class FirebaseAdapter extends StorageAdapter {
       return itemId;
     } catch (error) {
       console.error('Error saving item:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
       throw error;
     }
   }
@@ -134,7 +151,8 @@ export class FirebaseAdapter extends StorageAdapter {
         description: settings.description,
         startTime: Number(settings.startTime),
         duration: Number(settings.duration), // Duration in minutes
-        halfwayPoint: Number(settings.halfwayPoint)
+        halfwayPoint: Number(settings.halfwayPoint),
+        endTime: Number(settings.startTime) + (Number(settings.duration) * 60 * 1000) // Calculate end time in milliseconds
       };
       
       // Validate that all numeric values are valid
@@ -177,14 +195,23 @@ export class FirebaseAdapter extends StorageAdapter {
 
   // Set up real-time updates
   setupRealtimeListener(callback) {
-    console.log('Setting up real-time items listener');
-    if (!this.boardId) return () => {};
+    if (!this.boardId) {
+      console.error('Cannot setup listener: No boardId set');
+      return () => {};
+    }
     
+    console.log('Setting up realtime listener for board:', this.boardId);
     const itemsRef = ref(db, `boards/${this.boardId}/items`);
     
     try {
       return onValue(itemsRef, (snapshot) => {
         try {
+          console.log('Realtime update received:', {
+            exists: snapshot.exists(),
+            connected: this.connected,
+            boardId: this.boardId
+          });
+          
           if (snapshot.exists()) {
             const items = [];
             const data = snapshot.val();
@@ -193,26 +220,40 @@ export class FirebaseAdapter extends StorageAdapter {
               items.push({...item, id});
             }
             
-            console.log('Real-time update - Loaded items:', items);
+            console.log('Processed items:', items);
             callback(items);
           } else {
+            console.log('No items exist in snapshot');
             callback([]);
           }
         } catch (error) {
           console.error('Error processing items data:', error);
+          console.error('Error details:', {
+            code: error.code,
+            message: error.message,
+            stack: error.stack
+          });
           console.error('Snapshot value:', snapshot.val());
           callback([]);
         }
       }, (error) => {
-        console.error('Firebase onValue error:', error);
+        console.error('Firebase onValue error:', {
+          code: error.code,
+          message: error.message,
+          stack: error.stack
+        });
         if (error.code === 'PERMISSION_DENIED') {
           console.error('Firebase permission denied. Please check database rules.');
         }
         callback([]);
       });
     } catch (error) {
-      console.error('Error setting up Firebase listener:', error);
-      return () => {}; // Return a no-op cleanup function
+      console.error('Error setting up Firebase listener:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
+      return () => {};
     }
   }
 }
