@@ -98,8 +98,14 @@ const PasteArea = ({ onExport }) => {
   const [isInactive, setIsInactive] = useState(false);
   let inactivityTimer = useRef(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showTimeInput, setShowTimeInput] = useState(true);
+  const [showTimeInput, setShowTimeInput] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlBoardId = urlParams.get('board');
+    // Don't show time input initially if we're in collaborative mode
+    return !urlBoardId;
+  });
   const [isTransitioning, setIsTransitioning] = useState(false);
+
 // timeout
 // In your PasteArea.jsx component:
 useEffect(() => {
@@ -115,9 +121,15 @@ useEffect(() => {
           setTimeSettings(settings);
         } else {
           // Only show the time input dialog after a short delay
-          // if no settings were found
+          // if no settings were found and we're not in collaborative mode
           timeoutId = setTimeout(() => {
             if (isMounted && !timeSettings) {
+              const urlParams = new URLSearchParams(window.location.search);
+              const urlBoardId = urlParams.get('board');
+              // Only show time input if we're not in collaborative mode
+              if (!urlBoardId) {
+                setShowTimeInput(true);
+              }
               console.log('No time settings found after timeout');
             }
           }, 2000); // 2 second delay before showing time input
