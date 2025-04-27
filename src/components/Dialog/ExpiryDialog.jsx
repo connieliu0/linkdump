@@ -6,6 +6,7 @@ const ExpiryDialog = ({ onRestart, storage, isOpen }) => {
   const handleExport = useExport(storage);
 
   const handleRestartClick = (e) => {
+    console.log('[ExpiryDialog] Restart clicked, calling onRestart...');
     e.stopPropagation();
     onRestart();
   };

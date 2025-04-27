@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Just+Me+Again+Down+Here&display=swap');
 
 @font-face {
-  font-family: 'Decompositionphase1';
+  font-family: 'font-decomposition';
   src: url('/Decompositionphase1.woff2') format('woff2'),
        url('/Decompositionphase1.woff') format('woff'),
        url('/Decompositionphase1.ttf') format('truetype');
@@ -18,6 +18,7 @@
   --secondary-color: #645a5a; 
   --tertiary-color: #8f8989;
   --border-style:1.5px dashed var(--tertiary-color);
+  --error-color: #751010;
 }
 /* random leaves */
 /* Add this to your components.css file */
@@ -40,168 +41,11 @@
   50% { transform: translate(20px, 10px) rotate(2deg); opacity: 0.12; }
   100% { transform: translate(-15px, 15px) rotate(-3deg); opacity: 0.1; }
 }
-/* Update all Decompositionphase1 references to use the variable */
-.dialog-content h2,
-.dialog-content p,
-.dialog-content label,
-.dialog-content button,
-button,
-.text-content .editable.pasted-text,
-.text-content .content-input.pasted-text,
-.text-content:not(.new-text) {
-  font-family: var(--font-decomposition);
-}
 
-
-/* Base styles */
 
 body {
   /* font-family: 'Arial Narrow', Arial, sans-serif; */
   transition: background-color 2s ease;
-}
-/* Dialog styles */
-.dialog-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9000;
-  pointer-events: auto !important;
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;
-  visibility: hidden;
-}
-
-.dialog-overlay.visible {
-  opacity: 1;
-  visibility: visible;
-}
-
-.dialog-overlay.with-overlay {
-  background: rgba(0, 0, 0, 0.25);
-}
-
-.dialog-content {
-  width: 400px;
-  padding: 32px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 24px;
-  background: radial-gradient(100.4% 82.23% at 32.99% 26.35%, rgba(255, 255, 255, 0.90) 0%, rgba(255, 255, 255, 0.27) 100%);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  border: none;
-  box-shadow: none;
-  pointer-events: auto !important;
-  position: relative;
-  z-index: 3001;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  margin: 16px;
-  max-width: calc(100vw - 32px);
-  box-sizing: border-box;
-}
-
-.dialog-overlay.visible .dialog-content {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.dialog-content .dialog-header {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-}
-
-.dialog-content .dialog-body {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* Reset margins for direct children of dialog-body */
-.dialog-content .dialog-body > * {
-  margin: 0;
-}
-
-
-/* Ensure consistent spacing in nested containers */
-.dialog-content .dialog-body .input-container {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* Style labels consistently */
-.dialog-content .dialog-body label {
-  color: var(--primary-color);
-  margin: 0;
-}
-
-/* Style paragraphs consistently */
-.dialog-content .dialog-body p {
-  color: var(--primary-color);
-  font-size: 1.1rem;
-  line-height: 1.5;
-  margin: 0;
-  text-align: left;
-}
-
-.dialog-content h2 {
-  color: var(--primary-color);
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 500;
-  width: 100%;
-  text-align: left;
-}
-
-.dialog-content .input-field {
-  width: 100%;
-  border-bottom: 2px dashed var(--tertiary-color);
-  background: rgba(255, 255, 255, 0.20);
-  font-family: var(--font-decomposition);
-  color: var(--primary-color);
-  margin-bottom: 4px;
-  padding: 12px 8px;
-}
-.dialog-content .input-field::placeholder {
-  color: var(--secondary-color);
-}
-.dialog-content .button-container {
-  display: flex;
-  gap: 16px;
-  width: 100%;
-  margin-top: auto;
-}
-
-.dialog-content .button-container button {
-  flex: 1;
-  padding: 12px;
-  border: 1px solid var(--primary-color);
-  background: rgba(255, 255, 255, 0.20);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border-radius: 0;
-  color: var(--primary-color);
-  font-family: 'Decompositionphase1';
-  font-size: 1rem;
-  font-style: normal;
-  font-weight: 500;
-  line-height: normal;
-}
-
-.dialog-content .button-container button:hover {
-  background: rgba(255, 255, 255, 0.30);
-  transform: translateY(-1px);
 }
 
 .onboarding-steps {
@@ -471,36 +315,9 @@ button {
   font-family: var(--font-decomposition);
 }
 
-.dialog-content button {
-  width: 100%;
-}
 
 button:hover {
   background: rgba(255, 255, 255, 0.30);
-}
-
-.button-container {
-  display: flex;
-  gap: 8px;
-  justify-content: space-between;
-  width: 100%;
-}
-
-/* Input styles */
-.input-field {
-  box-sizing: border-box;
-  width: 100%;
-  margin-top: 8px;
-  margin-bottom: 16px;
-  border: none;
-  border-radius: 4px;
-  background: linear-gradient(to top, #f5f5f5, white);
-  font-family: 'Decompositionphase1';
-}
-
-.input-field:focus {
-  outline: none;
-  background: linear-gradient(to top, rgba(211, 211, 211, 0.5), transparent);
 }
 
 /* Toolbar styles */
@@ -688,13 +505,24 @@ button:hover {
   pointer-events: none;
 }
 
-.explode {
-  opacity: 0;
-  transform: translate(
-    calc(cos(var(--angle)) * var(--distance)),
-    calc(sin(var(--angle)) * var(--distance))
-  );
+/* Add appear animation styles */
+.appear {
+  animation: appear-animation 0.5s ease forwards;
 }
+
+@keyframes appear-animation {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.95);
+    pointer-events: none;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+}
+
 
 /* Add separate animation class */
 .clear-animation {
@@ -838,11 +666,6 @@ button:hover {
   font-size: 1.1rem;
 }
 
-/* Remove the duplicate source URL container styles at the bottom */
-.image-container .source-url-container {
-  /* Remove this duplicate rule block */
-}
-
 /* Update the main source URL container styles */
 .source-url-container {
   width: 100%; /* This will make it match parent width */
@@ -907,6 +730,37 @@ main {
   z-index: 0;
 }
 
+/* Share section - between project and actions */
+.share-section {
+  right: calc(50% - 250px); /* Position 6px to the right of project-section */
+  text-align: center;
+  min-width: 120px;
+  transform: translateY(calc(100% - 60px));
+  transition: transform 0.3s ease;
+  rotate: 2deg;
+}
+
+
+.share-button {
+  padding: 8px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background: transparent;
+  color: var(--primary-color);
+  font-family: var(--font-decomposition);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  font-size: 1em;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.share-button:hover {
+  background: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+
 /* Add responsive styles for mobile */
 @media screen and (max-width: 480px) {
   .actions-section {
@@ -922,28 +776,7 @@ main {
     transform: translateY(0);
     z-index: 3; /* Higher than actions-section when hovering */
   }
-  .dialog-content {
-    width: 300px;
-    padding: 24px;
-    gap: 16px;
-  }
-
-  .dialog-content h2 {
-    font-size: 1.1rem;
-  }
-
-  .dialog-content .dialog-body p {
-    font-size: 1rem;
-  }
-
-  .dialog-content .button-container {
-    flex-direction: column;
-  }
-
-  .dialog-content .input-field {
-    padding: 8px 6px;
-  }
-
+  
   /* Add responsive styles for cards and images */
   .paste-item {
     max-width: 200px; /* Reduce max-width on mobile */
@@ -991,43 +824,9 @@ main {
   .actions-section {
     font-size: 0.85em;
   }
-}
-
-/* Share section - between project and actions */
-.share-section {
-  right: calc(50% - 250px); /* Position 6px to the right of project-section */
-  text-align: center;
-  min-width: 120px;
-  transform: translateY(calc(100% - 60px));
-  transition: transform 0.3s ease;
-  rotate: 2deg;
-}
-
-
-.share-button {
-  padding: 8px 16px;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  background: transparent;
-  color: var(--primary-color);
-  font-family: var(--font-decomposition);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  font-size: 1em;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.share-button:hover {
-  background: rgba(255, 255, 255, 0.5);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* Add mobile responsiveness for share section */
-@media screen and (max-width: 480px) {
   .share-section {
     right: 240px;
     min-width: 100px;
     font-size: 0.85em;
   }
-} 
+}

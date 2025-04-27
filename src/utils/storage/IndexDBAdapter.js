@@ -93,22 +93,45 @@ export class IndexedDBAdapter extends StorageAdapter {
   async getTimeSettings() {
     try {
       await this.ensureDB();
-      return await this.db.settings.get(1);
+      const settings = await this.db.settings.get(1);
+      return settings || null; // Always return null if not found
     } catch (error) {
       console.error('Error getting time settings from IndexDB:', error);
       return null;
     }
   }
 
+  async clearItems() {
+    try {
+      await this.ensureDB();
+      
+      // Only clear items
+      await this.db.items.clear();
+      
+      console.log('[IndexDBAdapter] Items cleared successfully');
+      return true;
+    } catch (error) {
+      console.error('[IndexDBAdapter] Error clearing items:', error);
+      return false;
+    }
+  }
+
   async clearBoard() {
     try {
       await this.ensureDB();
-      await this.db.items.clear();
-      await this.db.settings.clear();
+      console.log('[IndexDBAdapter] Starting board clear...');
+      
+      // Clear both items and settings
+      await Promise.all([
+        this.db.items.clear(),
+        this.db.settings.clear()
+      ]);
+      
+      console.log('[IndexDBAdapter] Board cleared successfully');
       return true;
     } catch (error) {
-      console.error('Error clearing board in IndexDB:', error);
-      throw error;
+      console.error('[IndexDBAdapter] Error clearing board:', error);
+      return false;
     }
   }
 }

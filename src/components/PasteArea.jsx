@@ -52,14 +52,26 @@ const PasteArea = ({ onExport }) => {
   const [storageMode, setStorageMode] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const urlBoardId = urlParams.get('board');
-    // If we have a board ID in the URL, we're in collaborative mode
-    return urlBoardId ? 'collaborative' : (localStorage.getItem('storageMode') || 'local');
+    // If board ID is in URL, use collaborative mode
+    if (urlBoardId) {
+      localStorage.setItem('storageMode', 'collaborative');
+      return 'collaborative';
+    }
+    // Otherwise use stored preference or default to local
+    return localStorage.getItem('storageMode') || 'local';
   });
 
   const [boardId, setBoardId] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const urlBoardId = urlParams.get('board');
-    return urlBoardId || localStorage.getItem('boardId') || null;
+    if (urlBoardId) {
+      localStorage.setItem('boardId', urlBoardId);
+      return urlBoardId;
+    }
+    // Only use localStorage boardId if we're in collaborative mode
+    const storedMode = localStorage.getItem('storageMode');
+    const storedBoardId = localStorage.getItem('boardId');
+    return (storedMode === 'collaborative' && storedBoardId) ? storedBoardId : null;
   });
 
   const [storage, setStorage] = useState(null);
@@ -84,6 +96,9 @@ const PasteArea = ({ onExport }) => {
     return !urlBoardId;
   });
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Add a ref to track if we're clearing
+  const isClearingRef = useRef(false);
 
   // Initialize storage and load time settings
   useEffect(() => {
@@ -132,39 +147,33 @@ const PasteArea = ({ onExport }) => {
 
   // Initialize storage based on mode and boardId
   useEffect(() => {
-    console.log('Storage mode changed to:', storageMode);
     const { adapter, boardId: newBoardId } = getStorageAdapter(storageMode, boardId);
-    console.log('Storage adapter:', adapter.constructor.name);
-    console.log('Got new boardId:', newBoardId);
     
-    // Update URL if we're in collaborative mode
-    if (storageMode === 'collaborative' && newBoardId) {
+    setStorage(adapter);
+    setBoardId(newBoardId);
+
+    // Only update URL and localStorage after we have confirmed settings
+    if (storageMode === 'collaborative' && newBoardId && timeSettings) {
       const url = new URL(window.location.href);
       url.searchParams.set('board', newBoardId);
       window.history.replaceState({}, '', url);
-    } else {
+      localStorage.setItem('storageMode', storageMode);
+      localStorage.setItem('boardId', newBoardId);
+    } else if (storageMode === 'local') {
       // Remove board parameter from URL if we're in local mode
       const url = new URL(window.location.href);
       url.searchParams.delete('board');
       window.history.replaceState({}, '', url);
-    }
-
-    setStorage(adapter);
-    setBoardId(newBoardId);
-
-    // Save to localStorage
-    localStorage.setItem('storageMode', storageMode);
-    if (newBoardId) {
-      localStorage.setItem('boardId', newBoardId);
-    } else {
       localStorage.removeItem('boardId');
+      localStorage.setItem('storageMode', 'local');
     }
 
     // If we're in collaborative mode, initialize the board
     if (storageMode === 'collaborative' && adapter instanceof FirebaseAdapter) {
-      console.log('Initializing collaborative board');
       const unsubscribe = adapter.setupRealtimeListener((items) => {
-        console.log('Realtime update received:', items);
+        // Don't update items if we're in the middle of clearing
+        if (isClearingRef.current) return;
+
         // Filter out any items without IDs
         const validItems = items.filter(item => {
           if (!item?.id) {
@@ -177,7 +186,7 @@ const PasteArea = ({ onExport }) => {
       });
       return () => unsubscribe();
     }
-  }, [storageMode, boardId]);
+  }, [storageMode, boardId, timeSettings]);
 
   const handleStorageModeChange = (mode) => {
     console.log('Handling storage mode change:', mode);
@@ -213,11 +222,9 @@ const PasteArea = ({ onExport }) => {
   };
 
   const loadTimeSettings = async () => {
-    console.log('Loading time settings with storage:', storage);
     if (storage) {
       try {
         const settings = await storage.getTimeSettings();
-        console.log('Loaded time settings:', settings);
         if (settings) {
           setTimeSettings(settings);
           // Check if expired
@@ -233,12 +240,11 @@ const PasteArea = ({ onExport }) => {
     }
   };
 
-  // Load time settings when storage changes
-  useEffect(() => {
-    if (!storage) return;
-    console.log('Loading time settings with storage:', storage.constructor.name);
-    loadTimeSettings();
-  }, [storage]);
+  // // Load time settings when storage changes maybe I need to uncomment this in the future
+  // useEffect(() => {
+  //   if (!storage) return;
+  //   loadTimeSettings();
+  // }, [storage]);
 
   // Add aging effects
   useAgingEffect(timeSettings);
@@ -297,10 +303,8 @@ const PasteArea = ({ onExport }) => {
   useEffect(() => {
     const fetchItems = async () => {
       if (!storage) return;
-      console.log('Fetching items with storage:', storage.constructor.name);
       try {
         const savedItems = await storage.loadItems();
-        console.log('Loaded items with positions:', savedItems);
         setItems(savedItems || []);
       } catch (error) {
         console.error('Error loading items:', error);
@@ -358,11 +362,58 @@ const PasteArea = ({ onExport }) => {
 
   // Handle board restart
   const handleRestart = async () => {
-    await storage.clearBoard();
-    setTimeSettings(null);
-    setIsExpired(false);
-    setItems([]);
-    setShowTimeInput(true); // Show time input dialog for new session
+    console.log('[PasteArea] Starting board restart...');
+    
+    // Set clearing flag to prevent realtime updates
+    isClearingRef.current = true;
+    
+    try {
+      if (!storage) {
+        console.error('[PasteArea] No storage adapter available');
+        return;
+      }
+
+      console.log('[PasteArea] Clearing board in storage...');
+      const success = await storage.clearBoard();
+      
+      if (!success) {
+        console.error('[PasteArea] Failed to clear board in storage');
+        return;
+      }
+      
+      console.log('[PasteArea] Board cleared, resetting state...');
+      
+      // Reset URL and storage mode
+      const url = new URL(window.location.href);
+      url.searchParams.delete('board');
+      window.history.replaceState({}, '', url);
+      localStorage.removeItem('boardId');
+      localStorage.setItem('storageMode', 'local');
+      
+      // Reset storage mode and board ID
+      setStorageMode('local');
+      setBoardId(null);
+      
+      // Update all state in a single batch to avoid race conditions
+      const stateUpdates = () => {
+        setTimeSettings(null);
+        setIsExpired(false);
+        setItems([]);
+        setShowTimeInput(true);
+      };
+      
+      // Use requestAnimationFrame to ensure DOM is ready for updates
+      requestAnimationFrame(() => {
+        stateUpdates();
+        console.log('[PasteArea] State updates completed');
+      });
+      
+    } catch (error) {
+      console.error('[PasteArea] Error during restart:', error);
+    } finally {
+      // Reset clearing flag
+      isClearingRef.current = false;
+    }
   };
 
   // Track mouse position relative to panzoom
@@ -412,7 +463,11 @@ const PasteArea = ({ onExport }) => {
     setIsInputActive(active);
   };
 
-  const handleClearCanvas = () => {
+  const handleClearCanvas = async () => {
+    // Set clearing flag
+    isClearingRef.current = true;
+
+    // Start the animation first
     const elements = document.querySelectorAll('.paste-item');
     elements.forEach((el, index) => {
       setTimeout(() => {
@@ -424,9 +479,30 @@ const PasteArea = ({ onExport }) => {
       }, index * 100);
     });
 
-    setTimeout(() => {
+    // Wait for animation to complete before clearing storage and state
+    const animationDuration = elements.length * 100 + 500;
+    await new Promise(resolve => setTimeout(resolve, animationDuration));
+
+    try {
+      // Then clear the storage
+      if (storage) {
+        console.log('[PasteArea] Clearing items from storage...');
+        const success = await storage.clearItems();
+        if (!success) {
+          console.error('[PasteArea] Failed to clear items from storage');
+          return;
+        }
+      }
+
+      console.log('[PasteArea] Updating state after clear...');
+      // Only clear items, keep time settings
       setItems([]);
-    }, elements.length * 100 + 500);
+    } catch (error) {
+      console.error('[PasteArea] Error during clear:', error);
+    } finally {
+      // Reset clearing flag after everything is done
+      isClearingRef.current = false;
+    }
   };
 
   const resetInactivityTimer = useCallback(() => {
@@ -679,12 +755,14 @@ const PasteArea = ({ onExport }) => {
                       src={item.content} 
                       itemId={item.id}
                       sourceUrl={item.sourceUrl}
+                      storage={storage}
                     />
                   ) : item.type === 'link' ? (
                     <LinkCard 
                       url={item.content} 
                       itemId={item.id}
                       initialMetadata={item.metadata}
+                      storage={storage}
                     />
                   ) : item.type === 'pastedText' ? (
                     <TextCard
@@ -695,6 +773,7 @@ const PasteArea = ({ onExport }) => {
                       showSourceUrl={true}
                       onInputActiveChange={handleInputActiveChange}
                       type="pastedText"
+                      storage={storage}
                     />
                   ) : item.type === 'newText' ? (
                     <TextCard
@@ -704,6 +783,7 @@ const PasteArea = ({ onExport }) => {
                       showSourceUrl={false}
                       onInputActiveChange={handleInputActiveChange}
                       type="newText"
+                      storage={storage}
                     />
                   ) : null}
                 </Element>

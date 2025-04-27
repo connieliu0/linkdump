@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { clearBoard } from '../utils/storage';
+import { getStorageAdapter } from '../utils/storage/StorageFactory';
 import RoadmapDialog from './Dialog/RoadmapDialog';
 import AddContentDialog from './Dialog/AddContentDialog';
 import ImportArenaDialog from './Dialog/ImportArenaDialog';
@@ -104,7 +104,6 @@ const Toolbar = ({
 
   const handleClear = async () => {
     if (window.confirm('Are you sure you want to clear the canvas? This cannot be undone.')) {
-      await clearBoard();
       onClearCanvas();
     }
   };

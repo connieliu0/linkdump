@@ -44,8 +44,15 @@ const ImportArenaDialog = ({ isOpen, onClose, onImport }) => {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <h2>Import from Are.na</h2>
+    <Modal isOpen={isOpen}
+    title="Import from Are.na"
+    onClose={onClose}
+    primaryButton={{
+        label: "Import Channel",
+        onClick: handleImport,
+        disabled: isLoading
+      }}
+    >
       <div>
         <label>
           Are.na Channel URL or Slug
@@ -57,30 +64,15 @@ const ImportArenaDialog = ({ isOpen, onClose, onImport }) => {
             className="input-field"
           />
         </label>
-        <p className="help-text">
-          Paste the URL of an Are.na channel or enter the channel slug directly
-        </p>
+        <label className="duration-label">        Paste the channel URL or enter the slug directly
+        </label>
+
         
         {error && (
           <div className="error-message">
             {error}
           </div>
         )}
-      </div>
-      
-      <div className="button-container">
-        <button 
-          onClick={onClose}
-          disabled={isLoading}
-        >
-          Cancel
-        </button>
-        <button 
-          onClick={handleImport}
-          disabled={isLoading || !channelUrl.trim()}
-        >
-          {isLoading ? 'Importing...' : 'Import Channel'}
-        </button>
       </div>
     </Modal>
   );

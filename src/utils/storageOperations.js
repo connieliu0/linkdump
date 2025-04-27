@@ -1,11 +1,13 @@
 export const saveAndUpdateItems = async (storage, newItem, setItems) => {
   try {
     const id = await storage.saveItem(newItem);
-    setItems(prev => [...prev, { ...newItem, id }]);
-    return id;
+    if (id) {
+      setItems(prev => [...prev, { ...newItem, id }]);
+    } else {
+      console.warn('Saved item missing ID:', newItem);
+    }
   } catch (error) {
     console.error('Error saving item:', error);
-    throw error;
   }
 };
 

@@ -1,0 +1,235 @@
+/* Dialog styles */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9000;
+  pointer-events: auto !important;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  visibility: hidden;
+}
+
+.dialog-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.dialog-overlay.with-overlay {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.dialog-content {
+  width: 400px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  background: radial-gradient(100.4% 82.23% at 32.99% 26.35%, rgba(255, 255, 255, 0.90) 0%, rgba(255, 255, 255, 0.27) 100%);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: none;
+  box-shadow: none;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 3001;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 16px;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+}
+
+.dialog-overlay.visible .dialog-content {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dialog-content h2 {
+  color: var(--primary-color);
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 500;
+  width: 100%;
+  text-align: left;
+  font-family: 'Decompositionphase1';
+}
+
+.dialog-content .dialog-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Reset margins for direct children of dialog-body */
+.dialog-content .dialog-body > * {
+  margin: 0;
+}
+
+/* Style paragraphs consistently */
+.dialog-content .dialog-body p {
+  color: var(--primary-color);
+  font-size: 1.1rem;
+  line-height: 1.5;
+  margin: 0;
+  text-align: left;
+  font-family: 'Decompositionphase1';
+}
+
+/* Input styles */
+
+.dialog-content .input-field {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  border-bottom: var(--border-style);
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--primary-color);
+  margin:4px 0px;
+  padding: 12px 8px;
+  font-family: 'Decompositionphase1';
+  font-size: 1rem;
+}
+.dialog-content .input-field:focus {
+  outline: none;
+  background: linear-gradient(to top, rgba(211, 211, 211, 0.5), transparent);
+}
+
+.dialog-content .input-field::placeholder {
+  font-size: 0.8rem;
+  font-family: 'Decompositionphase1';
+}
+
+/* Button styles */
+.dialog-content .button-container {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  margin-top: auto;
+  justify-content: space-between;
+}
+
+.dialog-content .button-container button {
+  flex: 1;
+  padding: 12px;
+  border: 1.5px solid var(--primary-color);
+  background: rgba(255, 255, 255, 0.20);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 0;
+  color: var(--primary-color);
+  font-family: 'Decompositionphase1';
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+}
+
+.dialog-content .button-container button:hover {
+  background: rgba(255, 255, 255, 0.30);
+  transform: translateY(-1px);
+}
+
+/* Input container styles */
+.input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.duration-inputs {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Label styles */
+label {
+  color: var(--primary-color);
+  font-family: 'Decompositionphase1';
+}
+
+.duration-input {
+  flex: 1;
+}
+
+.duration-label {
+  font-size: 0.8em;
+  font-family: 'Decompositionphase1';
+}
+
+/* Storage mode selector styles */
+.storage-mode-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.mode-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px;
+  border: var(--border-style);
+  border-radius: 0px;
+  background: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: left;
+  font-family: 'Decompositionphase1';
+}
+
+.mode-button.active {
+  border: solid 1.5px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.mode-button:hover {
+  border: solid 1.5px;
+}
+
+.mode-description {
+  font-size: 0.8em;
+  color: #666;
+  margin-top: 4px;
+  font-family: 'Decompositionphase1';
+}
+
+.error-message {
+  color: var(--error-color);
+  font-family: 'Decompositionphase1';
+} 
+
+@media (max-width: 480px) {
+  .dialog-content {
+    width: 300px;
+    padding: 24px;
+    gap: 16px;
+  }
+
+  .dialog-content h2 {
+    font-size: 1.1rem;
+  }
+
+  .dialog-content .dialog-body p {
+    font-size: 1rem;
+  }
+
+  .dialog-content .button-container {
+    flex-direction: column;
+  }
+
+  .dialog-content .input-field {
+    padding: 8px 6px;
+  }
+}

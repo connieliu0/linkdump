@@ -1,6 +1,5 @@
 import React, { useState, useCallback, memo, useMemo } from 'react';
 import Modal from './Modal';
-import './TimeInputDialog.css';
 
 const TimeInputDialog = memo(({ isOpen, onClose, onTimeSet, onStorageModeSelect }) => {
   const [description, setDescription] = useState('');

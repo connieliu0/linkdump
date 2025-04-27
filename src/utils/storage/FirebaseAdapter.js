@@ -28,7 +28,6 @@ export class FirebaseAdapter extends StorageAdapter {
     const connectedRef = ref(db, '.info/connected');
     onValue(connectedRef, (snap) => {
       this.connected = snap.val();
-      console.log('Firebase connection state:', this.connected);
     });
     
     if (boardId) {
@@ -55,14 +54,12 @@ export class FirebaseAdapter extends StorageAdapter {
       console.error('Attempted to set null boardId');
       return null;
     }
-    console.log('Setting boardId to:', id);
     this.boardId = id;
     this.boardRef = ref(db, `boards/${id}`);
     return id;
   }
 
   async saveItem(item) {
-    console.log('Saving item to Firebase:', item);
     try {
       if (!this.boardId) throw new Error("No board ID set");
       if (!this.connected) {
@@ -92,7 +89,6 @@ export class FirebaseAdapter extends StorageAdapter {
   }
 
   async loadItems() {
-    console.log('Loading items from Firebase, boardId:', this.boardId);
     try {
       if (!this.boardId) {
         console.error('No boardId set when trying to load items');
@@ -109,7 +105,6 @@ export class FirebaseAdapter extends StorageAdapter {
           items.push({...item, id});
         }
         
-        console.log('Loaded items:', items);
         return items;
       }
       
@@ -181,14 +176,34 @@ export class FirebaseAdapter extends StorageAdapter {
     }
   }
 
-  async clearBoard() {
+  async clearItems() {
     try {
       if (!this.boardId) throw new Error("No board ID set");
+      
+      // Only clear items, not time settings
       await remove(ref(db, `boards/${this.boardId}/items`));
-      await remove(ref(db, `boards/${this.boardId}/timeSettings`));
+      
+      console.log('[FirebaseAdapter] Items cleared successfully');
       return true;
     } catch (error) {
-      console.error('Error clearing board:', error);
+      console.error('[FirebaseAdapter] Error clearing items:', error);
+      return false;
+    }
+  }
+
+  async clearBoard() {
+    try {
+      if (!this.boardId) {
+        console.error('No boardId set for FirebaseAdapter');
+        return false;
+      }
+
+      const boardRef = ref(db, `boards/${this.boardId}`);
+      await remove(boardRef); // This will remove the entire board node, including items and timeSettings
+      console.log('Board cleared successfully in Firebase');
+      return true;
+    } catch (error) {
+      console.error('Error clearing board in Firebase:', error);
       return false;
     }
   }
@@ -220,7 +235,6 @@ export class FirebaseAdapter extends StorageAdapter {
               items.push({...item, id});
             }
             
-            console.log('Processed items:', items);
             callback(items);
           } else {
             console.log('No items exist in snapshot');

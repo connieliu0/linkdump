@@ -126,7 +126,11 @@ const convertBlocksToCanvasItems = (blocks) => {
     const baseItem = {
       id: `arena-${blockId}`,
       position: { x: 0, y: 0 }, // Will be positioned by layout algorithm
-      originalData: block
+      originalData: block,
+      metadata: {
+        title: block.title || block.generated_title || 'Untitled',
+        description: block.description || 'Untitled'
+      }
     };
     
     // Validate that we have required content before creating the item
@@ -163,35 +167,23 @@ const convertBlocksToCanvasItems = (blocks) => {
         convertedItem = {
           ...baseItem,
           type: 'link',
-          content: linkUrl,
-          metadata: {
-            title: block.title || block.generated_title || 'Untitled Link',
-            description: block.description || ''
-          }
+          content: linkUrl
         };
         break;
       
       case 'Text':
       case 'Attachment':
       case 'Media':
-        const textContent = block.content || block.title || block.description;
-        if (!textContent) {
-          console.warn('Skipping text block without content:', block);
-          return null;
-        }
+        const textContent = block.content || block.title || block.description || 'No content available';
         convertedItem = {
           ...baseItem,
-          type: 'text',
+          type: 'newText',
           content: textContent
         };
         break;
       
       default:
-        const defaultContent = block.title || block.content || block.description;
-        if (!defaultContent) {
-          console.warn('Skipping block without content:', block);
-          return null;
-        }
+        const defaultContent = block.title || block.content || block.description || 'No content available';
         convertedItem = {
           ...baseItem,
           type: 'text',
@@ -204,6 +196,8 @@ const convertBlocksToCanvasItems = (blocks) => {
       console.warn('Skipping invalid converted item:', convertedItem);
       return null;
     }
+    
+    console.log('Converted item:', convertedItem);
     
     return convertedItem;
   }).filter(Boolean); // Remove any null items

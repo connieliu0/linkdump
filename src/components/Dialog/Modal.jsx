@@ -1,4 +1,5 @@
 import React, { useState, useEffect, memo, useCallback } from 'react';
+import './Modal.css';
 
 const Modal = memo(({ 
   isOpen, 
@@ -86,8 +87,11 @@ const Modal = memo(({
               </button>
             )}
             {primaryButton && (
-              <button onClick={primaryButton.onClick}>
-                {primaryButton.label}
+              <button 
+                onClick={primaryButton.onClick}
+                disabled={primaryButton.disabled}
+              >
+                {primaryButton.disabled ? 'Loading...' : primaryButton.label}
               </button>
             )}
           </div>

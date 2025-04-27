@@ -1,9 +1,8 @@
 // src/components/LinkCard.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { db } from '../utils/storage';
 import { fetchMetadata, getBaseDomain } from '../utils/urlMetadata';
 
-const LinkCard = ({ url, itemId, initialMetadata }) => {
+const LinkCard = ({ url, itemId, initialMetadata, storage }) => {
   const [metadata, setMetadata] = useState(initialMetadata || {});
   const domain = getBaseDomain(url);
   const tweetRef = useRef(null);
@@ -16,7 +15,9 @@ const LinkCard = ({ url, itemId, initialMetadata }) => {
       try {
         const data = await fetchMetadata(url);
         setMetadata({ ...data, isLoading: false });
-        await db.items.update(itemId, { metadata: data });
+        if (storage) {
+          await storage.updateItem(itemId, { metadata: data });
+        }
       } catch (error) {
         console.error('Error in LinkCard:', error);
         setMetadata({
@@ -27,7 +28,7 @@ const LinkCard = ({ url, itemId, initialMetadata }) => {
     };
 
     getMetadata();
-  }, [url, itemId, initialMetadata]);
+  }, [url, itemId, initialMetadata, storage]);
 
   useEffect(() => {
     // Check if it's a Twitter URL

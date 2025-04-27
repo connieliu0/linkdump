@@ -4,9 +4,6 @@ import { handleImageFile, extractImageFromClipboard } from '../../utils/imagePro
 import { detectImageSource } from '../../utils/linkProcessing';
 import { createImageCard, createTextCard, createLinkCard } from '../../utils/cardManagement';
 
-const MAX_WIDTH = 300; // Maximum width for images
-const COMPRESSION_QUALITY = 0.7; // 0 = max compression, 1 = max quality
-
 const AddContentDialog = ({ isOpen, onClose, onAddContent }) => {
   const [textValue, setTextValue] = useState('');
   const [imageDataUrl, setImageDataUrl] = useState(null);
@@ -103,20 +100,15 @@ const AddContentDialog = ({ isOpen, onClose, onAddContent }) => {
     resetState();
   };
 
-  return (
-    <Modal isOpen={isOpen} onClose={handleClose} className="add-content-dialog" title="Add Content">
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      
-      <textarea
-        value={textValue}
-        onChange={handleTextChange}
-        onPaste={handleTextPaste}
-        placeholder="Paste text, link, or image here..."
-        rows={4}
-        style={{ width: '100%', marginBottom: '1rem', resize: 'vertical' }}
-        disabled={!!imageDataUrl}
-      />
 
+  return (
+    <Modal isOpen={isOpen} onClose={handleClose} className="add-content-dialog" title="Add Content"
+    primaryButton={{
+      label: "Add",
+      onClick: handleAddClick
+    }}
+   >
+      {error && <p style={{ color: 'red' }}>{error}</p>}
       <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
         <input
           type="file"
@@ -134,6 +126,17 @@ const AddContentDialog = ({ isOpen, onClose, onAddContent }) => {
           </button>
         )}
       </div>
+      <textarea
+        value={textValue}
+        onChange={handleTextChange}
+        onPaste={handleTextPaste}
+        placeholder="Paste text, link, or image here..."
+        rows={4}
+        style={{ width: '100%', marginBottom: '1rem', resize: 'vertical' }}
+        disabled={!!imageDataUrl}
+      />
+
+     
 
       {imageDataUrl && (
         <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
@@ -145,10 +148,6 @@ const AddContentDialog = ({ isOpen, onClose, onAddContent }) => {
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-        <button onClick={handleClose}>Cancel</button>
-        <button onClick={handleAddClick}>Add</button>
-      </div>
     </Modal>
   );
 };
