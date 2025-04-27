@@ -15,11 +15,11 @@ import OnboardingDialog from './Dialog/OnboardingDialog';
 import shadowSvg from '../assets/timepasses/shadow.svg';
 import shadowSvg2 from '../assets/timepasses/shadow2.svg';
 import { FirebaseAdapter } from '../utils/storage/FirebaseAdapter';
-import CollaborativeLink from './CollaborativeLink';
-
-
-const MAX_WIDTH = 800; // Maximum width for images
-const COMPRESSION_QUALITY = 0.7; // 0 = max compression, 1 = max quality
+import { processImage, extractImageFromClipboard, handleImageFile } from '../utils/imageProcessing';
+import { detectImageSource } from '../utils/linkProcessing';
+import { createImageCard, createTextCard, createLinkCard } from '../utils/cardManagement';
+import { saveAndUpdateItems, updateAndRefreshItems, deleteAndRemoveItem } from '../utils/storageOperations';
+import { layoutArenaItems } from '../utils/layoutUtils';
 
 const extractSourceFromHtml = (html) => {
   if (!html) return null;
@@ -45,27 +45,6 @@ const extractSourceFromHtml = (html) => {
     console.error('Error extracting source from HTML:', error);
     return null;
   }
-};
-
-const detectImageSource = async (clipboardData, file) => {
-  // Try methods in order of reliability
-  const plainText = clipboardData.getData('text/plain');
-  const htmlText = clipboardData.getData('text/html');
-  
-  // Only use plainText if it's a valid URL
-  const isValidUrl = plainText && (plainText.startsWith('http://') || plainText.startsWith('https://'));
-  
-  const source = 
-    (isValidUrl ? plainText : null) || // Only use if valid URL
-    extractSourceFromHtml(htmlText) ||  // Try to get from HTML
-    ''; // Default to empty string instead of baseURI
-    
-  // Don't return localhost or app URLs
-  if (source.includes('localhost') || source.includes('127.0.0.1')) {
-    return '';
-  }
-  
-  return source;
 };
 
 const PasteArea = ({ onExport }) => {
@@ -106,48 +85,51 @@ const PasteArea = ({ onExport }) => {
   });
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-// timeout
-// In your PasteArea.jsx component:
-useEffect(() => {
-  let timeoutId;
-  let isMounted = true;
-  
-  const loadTimeSettings = async () => {
-    try {
-      const settings = await getTimeSettings();
-      
-      if (isMounted) {
-        if (settings) {
-          setTimeSettings(settings);
-        } else {
-          // Only show the time input dialog after a short delay
-          // if no settings were found and we're not in collaborative mode
-          timeoutId = setTimeout(() => {
-            if (isMounted && !timeSettings) {
-              const urlParams = new URLSearchParams(window.location.search);
-              const urlBoardId = urlParams.get('board');
-              // Only show time input if we're not in collaborative mode
-              if (!urlBoardId) {
-                setShowTimeInput(true);
+  // Initialize storage and load time settings
+  useEffect(() => {
+    let timeoutId;
+    let isMounted = true;
+    
+    const loadInitialTimeSettings = async () => {
+      try {
+        // Get the storage adapter
+        const { adapter } = getStorageAdapter(storageMode, boardId);
+        
+        if (adapter && isMounted) {
+          const settings = await adapter.getTimeSettings();
+          
+          if (settings) {
+            setTimeSettings(settings);
+          } else {
+            // Only show the time input dialog after a short delay
+            // if no settings were found and we're not in collaborative mode
+            timeoutId = setTimeout(() => {
+              if (isMounted && !timeSettings) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlBoardId = urlParams.get('board');
+                // Only show time input if we're not in collaborative mode
+                if (!urlBoardId) {
+                  setShowTimeInput(true);
+                }
+                console.log('No time settings found after timeout');
               }
-              console.log('No time settings found after timeout');
-            }
-          }, 2000); // 2 second delay before showing time input
+            }, 2000); // 2 second delay before showing time input
+          }
         }
+      } catch (error) {
+        console.error('Error loading time settings:', error);
       }
-    } catch (error) {
-      console.error('Error loading time settings:', error);
-    }
-  };
-  
-  loadTimeSettings();
-  
-  // Cleanup function
-  return () => {
-    isMounted = false;
-    if (timeoutId) clearTimeout(timeoutId);
-  };
-}, []);
+    };
+    
+    loadInitialTimeSettings();
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [storageMode, boardId]);
+
   // Initialize storage based on mode and boardId
   useEffect(() => {
     console.log('Storage mode changed to:', storageMode);
@@ -183,7 +165,15 @@ useEffect(() => {
       console.log('Initializing collaborative board');
       const unsubscribe = adapter.setupRealtimeListener((items) => {
         console.log('Realtime update received:', items);
-        setItems(items);
+        // Filter out any items without IDs
+        const validItems = items.filter(item => {
+          if (!item?.id) {
+            console.warn('Found item without ID:', item);
+            return false;
+          }
+          return true;
+        });
+        setItems(validItems);
       });
       return () => unsubscribe();
     }
@@ -276,23 +266,13 @@ useEffect(() => {
   }, [timeSettings]);
 
   // Define addEmptyCard function
-  const addEmptyCard = async (position = { x: 100, y: 100 }) => {
-    const cardPosition = position && typeof position === 'object' 
-      ? { x: position.x || 100, y: position.y || 100 }
-      : { x: 100, y: 100 };
-
-    const newItem = {
-      type: 'newText',
-      content: '',
-      position: cardPosition,
-      sourceUrl: '',
-      isEmpty: true,
-      timestamp: Date.now()
-    };
-
+  const addEmptyCard = async (cardData = { position: { x: 100, y: 100 } }) => {
     try {
-      const id = await storage.saveItem(newItem);
-      setItems(prev => [...prev, { ...newItem, id }]);
+      const newItem = cardData.type === 'image' 
+        ? createImageCard(cardData.content, cardData.position)
+        : createTextCard(cardData.content, cardData.position, cardData.isEmpty);
+
+      await saveAndUpdateItems(storage, newItem, setItems);
     } catch (error) {
       console.error('Error adding empty card:', error);
     }
@@ -300,22 +280,17 @@ useEffect(() => {
 
   // Define addCard function
   const addCard = async (cardData) => {
-    const id = await storage.saveItem(cardData);
-    setItems(prev => [...prev, { ...cardData, id }]);
+    await saveAndUpdateItems(storage, cardData, setItems);
   };
 
   // Define updateCard function
   const updateCard = async (id, updates) => {
-    await storage.updateItem(id, updates);
-    setItems(prev => prev.map(item => 
-      item.id === id ? { ...item, ...updates } : item
-    ));
+    await updateAndRefreshItems(storage, id, updates, setItems);
   };
 
   // Define deleteCard function
   const deleteCard = async (id) => {
-    await storage.deleteItem(id);
-    setItems(prev => prev.filter(item => item.id !== id));
+    await deleteAndRemoveItem(storage, id, setItems);
   };
 
   // Load items when storage is ready
@@ -348,57 +323,33 @@ useEffect(() => {
     const { x, y } = mousePosition;
     
     try {
-      const imageItem = [...clipboardData.items].find(
-        item => item.type.indexOf('image') !== -1
-      );
+      const imageItem = extractImageFromClipboard(clipboardData);
       
       if (imageItem) {
         const file = imageItem.getAsFile();
         const sourceUrl = await detectImageSource(clipboardData, file);
         
-        const img = new Image();
-        img.onload = async () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-          
-          const newItem = {
-            type: 'image',
-            content: dataUrl,
-            position: { x, y },
-            sourceUrl,
-            timestamp: Date.now()
-          };
-          
-          const id = await storage.saveItem(newItem);
-          setItems(prev => [...prev, { ...newItem, id }]);
-        };
-        
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
+        handleImageFile(
+          file,
+          async (resizedDataUrl) => {
+            const newItem = createImageCard(resizedDataUrl, { x, y }, sourceUrl);
+            await saveAndUpdateItems(storage, newItem, setItems);
+          },
+          (error) => {
+            console.error('Error processing image:', error);
+          }
+        );
         return;
       }
 
       const text = clipboardData.getData('text');
       if (text) {
         const isUrl = text.startsWith('http://') || text.startsWith('https://');
-        const newItem = {
-          type: isUrl ? 'link' : 'pastedText',
-          content: text,
-          position: { x, y },
-          sourceUrl: '',
-          timestamp: Date.now(),
-          isEmpty: false
-        };
+        const newItem = isUrl 
+          ? createLinkCard(text, { x, y })
+          : createTextCard(text, { x, y }, false);
         
-        const id = await storage.saveItem(newItem);
-        setItems(prev => [...prev, { ...newItem, id }]);
+        await saveAndUpdateItems(storage, newItem, setItems);
       }
     } catch (error) {
       console.error('Error saving item:', error);
@@ -546,6 +497,57 @@ useEffect(() => {
     };
   }, [handlePaste]);
 
+  const handleImportArenaItems = async (arenaItems) => {
+    try {
+      // Position items using layout algorithm
+      const positionedItems = layoutArenaItems(arenaItems);
+      
+      // Add items to storage and state
+      const newItems = [];
+      
+      for (const item of positionedItems) {
+        if (!item?.id) {
+          console.warn('Skipping item without ID:', item);
+          continue;
+        }
+        
+        const newItem = {
+          id: item.id, // Ensure ID is included
+          type: item.type,
+          content: item.content,
+          position: item.position,
+          metadata: item.metadata
+        };
+        
+        try {
+          await saveAndUpdateItems(storage, newItem, (savedItem) => {
+            if (savedItem?.id) {
+              newItems.push(savedItem);
+            } else {
+              console.warn('Saved item missing ID:', savedItem);
+            }
+          });
+        } catch (error) {
+          console.error('Error saving individual item:', error);
+          // Continue with other items even if one fails
+        }
+      }
+      
+      // Only update state if we have valid items
+      if (newItems.length > 0) {
+        setItems(prev => {
+          // Filter out any existing items with same IDs
+          const existingIds = new Set(newItems.map(item => item.id));
+          const filteredPrev = prev.filter(item => !existingIds.has(item.id));
+          return [...filteredPrev, ...newItems];
+        });
+      }
+      
+    } catch (error) {
+      console.error('Error importing Are.na items:', error);
+    }
+  };
+
   return (
     <>
       {showOnboarding && (
@@ -574,13 +576,15 @@ useEffect(() => {
 
       {timeSettings && (
         <>
+          <ExpiryDialog
+            isOpen={isExpired}
+            onRestart={handleRestart}
+            storage={storage}
+          />
           <InactivityOverlay 
             isVisible={isInactive} 
             onDismiss={handleDismissOverlay}
           />
-          {storageMode === 'collaborative' && boardId && (
-            <CollaborativeLink boardId={boardId} />
-          )}
           <div 
             className="paste-container" 
             onKeyDown={handleKeyDown} 
@@ -614,7 +618,10 @@ useEffect(() => {
               onAddEmptyCard={addEmptyCard}
               onClearCanvas={handleClearCanvas}
               isExpired={isExpired}
+              boardId={boardId}
+              onImportArenaItems={handleImportArenaItems}
             />
+            
             <PanZoom 
               selecting={isSelecting}
               zoomInitial={1}
@@ -639,6 +646,7 @@ useEffect(() => {
                 }
               }}
             >
+              
               {!isExpired && (
                 <div style={{ 
                   position: 'fixed', 
@@ -652,7 +660,7 @@ useEffect(() => {
                 </div>
               )}
               
-              {items.map(item => (
+              {items.filter(item => item?.id).map(item => (
                 <Element
                   key={item.id}
                   id={item.id}
@@ -704,15 +712,6 @@ useEffect(() => {
           </div>
         </>
       )}
-
-      {isExpired && (
-        <ExpiryDialog 
-          isOpen={isExpired}
-          panzoomRef={panzoomRef}
-          onRestart={handleRestart} 
-        />
-      )}
-      
     </>
   );
 };

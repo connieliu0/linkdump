@@ -31,9 +31,9 @@
   flex-direction: column;
   align-items: flex-start;
   padding: 12px;
-  border: 2px solid #E0E0E0;
-  border-radius: 8px;
-  background: white;
+  border: var(--border-style);
+  border-radius: 0px;
+  background: rgba(255, 255, 255, 0.2);
   cursor: pointer;
   transition: all 0.2s ease;
   width: 100%;
@@ -41,12 +41,13 @@
 }
 
 .mode-button.active {
-  border-color: #351C1C;
-  background: #FFF8F0;
+  border-color: var(--tertiary-color);
+  border: solid 1.5px ;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .mode-button:hover {
-  border-color: #351C1C;
+  border: solid 1.5px;
 }
 
 .mode-description {

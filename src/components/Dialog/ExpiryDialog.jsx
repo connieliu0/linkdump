@@ -2,8 +2,8 @@ import React from 'react';
 import Modal from './Modal';
 import { useExport } from '../../hooks/useExport';
 
-const ExpiryDialog = ({ onRestart, panzoomRef, isOpen }) => {
-  const handleExport = useExport(panzoomRef);
+const ExpiryDialog = ({ onRestart, storage, isOpen }) => {
+  const handleExport = useExport(storage);
 
   const handleRestartClick = (e) => {
     e.stopPropagation();

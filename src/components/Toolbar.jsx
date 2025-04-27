@@ -1,33 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { useExport } from '../hooks/useExport';
 import { clearBoard } from '../utils/storage';
 import RoadmapDialog from './Dialog/RoadmapDialog';
+import AddContentDialog from './Dialog/AddContentDialog';
+import ImportArenaDialog from './Dialog/ImportArenaDialog';
+import { formatTimeRemaining, getTimePhase, getTimeMessage } from '../utils/timeFormatting';
+import { useDialogState } from '../hooks/useDialogState';
 
 const TimeDisplay = ({ timeRemaining, timeSettings }) => {
   const getMessage = () => {
     if (!timeSettings) return '';
     const now = Date.now();
-    const isBeforeHalfway = now < timeSettings.halfwayPoint;
-    return isBeforeHalfway 
-      ? "the sun is shining, grow your files"
-      : "the sun is setting, process your files before they decay";
-  };
-
-  const formatTimeRemaining = (seconds) => {
-    if (!seconds) return 'Loading...';
-    
-    const days = Math.floor(seconds / (24 * 60 * 60));
-    const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
-    const minutes = Math.floor((seconds % (60 * 60)) / 60);
-    const remainingSeconds = seconds % 60;
-
-    const parts = [];
-    if (days > 0) parts.push(`${days}d`);
-    if (hours > 0) parts.push(`${hours}h`);
-    if (minutes > 0) parts.push(`${minutes}m`);
-    if (remainingSeconds > 0 || parts.length === 0) parts.push(`${remainingSeconds}s`);
-
-    return parts.join(' ');
+    const timePhase = getTimePhase(now, timeSettings.startTime, timeSettings.halfwayPoint);
+    return getTimeMessage(timePhase);
   };
 
   return (
@@ -38,18 +22,45 @@ const TimeDisplay = ({ timeRemaining, timeSettings }) => {
   );
 };
 
-const ProjectSection = ({ projectDescription }) => (
-  <div className="toolbar-section project-section">
-    <div className="project-name">{projectDescription || 'Project Name here'}</div>
-  </div>
-);
+const ProjectSection = ({ projectDescription }) => {
+  return (
+    <div className="toolbar-section project-section">
+      <div className="project-name">{projectDescription || 'Project Name here'}</div>
+    </div>
+  );
+};
 
-const ActionsMenu = ({ onClearCanvas, onAddEmptyCard, onShowRoadmap }) => {
+const ShareSection = ({ boardId }) => {
+  const [copied, setCopied] = useState(false);
+  
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}?board=${boardId}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  if (!boardId) return null;
+
+  return (
+    <div className="toolbar-section share-section">
+      <button className="share-button" onClick={handleShare}>
+        {copied ? '✓ Copied!' : 'Share Board'}
+      </button>
+    </div>
+  );
+};
+
+const ActionsMenu = ({ onClearCanvas, onShowRoadmap, onOpenAddContentModal, onOpenImportArena }) => {
   return (
     <div className="toolbar-section actions-section">
       <div className="actions-header">Actions</div>
       <div className="actions-menu">
-        <button onClick={onAddEmptyCard}>Add card</button>
+        <button onClick={onOpenAddContentModal}>Add Content</button>
         <a 
           href="https://docs.google.com/forms/d/e/1FAIpQLScCG7CZkm6JVju3iHANitU1XkBrLCMZC066pjQN_HCYSuBXmg/viewform?usp=header"
           target="_blank"
@@ -57,6 +68,7 @@ const ActionsMenu = ({ onClearCanvas, onAddEmptyCard, onShowRoadmap }) => {
         >
           <button>Give feedback</button>
         </a>
+        <button onClick={onOpenImportArena}>Import Arena</button>
         <button onClick={onShowRoadmap}>Roadmap</button>
         <button onClick={onClearCanvas}>Clear canvas</button>
       </div>
@@ -68,12 +80,16 @@ const Toolbar = ({
   timeRemaining,
   timeSettings,
   projectDescription,
-  onAddEmptyCard,
   onClearCanvas,
-  isExpired
+  isExpired,
+  boardId,
+  onAddEmptyCard,
+  onImportArenaItems
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
+  const [showAddContentModal, setShowAddContentModal] = useState(false);
+  const [showImportArena, setShowImportArena] = useState(false);
 
   useEffect(() => {
     // Small delay to ensure the initial render is complete
@@ -93,6 +109,21 @@ const Toolbar = ({
     }
   };
 
+  const handleAddContent = (content) => {
+    if (content.type === 'text') {
+      onAddEmptyCard({ content: content.content, type: 'newText', isEmpty: false });
+    } else if (content.type === 'image') {
+      onAddEmptyCard({ content: content.content, type: 'image' });
+    }
+  };
+
+  const handleImportArena = (items) => {
+    if (onImportArenaItems) {
+      onImportArenaItems(items);
+    }
+    setShowImportArena(false);
+  };
+
   return (
     <>
       <div className={`toolbar ${isVisible ? 'visible' : ''}`}>
@@ -101,16 +132,28 @@ const Toolbar = ({
           timeSettings={timeSettings} 
         />
         <ProjectSection projectDescription={projectDescription} />
+        <ShareSection boardId={boardId} />
         <ActionsMenu 
           onClearCanvas={handleClear}
-          onAddEmptyCard={onAddEmptyCard}
           onShowRoadmap={() => setShowRoadmap(true)}
+          onOpenAddContentModal={() => setShowAddContentModal(true)}
+          onOpenImportArena={() => setShowImportArena(true)}
         />
       </div>
       
       <RoadmapDialog 
         isOpen={showRoadmap} 
         onClose={() => setShowRoadmap(false)} 
+      />
+      <AddContentDialog 
+        isOpen={showAddContentModal} 
+        onClose={() => setShowAddContentModal(false)}
+        onAddContent={handleAddContent}
+      />
+      <ImportArenaDialog
+        isOpen={showImportArena}
+        onClose={() => setShowImportArena(false)}
+        onImport={handleImportArena}
       />
     </>
   );

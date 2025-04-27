@@ -17,7 +17,7 @@
   --primary-color: #351C1C;
   --secondary-color: #645a5a; 
   --tertiary-color: #8f8989;
-
+  --border-style:1.5px dashed var(--tertiary-color);
 }
 /* random leaves */
 /* Add this to your components.css file */
@@ -464,7 +464,7 @@ button {
   padding: 8px 16px;
   background: transparent;
   color: var(--primary-color);
-  border: 1px solid var(--primary-color);
+  border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 0;
   cursor: pointer;
   transition: all 0.5s ease;
@@ -553,7 +553,7 @@ button:hover {
 
 /* Project section - center */
 .project-section {
-  left: 50%;
+  left: 48%;
   text-align: center;
   min-width: 200px;
   max-width: 300px;
@@ -563,6 +563,13 @@ button:hover {
   align-items: flex-start; /* Align content to top */
   justify-content: center;
   padding-top: 20px; /* Add some padding at the top */
+}
+.project-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
 
 /* Actions section - right side */
@@ -902,6 +909,19 @@ main {
 
 /* Add responsive styles for mobile */
 @media screen and (max-width: 480px) {
+  .actions-section {
+    transform: translateY(calc(100% - 130px)); 
+    right:-20px;/* Show more of the buttons */
+    z-index: 2;
+  }
+  .time-section {
+    z-index: 1;
+    transition: transform 0.3s ease, z-index 0s;
+  }
+  .time-section:hover {
+    transform: translateY(0);
+    z-index: 3; /* Higher than actions-section when hovering */
+  }
   .dialog-content {
     width: 300px;
     padding: 24px;
@@ -922,5 +942,92 @@ main {
 
   .dialog-content .input-field {
     padding: 8px 6px;
+  }
+
+  /* Add responsive styles for cards and images */
+  .paste-item {
+    max-width: 200px; /* Reduce max-width on mobile */
+  }
+
+  .text-content {
+    max-width: 180px; /* Reduce text content width */
+    font-size: 0.9em; /* Slightly smaller font */
+  }
+
+  .text-content .editable.new-text,
+  .text-content .content-input.new-text {
+    font-size: 1.2em; /* Reduce handwriting font size */
+  }
+
+  .link-card {
+    max-width: 200px; /* Match paste-item max-width */
+  }
+
+  .link-title {
+    font-size: 14px; /* Smaller title */
+  }
+
+  .link-description {
+    font-size: 12px; /* Smaller description */
+  }
+
+  .source-url-container {
+    padding: 6px; /* Smaller padding */
+  }
+
+  .source-text,
+  .source-input {
+    font-size: 11px; /* Smaller source text */
+  }
+
+  /* Adjust toolbar sections for mobile */
+  .toolbar-section {
+    max-width: 200px;
+    padding: 15px;
+  }
+
+  .time-section,
+  .project-section,
+  .actions-section {
+    font-size: 0.85em;
+  }
+}
+
+/* Share section - between project and actions */
+.share-section {
+  right: calc(50% - 250px); /* Position 6px to the right of project-section */
+  text-align: center;
+  min-width: 120px;
+  transform: translateY(calc(100% - 60px));
+  transition: transform 0.3s ease;
+  rotate: 2deg;
+}
+
+
+.share-button {
+  padding: 8px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background: transparent;
+  color: var(--primary-color);
+  font-family: var(--font-decomposition);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  font-size: 1em;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.share-button:hover {
+  background: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Add mobile responsiveness for share section */
+@media screen and (max-width: 480px) {
+  .share-section {
+    right: 240px;
+    min-width: 100px;
+    font-size: 0.85em;
   }
 } 

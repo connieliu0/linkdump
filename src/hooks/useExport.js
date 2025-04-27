@@ -1,13 +1,12 @@
-import { db } from '../utils/storage';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
 // All the existing export.js content goes here
-export const useExport = (panzoomRef) => {
+export const useExport = (storage) => {
   const handleExport = async () => {
     try {
-      // Get all items from the database
-      const allItems = await db.items.toArray();
+      // Get all items from the storage adapter
+      const allItems = await storage.loadItems();
       
       // Only export items that have a valid position
       const itemsOnCanvas = allItems.filter(item => 

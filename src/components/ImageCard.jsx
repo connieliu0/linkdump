@@ -8,35 +8,69 @@ const ImageCard = ({ src, itemId, sourceUrl: initialSourceUrl }) => {
   const [compressedSrc, setCompressedSrc] = useState(src);
   const [isEditing, setIsEditing] = useState(false);
   const [sourceUrl, setSourceUrl] = useState(initialSourceUrl || '');
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     const compressImage = () => {
       const img = new Image();
+      
+      img.crossOrigin = "anonymous";
+      
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const maxWidth = 300; // Match with paste-item max-width
-        
-        let width = img.width;
-        let height = img.height;
-        
-        // Only scale down if image is larger than maxWidth
-        if (width > maxWidth) {
-          const ratio = maxWidth / width;
-          width = maxWidth;
-          height = height * ratio;
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const maxWidth = 300; // Match with paste-item max-width
+          
+          let width = img.width;
+          let height = img.height;
+          
+          // Only scale down if image is larger than maxWidth
+          if (width > maxWidth) {
+            const ratio = maxWidth / width;
+            width = maxWidth;
+            height = height * ratio;
+          }
           
           canvas.width = width;
           canvas.height = height;
           ctx.drawImage(img, 0, 0, width, height);
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          setCompressedSrc(compressedDataUrl);
-        } else {
-          // Use original image if it's smaller than maxWidth
+          
+          try {
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            setCompressedSrc(compressedDataUrl);
+            setImageError(false);
+          } catch (e) {
+            console.warn('Canvas export failed, using original image:', e);
+            setCompressedSrc(src);
+          }
+        } catch (e) {
+          console.error('Error processing image:', e);
           setCompressedSrc(src);
         }
       };
-      img.src = src;
+
+      img.onerror = (e) => {
+        console.error('Error loading image:', e);
+        setImageError(true);
+        // Try loading without crossOrigin as fallback
+        const fallbackImg = new Image();
+        fallbackImg.onload = () => {
+          setCompressedSrc(src);
+          setImageError(false);
+        };
+        fallbackImg.onerror = () => {
+          setImageError(true);
+        };
+        fallbackImg.src = src;
+      };
+
+      // Add a proxy for cross-origin images if needed
+      if (src.startsWith('http')) {
+        img.src = `https://images.weserv.nl/?url=${encodeURIComponent(src)}`;
+      } else {
+        img.src = src;
+      }
     };
 
     compressImage();
@@ -62,11 +96,22 @@ const ImageCard = ({ src, itemId, sourceUrl: initialSourceUrl }) => {
 
   return (
     <div className="image-container">
-      <img 
-        src={compressedSrc} 
-        alt="Pasted content"
-        className="pasted-image"
-      />
+      {imageError ? (
+        <div className="image-error">
+          Failed to load image
+        </div>
+      ) : (
+        <img 
+          src={compressedSrc} 
+          alt="Pasted content"
+          className="pasted-image"
+          crossOrigin="anonymous"
+          onError={(e) => {
+            console.error('Error displaying image:', e);
+            setImageError(true);
+          }}
+        />
+      )}
       <div 
         className="source-url-container" 
         onClick={handleSourceClick}
