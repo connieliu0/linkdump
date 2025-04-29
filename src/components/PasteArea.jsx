@@ -240,11 +240,11 @@ const PasteArea = ({ onExport }) => {
     }
   };
 
-  // // Load time settings when storage changes maybe I need to uncomment this in the future
-  // useEffect(() => {
-  //   if (!storage) return;
-  //   loadTimeSettings();
-  // }, [storage]);
+  // Load time settings when storage changes maybe I need to uncomment this in the future
+  useEffect(() => {
+    if (!storage) return;
+    loadTimeSettings();
+  }, [storage]);
 
   // Add aging effects
   useAgingEffect(timeSettings);

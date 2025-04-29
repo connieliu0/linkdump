@@ -735,7 +735,7 @@ main {
   right: calc(50% - 250px); /* Position 6px to the right of project-section */
   text-align: center;
   min-width: 120px;
-  transform: translateY(calc(100% - 60px));
+  transform: translateY(calc(100% - 50px));
   transition: transform 0.3s ease;
   rotate: 2deg;
 }
