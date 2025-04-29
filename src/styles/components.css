@@ -13,7 +13,7 @@
 
 /* Fallback font stack */
 :root {
-  --font-decomposition: 'Decompositionphase1', 'Courier New', monospace;
+  --font-decomposition: 'Decompositionphase1';
   --primary-color: #351C1C;
   --secondary-color: #645a5a; 
   --tertiary-color: #8f8989;
