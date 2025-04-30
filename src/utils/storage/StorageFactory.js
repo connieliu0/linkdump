@@ -1,6 +1,6 @@
 // src/utils/storage/StorageFactory.js
 import { FirebaseAdapter } from './FirebaseAdapter';
-import { IndexedDBAdapter } from './IndexDBAdapter';
+import { IndexedDBAdapter } from './IndexedDBAdapter';
 
 // Factory function to get the appropriate adapter
 export function getStorageAdapter(mode = 'local', existingBoardId = null) {
