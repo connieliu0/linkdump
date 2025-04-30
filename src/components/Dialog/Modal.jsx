@@ -8,6 +8,7 @@ const Modal = memo(({
   preventBackdropClick,
   title,
   description,
+  errormsg,
   primaryButton,
   secondaryButton,
   className = '',
@@ -51,8 +52,6 @@ const Modal = memo(({
   if (!shouldRender) return null;
 
   const hasButtons = primaryButton || secondaryButton;
-  
-
 
   return (
     <div 
@@ -77,7 +76,11 @@ const Modal = memo(({
           {description && <p>{description}</p>}
           {children}
         </div>
-
+        {errormsg && (
+          <div className="error-message">
+            {errormsg}
+          </div>
+        )}
         {/* Buttons */}
         {hasButtons && (
           <div className="button-container">

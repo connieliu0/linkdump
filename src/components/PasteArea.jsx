@@ -5,13 +5,13 @@ import { getStorageAdapter } from '../utils/storage/StorageFactory';
 import LinkCard from './LinkCard';
 import ImageCard from './ImageCard';
 import Toolbar from './Toolbar';
-import TimeInputDialog from './Dialog/TimeInputDialog';
+// import TimeInputDialog from './Dialog/TimeInputDialog';
 import ExpiryDialog from './Dialog/ExpiryDialog';
 import { useAgingEffect } from '../hooks/useAgingEffect';
 import { usePaperAgingEffect } from '../hooks/usePaperAgingEffect';
 import TextCard from './TextCard';
 import InactivityOverlay from './InactivityOverlay';
-import OnboardingDialog from './Dialog/OnboardingDialog';
+// import OnboardingDialog from './Dialog/OnboardingDialog';
 import shadowSvg from '../assets/timepasses/shadow.svg';
 import shadowSvg2 from '../assets/timepasses/shadow2.svg';
 import { FirebaseAdapter } from '../utils/storage/FirebaseAdapter';
@@ -20,6 +20,7 @@ import { detectImageSource } from '../utils/linkProcessing';
 import { createImageCard, createTextCard, createLinkCard } from '../utils/cardManagement';
 import { saveAndUpdateItems, updateAndRefreshItems, deleteAndRemoveItem } from '../utils/storageOperations';
 import { layoutArenaItems } from '../utils/layoutUtils';
+import MergedDialog from './Dialog/MergedDialog';
 
 const extractSourceFromHtml = (html) => {
   if (!html) return null;
@@ -50,8 +51,8 @@ const extractSourceFromHtml = (html) => {
 const PasteArea = ({ onExport }) => {
   // Get boardId from URL if present
   const [storageMode, setStorageMode] = useState(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlBoardId = urlParams.get('board');
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    const urlBoardId = pathParts[0] || null;
     // If board ID is in URL, use collaborative mode
     if (urlBoardId) {
       localStorage.setItem('storageMode', 'collaborative');
@@ -62,16 +63,8 @@ const PasteArea = ({ onExport }) => {
   });
 
   const [boardId, setBoardId] = useState(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlBoardId = urlParams.get('board');
-    if (urlBoardId) {
-      localStorage.setItem('boardId', urlBoardId);
-      return urlBoardId;
-    }
-    // Only use localStorage boardId if we're in collaborative mode
-    const storedMode = localStorage.getItem('storageMode');
-    const storedBoardId = localStorage.getItem('boardId');
-    return (storedMode === 'collaborative' && storedBoardId) ? storedBoardId : null;
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    return pathParts[0] || null;
   });
 
   const [storage, setStorage] = useState(null);
@@ -88,10 +81,9 @@ const PasteArea = ({ onExport }) => {
   const [isInputActive, setIsInputActive] = useState(false);
   const [isInactive, setIsInactive] = useState(false);
   let inactivityTimer = useRef(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const [showTimeInput, setShowTimeInput] = useState(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlBoardId = urlParams.get('board');
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    const urlBoardId = pathParts[0] || null;
     // Don't show time input initially if we're in collaborative mode
     return !urlBoardId;
   });
@@ -120,8 +112,8 @@ const PasteArea = ({ onExport }) => {
             // if no settings were found and we're not in collaborative mode
             timeoutId = setTimeout(() => {
               if (isMounted && !timeSettings) {
-                const urlParams = new URLSearchParams(window.location.search);
-                const urlBoardId = urlParams.get('board');
+                const pathParts = window.location.pathname.split('/').filter(Boolean);
+                const urlBoardId = pathParts[0] || null;
                 // Only show time input if we're not in collaborative mode
                 if (!urlBoardId) {
                   setShowTimeInput(true);
@@ -154,17 +146,13 @@ const PasteArea = ({ onExport }) => {
 
     // Only update URL and localStorage after we have confirmed settings
     if (storageMode === 'collaborative' && newBoardId && timeSettings) {
-      const url = new URL(window.location.href);
-      url.searchParams.set('board', newBoardId);
-      window.history.replaceState({}, '', url);
+      const newPath = `/${newBoardId}`;
+      window.history.replaceState({}, '', newPath);
       localStorage.setItem('storageMode', storageMode);
-      localStorage.setItem('boardId', newBoardId);
     } else if (storageMode === 'local') {
       // Remove board parameter from URL if we're in local mode
-      const url = new URL(window.location.href);
-      url.searchParams.delete('board');
-      window.history.replaceState({}, '', url);
-      localStorage.removeItem('boardId');
+      const newPath = '/';
+      window.history.replaceState({}, '', newPath);
       localStorage.setItem('storageMode', 'local');
     }
 
@@ -194,7 +182,6 @@ const PasteArea = ({ onExport }) => {
     // Clear boardId when switching modes
     if (mode === 'local') {
       setBoardId(null);
-      localStorage.removeItem('boardId');
     }
   };
 
@@ -210,7 +197,18 @@ const PasteArea = ({ onExport }) => {
           halfwayPoint: settings.halfwayPoint
         };
         
-        await storage.saveTimeSettings(timeSettings);
+        if (settings.urlBackhalf) {
+          setBoardId(settings.urlBackhalf);
+          const newPath = `/${settings.urlBackhalf}`;
+          window.history.replaceState({}, '', newPath);
+
+          // Re-initialize storage with the new boardId
+          const { adapter } = getStorageAdapter('collaborative', settings.urlBackhalf);
+          await adapter.saveTimeSettings(timeSettings);
+          setStorage(adapter); // update the storage in state if needed
+        } else {
+          await storage.saveTimeSettings(timeSettings);
+        }
         setTimeSettings(timeSettings);
         resetInactivityTimer();
       } catch (error) {
@@ -384,10 +382,8 @@ const PasteArea = ({ onExport }) => {
       console.log('[PasteArea] Board cleared, resetting state...');
       
       // Reset URL and storage mode
-      const url = new URL(window.location.href);
-      url.searchParams.delete('board');
-      window.history.replaceState({}, '', url);
-      localStorage.removeItem('boardId');
+      const newPath = '/';
+      window.history.replaceState({}, '', newPath);
       localStorage.setItem('storageMode', 'local');
       
       // Reset storage mode and board ID
@@ -559,7 +555,6 @@ const PasteArea = ({ onExport }) => {
   useEffect(() => {
     const hasVisited = localStorage.getItem('hasVisitedBefore');
     if (!hasVisited) {
-      setShowOnboarding(true);
       setShowTimeInput(false);
     }
   }, []);
@@ -626,6 +621,7 @@ const PasteArea = ({ onExport }) => {
 
   return (
     <>
+      {/*
       {showOnboarding && (
         <OnboardingDialog 
           isOpen={showOnboarding}
@@ -649,7 +645,18 @@ const PasteArea = ({ onExport }) => {
           onStorageModeSelect={handleStorageModeChange}
         />
       )}
-
+      */}
+      {!timeSettings && (
+        <MergedDialog
+          isOpen={!timeSettings}
+          onClose={() => setShowTimeInput(false)}
+          onTimeSet={(settings) => {
+            handleTimeSet(settings);
+            setShowTimeInput(false);
+          }}
+          onStorageModeSelect={handleStorageModeChange}
+        />
+      )}
       {timeSettings && (
         <>
           <ExpiryDialog

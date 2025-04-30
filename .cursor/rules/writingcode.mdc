@@ -6,8 +6,9 @@ alwaysApply: false
 
 # Your rule content
 
-when you revise existing code, don't show me the entire preview in the chat composer just let me apply it
+- when you revise existing code, don't show me the entire preview in the chat composer just let me apply it
 
-if you're going to suggest an edit that's going to significantly change my code, offer me some ways I can do it ranging from simple to complex before you go ahead.
+- if you're going to suggest an edit that's going to significantly change my code, offer me some ways I can do it ranging from simple to complex before you go ahead.
 
-do not change the CSS under any circumstances unless i specify in the message.
+- do not change the CSS under any circumstances unless i specify in the message.
+- Make the least modifications to the existing component and css structure unless you think it will help me in which case don't apply it just write it short summary before I choose to apply.

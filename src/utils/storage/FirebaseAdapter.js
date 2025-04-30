@@ -35,10 +35,9 @@ export class FirebaseAdapter extends StorageAdapter {
     }
   }
 
-  generateBoardId() {
-    // Use Firebase's push() method to create a unique key
-    const newBoardRef = push(ref(db, 'boards'));
-    const newId = newBoardRef.key;
+  generateBoardId(customId = null) {
+    // Use provided ID or generate a new one
+    const newId = customId || push(ref(db, 'boards')).key;
     
     // Set this as the current boardId
     this.setBoardId(newId);
@@ -190,11 +189,25 @@ export class FirebaseAdapter extends StorageAdapter {
       return false;
     }
   }
-
+// In your Firebase adapter (FirebaseAdapter.js)
+    async checkUrlAvailability(customId) {
+      try {
+        // Reference to the specific board ID
+        const boardRef = ref(db, `boards/${customId}`);
+        
+        // Get the data at the reference
+        const snapshot = await get(boardRef);
+        
+        // If snapshot exists, the URL is already taken
+        return !snapshot.exists();
+      } catch (error) {
+        console.error('Error checking URL availability:', error);
+        throw error;
+      }
+    }
   async clearBoard() {
     try {
       if (!this.boardId) {
-        console.error('No boardId set for FirebaseAdapter');
         return false;
       }
 
@@ -215,17 +228,11 @@ export class FirebaseAdapter extends StorageAdapter {
       return () => {};
     }
     
-    console.log('Setting up realtime listener for board:', this.boardId);
     const itemsRef = ref(db, `boards/${this.boardId}/items`);
     
     try {
       return onValue(itemsRef, (snapshot) => {
         try {
-          console.log('Realtime update received:', {
-            exists: snapshot.exists(),
-            connected: this.connected,
-            boardId: this.boardId
-          });
           
           if (snapshot.exists()) {
             const items = [];
@@ -237,7 +244,6 @@ export class FirebaseAdapter extends StorageAdapter {
             
             callback(items);
           } else {
-            console.log('No items exist in snapshot');
             callback([]);
           }
         } catch (error) {
