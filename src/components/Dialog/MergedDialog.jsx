@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import Modal from './Modal';
-import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getStorageAdapter } from '../../utils/storage/StorageFactory';
 import useMeasure from 'react-use-measure';
 
@@ -272,9 +272,10 @@ const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) => {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={stepMeta.title} primaryButton={stepMeta.primaryButton}>
-      <MotionConfig transition={{ duration: 0.5, type: "spring", bounce: 0 }}>
+      <div style={{ position: 'relative', overflow: 'hidden' }}>
         <motion.div
           animate={{ height: bounds.height > 0 ? bounds.height : 'auto' }}
+          transition={{ duration: 0.5, type: "spring", bounce: 0 }}
           style={{ overflow: 'hidden' }}
         >
           <div ref={ref}>
@@ -284,13 +285,14 @@ const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) => {
                 initial={{ x: "110%", opacity: 0 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ x: "-110%", opacity: 0 }}
+                transition={{ duration: 0.5, type: "spring", bounce: 0 }}
               >
                 {content}
               </motion.div>
             </AnimatePresence>
           </div>
         </motion.div>
-      </MotionConfig>
+      </div>
     </Modal>
   );
 };
