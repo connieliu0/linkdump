@@ -37,7 +37,7 @@ export function AnimatedHeight({ children, ...props }) {
           setTimeout(() => {
             setIsAnimating(false);
             setHeight(undefined);
-          }, 300); // match transition duration
+          }, 600); // match transition duration
         });
       });
     }
@@ -56,7 +56,7 @@ export function AnimatedHeight({ children, ...props }) {
     <motion.div
       animate={{ height: isAnimating ? height : "auto" }}
       style={{ overflow: "hidden" }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      transition={{ duration: 0.6, ease: "easeInOut" }}
       {...props}
     >
       <div ref={ref}>{displayChildren}</div>
