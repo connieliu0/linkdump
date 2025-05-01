@@ -127,7 +127,10 @@ textarea:focus,
   margin-top: auto;
   justify-content: space-between;
 }
-
+.dialog-content a{
+  color: var(--secondary-color);
+  text-decoration: wavy underline;
+}
 .dialog-content .button-container button {
   flex: 1;
   padding: 12px;
