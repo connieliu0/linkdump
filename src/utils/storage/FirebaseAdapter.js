@@ -19,6 +19,10 @@ import { StorageAdapter } from './StorageAdapter';
  * @property {number} timestamp
  */
 
+// Characters to use for short IDs (alphanumeric, lowercase only)
+const ID_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789';
+const ID_LENGTH = 5;
+
 export class FirebaseAdapter extends StorageAdapter {
   constructor(boardId = null) {
     super();
@@ -35,23 +39,74 @@ export class FirebaseAdapter extends StorageAdapter {
     }
   }
 
-  generateBoardId(customId = null) {
-    // Use provided ID or generate a new one
-    const newId = customId || push(ref(db, 'boards')).key;
+  // Generate a random short ID and check if it's available
+  async generateShortId() {
+    let attempts = 0;
+    const maxAttempts = 10; // Prevent infinite loops
+
+    while (attempts < maxAttempts) {
+      try {
+        // Generate a random 5-character string
+        let result = '';
+        for (let i = 0; i < ID_LENGTH; i++) {
+          result += ID_CHARS.charAt(Math.floor(Math.random() * ID_CHARS.length));
+        }
+
+        // Check if this ID is available
+        const isAvailable = await this.checkUrlAvailability(result);
+        if (isAvailable) {
+          return result;
+        }
+
+        attempts++;
+      } catch (error) {
+        console.error('Error generating short ID:', error);
+        attempts++;
+      }
+    }
     
-    // Set this as the current boardId
-    this.setBoardId(newId);
-    
-    // Initialize the board with empty structure
-    set(ref(db, `boards/${newId}`), { items: {}, timeSettings: null });
-    
-    return newId;
+    throw new Error('Could not generate a unique board ID. Please try again.');
+  }
+
+  async generateBoardId(customId = null) {
+    try {
+      if (customId) {
+        // Check if the board exists and is expired
+        const isAvailable = await this.checkUrlAvailability(customId);
+        
+        if (!isAvailable) {
+          throw new Error("This board name is already taken by an active board");
+        }
+        
+        // Use the custom ID (either it's new or we've already cleared the expired board)
+        this.setBoardId(customId);
+        
+        // Initialize the board with empty structure
+        await set(this.boardRef, { items: {}, timeSettings: null });
+        
+        return customId;
+      } else {
+        // Generate a new random short ID
+        const newId = await this.generateShortId();
+        
+        // Set this as the current boardId
+        this.setBoardId(newId);
+        
+        // Initialize the board with empty structure
+        await set(this.boardRef, { items: {}, timeSettings: null });
+        
+        return newId;
+      }
+    } catch (error) {
+      console.error('Error generating board ID:', error);
+      throw error;
+    }
   }
 
   setBoardId(id) {
     if (!id) {
       console.error('Attempted to set null boardId');
-      return null;
+      throw new Error('Cannot set null boardId');
     }
     this.boardId = id;
     this.boardRef = ref(db, `boards/${id}`);
@@ -65,13 +120,14 @@ export class FirebaseAdapter extends StorageAdapter {
         console.warn('Firebase not connected when trying to save item');
       }
       
-      // Generate a key if none provided
-      const itemId = item.id || push(ref(db, `boards/${this.boardId}/items`)).key;
+      // Always generate a new key for the item
+      const itemId = push(ref(db, `boards/${this.boardId}/items`)).key;
       
       // Save the item with this ID
       await set(ref(db, `boards/${this.boardId}/items/${itemId}`), {
         ...item,
-        id: itemId
+        id: itemId,
+        timestamp: Date.now()
       });
       
       console.log('Item saved successfully with id:', itemId);
@@ -189,22 +245,54 @@ export class FirebaseAdapter extends StorageAdapter {
       return false;
     }
   }
-// In your Firebase adapter (FirebaseAdapter.js)
-    async checkUrlAvailability(customId) {
-      try {
-        // Reference to the specific board ID
-        const boardRef = ref(db, `boards/${customId}`);
-        
-        // Get the data at the reference
-        const snapshot = await get(boardRef);
-        
-        // If snapshot exists, the URL is already taken
-        return !snapshot.exists();
-      } catch (error) {
-        console.error('Error checking URL availability:', error);
-        throw error;
+
+  async checkUrlAvailability(customId) {
+    try {
+      if (!customId) return false;
+      
+      // Check if board exists
+      const snapshot = await get(ref(db, `boards/${customId}`));
+      if (!snapshot.exists()) {
+        return true; // Board doesn't exist, so ID is available
       }
+      
+      // If board exists, check if it's expired
+      const timeSettings = snapshot.val()?.timeSettings;
+      if (!timeSettings) {
+        return true; // No time settings means board is incomplete/invalid
+      }
+
+      const currentTime = Date.now();
+      const endTime = timeSettings.startTime + (timeSettings.duration * 60 * 1000);
+      
+      // If board is expired, it can be recycled
+      if (currentTime > endTime) {
+        // Optional: Clear the old board data
+        await this.deleteExpiredBoard(customId);
+        return true;
+      }
+      
+      // Board exists and isn't expired
+      return false;
+    } catch (error) {
+      console.error('Error checking URL availability:', error);
+      throw error;
     }
+  }
+
+  // Add this method to handle deleting expired boards
+  async deleteExpiredBoard(boardId) {
+    try {
+      // Delete all items and settings for this board
+      await remove(ref(db, `boards/${boardId}`));
+      console.log(`Deleted expired board: ${boardId}`);
+      return true;
+    } catch (error) {
+      console.error(`Error deleting expired board ${boardId}:`, error);
+      throw error;
+    }
+  }
+
   async clearBoard() {
     try {
       if (!this.boardId) {

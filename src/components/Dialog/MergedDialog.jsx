@@ -240,7 +240,6 @@ const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) => {
                 exit={{ opacity: 0, y: 16 }}
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
                 className="collaborative-input"
-                style={{ marginTop: 12 }}
               >
                 <p>linkdump.connie.surf/</p>
                 <input

@@ -21,6 +21,7 @@ import { createImageCard, createTextCard, createLinkCard } from '../utils/cardMa
 import { saveAndUpdateItems, updateAndRefreshItems, deleteAndRemoveItem } from '../utils/storageOperations';
 import { layoutArenaItems } from '../utils/layoutUtils';
 import MergedDialog from './Dialog/MergedDialog';
+import NotFound from './Dialog/NotFound';
 
 const extractSourceFromHtml = (html) => {
   if (!html) return null;
@@ -49,17 +50,26 @@ const extractSourceFromHtml = (html) => {
 };
 
 const PasteArea = ({ onExport }) => {
-  // Get boardId from URL if present
+  // Get boardId from URL if present and determine storage mode
   const [storageMode, setStorageMode] = useState(() => {
     const pathParts = window.location.pathname.split('/').filter(Boolean);
     const urlBoardId = pathParts[0] || null;
-    // If board ID is in URL, use collaborative mode
+    
+    // If there's a board ID in the URL, always use collaborative mode
     if (urlBoardId) {
       localStorage.setItem('storageMode', 'collaborative');
       return 'collaborative';
     }
-    // Otherwise use stored preference or default to local
-    return localStorage.getItem('storageMode') || 'local';
+    
+    // If we're at the root URL, use the stored preference
+    const storedMode = localStorage.getItem('storageMode');
+    if (storedMode) {
+      return storedMode;
+    }
+    
+    // Default to local mode
+    localStorage.setItem('storageMode', 'local');
+    return 'local';
   });
 
   const [boardId, setBoardId] = useState(() => {
@@ -91,6 +101,8 @@ const PasteArea = ({ onExport }) => {
 
   // Add a ref to track if we're clearing
   const isClearingRef = useRef(false);
+
+  const [boardNotFound, setBoardNotFound] = useState(false);
 
   // Initialize storage and load time settings
   useEffect(() => {
@@ -139,83 +151,159 @@ const PasteArea = ({ onExport }) => {
 
   // Initialize storage based on mode and boardId
   useEffect(() => {
-    const { adapter, boardId: newBoardId } = getStorageAdapter(storageMode, boardId);
-    
-    setStorage(adapter);
-    setBoardId(newBoardId);
-
-    // Only update URL and localStorage after we have confirmed settings
-    if (storageMode === 'collaborative' && newBoardId && timeSettings) {
-      const newPath = `/${newBoardId}`;
-      window.history.replaceState({}, '', newPath);
-      localStorage.setItem('storageMode', storageMode);
-    } else if (storageMode === 'local') {
-      // Remove board parameter from URL if we're in local mode
-      const newPath = '/';
-      window.history.replaceState({}, '', newPath);
-      localStorage.setItem('storageMode', 'local');
-    }
-
-    // If we're in collaborative mode, initialize the board
-    if (storageMode === 'collaborative' && adapter instanceof FirebaseAdapter) {
-      const unsubscribe = adapter.setupRealtimeListener((items) => {
-        // Don't update items if we're in the middle of clearing
-        if (isClearingRef.current) return;
-
-        // Filter out any items without IDs
-        const validItems = items.filter(item => {
-          if (!item?.id) {
-            console.warn('Found item without ID:', item);
-            return false;
+    const initializeStorage = async () => {
+      // If we're at the root URL and have local storage mode set
+      if (window.location.pathname === '/' && storageMode === 'local') {
+        const { adapter } = getStorageAdapter('local');
+        setStorage(adapter);
+        setBoardId(null);
+        setBoardNotFound(false);
+        
+        // Try to load existing time settings from IndexedDB
+        try {
+          const settings = await adapter.getTimeSettings();
+          if (settings) {
+            setTimeSettings(settings);
           }
-          return true;
+        } catch (error) {
+          console.error('Error loading local time settings:', error);
+        }
+        return;
+      }
+
+      // Handle collaborative mode
+      if (storageMode === 'collaborative') {
+        const { adapter, boardId: newBoardId } = getStorageAdapter('collaborative', boardId);
+        setStorage(adapter);
+        
+        if (!newBoardId && adapter instanceof FirebaseAdapter) {
+          try {
+            const generatedBoardId = await adapter.generateBoardId();
+            setBoardId(generatedBoardId);
+            setBoardNotFound(false);
+            
+            if (timeSettings) {
+              const newPath = `/${generatedBoardId}`;
+              window.history.replaceState({}, '', newPath);
+            }
+          } catch (error) {
+            console.error('Error generating board ID:', error);
+            setBoardNotFound(true);
+            return;
+          }
+        } else if (newBoardId) {
+          try {
+            const exists = await adapter.checkUrlAvailability(newBoardId);
+            if (exists) {
+              setBoardNotFound(true);
+              return;
+            }
+            setBoardId(newBoardId);
+            setBoardNotFound(false);
+            
+            if (timeSettings) {
+              const newPath = `/${newBoardId}`;
+              window.history.replaceState({}, '', newPath);
+            }
+          } catch (error) {
+            console.error('Error checking board existence:', error);
+            setBoardNotFound(true);
+            return;
+          }
+        }
+
+        // Set up realtime listener for collaborative mode
+        const unsubscribe = adapter.setupRealtimeListener((items) => {
+          if (isClearingRef.current) return;
+          const validItems = items.filter(item => {
+            if (!item?.id) {
+              console.warn('Found item without ID:', item);
+              return false;
+            }
+            return true;
+          });
+          setItems(validItems);
         });
-        setItems(validItems);
-      });
-      return () => unsubscribe();
-    }
-  }, [storageMode, boardId, timeSettings]);
+        return () => unsubscribe();
+      }
+    };
+
+    initializeStorage();
+  }, [storageMode, timeSettings]);
 
   const handleStorageModeChange = (mode) => {
     console.log('Handling storage mode change:', mode);
     setStorageMode(mode);
-    // Clear boardId when switching modes
+    localStorage.setItem('storageMode', mode);
+    
+    // Clear boardId and URL when switching to local mode
     if (mode === 'local') {
       setBoardId(null);
+      window.history.replaceState({}, '', '/');
     }
   };
 
   const handleTimeSet = async (settings) => {
     console.log('Handling time set:', settings);
-    if (storage) {
-      try {
-        // Ensure we have all the required fields
-        const timeSettings = {
-          description: settings.description,
-          startTime: settings.startTime,
-          duration: settings.duration, // Duration in minutes
-          halfwayPoint: settings.halfwayPoint
-        };
-        
+    try {
+      // Ensure we have all the required fields
+      const timeSettings = {
+        description: settings.description,
+        startTime: settings.startTime,
+        duration: settings.duration,
+        halfwayPoint: settings.halfwayPoint
+      };
+      
+      if (storageMode === 'collaborative') {
+        // Handle collaborative mode
         if (settings.urlBackhalf) {
+          const { adapter } = getStorageAdapter('collaborative');
+          await adapter.generateBoardId(settings.urlBackhalf);
+          
+          setStorage(adapter);
           setBoardId(settings.urlBackhalf);
+          setBoardNotFound(false);
+          
+          // Update URL
           const newPath = `/${settings.urlBackhalf}`;
           window.history.replaceState({}, '', newPath);
-
-          // Re-initialize storage with the new boardId
-          const { adapter } = getStorageAdapter('collaborative', settings.urlBackhalf);
+          
+          // Save time settings
           await adapter.saveTimeSettings(timeSettings);
-          setStorage(adapter); // update the storage in state if needed
         } else {
-          await storage.saveTimeSettings(timeSettings);
+          const { adapter } = getStorageAdapter('collaborative');
+          const newBoardId = await adapter.generateBoardId();
+          
+          setStorage(adapter);
+          setBoardId(newBoardId);
+          setBoardNotFound(false);
+          
+          // Update URL
+          const newPath = `/${newBoardId}`;
+          window.history.replaceState({}, '', newPath);
+          
+          // Save time settings
+          await adapter.saveTimeSettings(timeSettings);
         }
-        setTimeSettings(timeSettings);
-        resetInactivityTimer();
-      } catch (error) {
-        console.error('Error saving time settings:', error);
+      } else {
+        // Handle local mode
+        const { adapter } = getStorageAdapter('local');
+        setStorage(adapter);
+        setBoardId(null);
+        setBoardNotFound(false);
+        
+        // Ensure we're at the root URL
+        window.history.replaceState({}, '', '/');
+        
+        // Save time settings to IndexedDB
+        await adapter.saveTimeSettings(timeSettings);
       }
-    } else {
-      console.error('No storage adapter available');
+      
+      setTimeSettings(timeSettings);
+      resetInactivityTimer();
+    } catch (error) {
+      console.error('Error saving time settings:', error);
+      setBoardNotFound(true);
     }
   };
 
@@ -301,6 +389,9 @@ const PasteArea = ({ onExport }) => {
   useEffect(() => {
     const fetchItems = async () => {
       if (!storage) return;
+      // In collaborative mode, we need both storage and boardId
+      if (storageMode === 'collaborative' && !boardId) return;
+      
       try {
         const savedItems = await storage.loadItems();
         setItems(savedItems || []);
@@ -309,7 +400,7 @@ const PasteArea = ({ onExport }) => {
       }
     };
     fetchItems();
-  }, [storage]);
+  }, [storage, boardId, storageMode]);
 
   // Handle paste events
   const handlePaste = useCallback(async (e) => {
@@ -577,13 +668,8 @@ const PasteArea = ({ onExport }) => {
       const newItems = [];
       
       for (const item of positionedItems) {
-        if (!item?.id) {
-          console.warn('Skipping item without ID:', item);
-          continue;
-        }
-        
+        // Create new item without the original ID
         const newItem = {
-          id: item.id, // Ensure ID is included
           type: item.type,
           content: item.content,
           position: item.position,
@@ -619,184 +705,176 @@ const PasteArea = ({ onExport }) => {
     }
   };
 
+  const handleCreateNewBoard = useCallback(() => {
+    // Reset board not found state
+    setBoardNotFound(false);
+    // Reset storage mode to local
+    handleStorageModeChange('local');
+    // Show time input dialog
+    setShowTimeInput(true);
+    // Clear the URL
+    window.history.replaceState({}, '', '/');
+  }, []);
+
   return (
     <>
-      {/*
-      {showOnboarding && (
-        <OnboardingDialog 
-          isOpen={showOnboarding}
-          onClose={() => {
-            setShowOnboarding(false);
-            setShowTimeInput(true);
-            localStorage.setItem('hasVisitedBefore', 'true');
-          }}
-        />
-      )}
-
-      {!showOnboarding && showTimeInput && !timeSettings && (
-        <TimeInputDialog 
-          isOpen={true}
-          onClose={() => setShowTimeInput(false)}
-          onTimeSet={(settings) => {
-            console.log('Setting time settings:', settings);
-            handleTimeSet(settings);
-            setShowTimeInput(false);
-          }}
-          onStorageModeSelect={handleStorageModeChange}
-        />
-      )}
-      */}
-      {!timeSettings && (
-        <MergedDialog
-          isOpen={!timeSettings}
-          onClose={() => setShowTimeInput(false)}
-          onTimeSet={(settings) => {
-            handleTimeSet(settings);
-            setShowTimeInput(false);
-          }}
-          onStorageModeSelect={handleStorageModeChange}
-        />
-      )}
-      {timeSettings && (
+      {boardNotFound ? (
+        <NotFound onCreateNewBoard={handleCreateNewBoard} />
+      ) : (
         <>
-          <ExpiryDialog
-            isOpen={isExpired}
-            onRestart={handleRestart}
-            storage={storage}
-          />
-          <InactivityOverlay 
-            isVisible={isInactive} 
-            onDismiss={handleDismissOverlay}
-          />
-          <div 
-            className="paste-container" 
-            onKeyDown={handleKeyDown} 
-            onMouseMove={handleMouseMove}
-            tabIndex={0}
-          >
-            <div 
-              className="leaf-shadows-container sway1"
-              style={{
-                backgroundImage: `url(${shadowSvg})`,
-                backgroundSize: 'cover',
-                backgroundRepeat: 'no-repeat',
-                rotate: '180deg',
+          {!timeSettings && (
+            <MergedDialog
+              isOpen={!timeSettings}
+              onClose={() => setShowTimeInput(false)}
+              onTimeSet={(settings) => {
+                handleTimeSet(settings);
+                setShowTimeInput(false);
               }}
-            ></div>
-            <div 
-              className="leaf-shadows-container sway2"
-              style={{
-                backgroundImage: `url(${shadowSvg2})`,
-                backgroundSize: 'cover',
-                backgroundRepeat: 'no-repeat',
-                rotate: '180deg',
-              }}
-            ></div>
-            <Toolbar 
-              panzoomRef={panzoomRef} 
-              onExport={onExport} 
-              timeRemaining={timeRemaining}
-              timeSettings={timeSettings}
-              projectDescription={timeSettings?.description}
-              onAddEmptyCard={addEmptyCard}
-              onClearCanvas={handleClearCanvas}
-              isExpired={isExpired}
-              boardId={boardId}
-              onImportArenaItems={handleImportArenaItems}
+              onStorageModeSelect={handleStorageModeChange}
             />
-            
-            <PanZoom 
-              selecting={isSelecting}
-              zoomInitial={1}
-              zoomMin={0.9}
-              zoomMax={3}
-              ref={panzoomRef}
-              className="canvas-area"
-              style={{ width: '100%', height: '100%' }}
-              onContainerClick={() => setSelectedId(null)}
-              disabled={isInputActive || isExpired}
-              containerClassNames={{
-                outer: 'canvas-area',
-                inner: 'canvas-area__in'
-              }}
-              onElementsChange={(element) => {
-                if (!activeItemRef.current) return;
-                const elementData = element[activeItemRef.current];
-                if (elementData) {
-                  updateCard(activeItemRef.current, { 
-                    position: { x: elementData.x, y: elementData.y } 
-                  });
-                }
-              }}
-            >
-              
-              {!isExpired && (
-                <div style={{ 
-                  position: 'fixed', 
-                  top: '1rem', 
-                  left: '50%', 
-                  transform: 'translateX(-50%)',
-                  color: 'black',
-                  pointerEvents: 'none'
-                }}>
-                  Paste an image or link here; Hold down shift to drag and select multiple 
-                </div>
-              )}
-              
-              {items.filter(item => item?.id).map(item => (
-                <Element
-                  key={item.id}
-                  id={item.id}
-                  className={`paste-item ${selectedId === item.id ? 'selected' : ''}`}
-                  onClick={(e) => {
-                    if (!isExpired) {
-                      setSelectedId(item.id);
-                      activeItemRef.current = item.id;
+          )}
+          {timeSettings && (
+            <>
+              <ExpiryDialog
+                isOpen={isExpired}
+                onRestart={handleRestart}
+                storage={storage}
+              />
+              <InactivityOverlay 
+                isVisible={isInactive} 
+                onDismiss={handleDismissOverlay}
+              />
+              <div 
+                className="paste-container" 
+                onKeyDown={handleKeyDown} 
+                onMouseMove={handleMouseMove}
+                tabIndex={0}
+              >
+                <div 
+                  className="leaf-shadows-container sway1"
+                  style={{
+                    backgroundImage: `url(${shadowSvg})`,
+                    backgroundSize: 'cover',
+                    backgroundRepeat: 'no-repeat',
+                    rotate: '180deg',
+                  }}
+                ></div>
+                <div 
+                  className="leaf-shadows-container sway2"
+                  style={{
+                    backgroundImage: `url(${shadowSvg2})`,
+                    backgroundSize: 'cover',
+                    backgroundRepeat: 'no-repeat',
+                    rotate: '180deg',
+                  }}
+                ></div>
+                <Toolbar 
+                  panzoomRef={panzoomRef} 
+                  onExport={onExport} 
+                  timeRemaining={timeRemaining}
+                  timeSettings={timeSettings}
+                  projectDescription={timeSettings?.description}
+                  onAddEmptyCard={addEmptyCard}
+                  onClearCanvas={handleClearCanvas}
+                  isExpired={isExpired}
+                  boardId={boardId}
+                  onImportArenaItems={handleImportArenaItems}
+                />
+                
+                <PanZoom 
+                  selecting={isSelecting}
+                  zoomInitial={1}
+                  zoomMin={0.9}
+                  zoomMax={3}
+                  ref={panzoomRef}
+                  className="canvas-area"
+                  style={{ width: '100%', height: '100%' }}
+                  onContainerClick={() => setSelectedId(null)}
+                  disabled={isInputActive || isExpired}
+                  containerClassNames={{
+                    outer: 'canvas-area',
+                    inner: 'canvas-area__in'
+                  }}
+                  onElementsChange={(element) => {
+                    if (!activeItemRef.current) return;
+                    const elementData = element[activeItemRef.current];
+                    if (elementData) {
+                      updateCard(activeItemRef.current, { 
+                        position: { x: elementData.x, y: elementData.y } 
+                      });
                     }
                   }}
-                  x={item.position?.x || 0}
-                  y={item.position?.y || 0}
                 >
-                  {item.type === 'image' ? (
-                    <ImageCard 
-                      src={item.content} 
-                      itemId={item.id}
-                      sourceUrl={item.sourceUrl}
-                      storage={storage}
-                    />
-                  ) : item.type === 'link' ? (
-                    <LinkCard 
-                      url={item.content} 
-                      itemId={item.id}
-                      initialMetadata={item.metadata}
-                      storage={storage}
-                    />
-                  ) : item.type === 'pastedText' ? (
-                    <TextCard
-                      content={item.content}
-                      itemId={item.id}
-                      sourceUrl={item.sourceUrl}
-                      isEmpty={false}
-                      showSourceUrl={true}
-                      onInputActiveChange={handleInputActiveChange}
-                      type="pastedText"
-                      storage={storage}
-                    />
-                  ) : item.type === 'newText' ? (
-                    <TextCard
-                      content={item.content}
-                      itemId={item.id}
-                      isEmpty={item.isEmpty}
-                      showSourceUrl={false}
-                      onInputActiveChange={handleInputActiveChange}
-                      type="newText"
-                      storage={storage}
-                    />
-                  ) : null}
-                </Element>
-              ))}
-            </PanZoom>
-          </div>
+                  
+                  {!isExpired && (
+                    <div style={{ 
+                      position: 'fixed', 
+                      top: '1rem', 
+                      left: '50%', 
+                      transform: 'translateX(-50%)',
+                      color: 'black',
+                      pointerEvents: 'none'
+                    }}>
+                      Paste an image or link here; Hold down shift to drag and select multiple 
+                    </div>
+                  )}
+                  
+                  {items.filter(item => item?.id).map(item => (
+                    <Element
+                      key={item.id}
+                      id={item.id}
+                      className={`paste-item ${selectedId === item.id ? 'selected' : ''}`}
+                      onClick={(e) => {
+                        if (!isExpired) {
+                          setSelectedId(item.id);
+                          activeItemRef.current = item.id;
+                        }
+                      }}
+                      x={item.position?.x || 0}
+                      y={item.position?.y || 0}
+                    >
+                      {item.type === 'image' ? (
+                        <ImageCard 
+                          src={item.content} 
+                          itemId={item.id}
+                          sourceUrl={item.sourceUrl}
+                          storage={storage}
+                        />
+                      ) : item.type === 'link' ? (
+                        <LinkCard 
+                          url={item.content} 
+                          itemId={item.id}
+                          initialMetadata={item.metadata}
+                          storage={storage}
+                        />
+                      ) : item.type === 'pastedText' ? (
+                        <TextCard
+                          content={item.content}
+                          itemId={item.id}
+                          sourceUrl={item.sourceUrl}
+                          isEmpty={false}
+                          showSourceUrl={true}
+                          onInputActiveChange={handleInputActiveChange}
+                          type="pastedText"
+                          storage={storage}
+                        />
+                      ) : item.type === 'newText' ? (
+                        <TextCard
+                          content={item.content}
+                          itemId={item.id}
+                          isEmpty={item.isEmpty}
+                          showSourceUrl={false}
+                          onInputActiveChange={handleInputActiveChange}
+                          type="newText"
+                          storage={storage}
+                        />
+                      ) : null}
+                    </Element>
+                  ))}
+                </PanZoom>
+              </div>
+            </>
+          )}
         </>
       )}
     </>

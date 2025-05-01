@@ -101,35 +101,38 @@ const TimeInputDialog = memo(({ isOpen, onClose, onTimeSet, onStorageModeSelect 
       return;
     }
 
-    // Handle custom URL if provided
-    let boardId;
-    if (customUrl.trim()) {
-      // Sanitize the custom URL
-      const sanitizedUrl = customUrl.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
-      try {
-        const { adapter } = getStorageAdapter('collaborative');
-        // Check if sanitized URL is available
-        const isAvailable = await adapter.checkUrlAvailability(sanitizedUrl);
-        if (!isAvailable) {
-          setError('This URL is already taken. Please choose another.');
+    let boardId = null;
+    // Only handle custom URL and board generation for collaborative mode
+    if (storageMode === 'collaborative') {
+      if (customUrl.trim()) {
+        // Sanitize the custom URL
+        const sanitizedUrl = customUrl.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+        try {
+          const { adapter } = getStorageAdapter('collaborative');
+          // Check if sanitized URL is available
+          const isAvailable = await adapter.checkUrlAvailability(sanitizedUrl);
+          if (!isAvailable) {
+            setError('This URL is already taken. Please choose another.');
+            return;
+          }
+          // Use sanitized URL for the board
+          boardId = await adapter.generateBoardId(sanitizedUrl);
+        } catch (error) {
+          setError('Error creating board with custom URL. Please try again.');
           return;
         }
-        // Use sanitized URL for the board
-        boardId = await adapter.generateBoardId(sanitizedUrl);
-      } catch (error) {
-        setError('Error creating board with custom URL. Please try again.');
-        return;
-      }
-    } else {
-      // Generate random board ID
-      try {
-        const { adapter } = getStorageAdapter('collaborative');
-        boardId = await adapter.generateBoardId();
-      } catch (error) {
-        setError('Error creating board. Please try again.');
-        return;
+      } else {
+        // Generate random board ID only for collaborative mode
+        try {
+          const { adapter } = getStorageAdapter('collaborative');
+          boardId = await adapter.generateBoardId();
+        } catch (error) {
+          setError('Error creating board. Please try again.');
+          return;
+        }
       }
     }
+
     const totalSeconds = (daysValue * 86400) + (hoursValue * 3600) + (minutesValue * 60) + secondsValue;
     const startTime = Date.now();
 
@@ -140,7 +143,7 @@ const TimeInputDialog = memo(({ isOpen, onClose, onTimeSet, onStorageModeSelect 
       endTime: startTime + (totalSeconds * 1000),
       halfwayPoint: startTime + (totalSeconds * 500),
       duration: totalSeconds / 60, // Keep duration in minutes for compatibility
-      urlBackhalf: boardId // Add this to your time setting
+      urlBackhalf: boardId // Will be null for local storage
     });
 
     onClose();

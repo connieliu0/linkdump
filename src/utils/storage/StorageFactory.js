@@ -6,23 +6,23 @@ import { IndexedDBAdapter } from './IndexDBAdapter';
 export function getStorageAdapter(mode = 'local', existingBoardId = null) {
   if (mode === 'collaborative') {
     const adapter = new FirebaseAdapter();
-    let boardId;
     if (existingBoardId) {
-      boardId = existingBoardId;
-      adapter.setBoardId(boardId);
+      adapter.setBoardId(existingBoardId);
+      return { adapter, boardId: existingBoardId };
     } else {
-      boardId = adapter.generateBoardId(); // This already sets the boardId
+      // Don't generate boardId here, let the caller handle it
+      return { adapter, boardId: null };
     }
-    return { adapter, boardId };
   } else {
     return { adapter: new IndexedDBAdapter(), boardId: null };
   }
 }
 
 // Function to create a new collaborative board
-export function createCollaborativeBoard() {
+export async function createCollaborativeBoard() {
   const adapter = new FirebaseAdapter();
-  const boardId = adapter.generateBoardId(); // This already sets the boardId
+  const boardId = await adapter.generateBoardId(); // Wait for the async operation
+  adapter.setBoardId(boardId);
   return { adapter, boardId };
 }
 

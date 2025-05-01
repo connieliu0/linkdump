@@ -182,10 +182,6 @@ label {
   gap: 8px;
   margin-top: 8px;
 }
-.dialog-content .dialog-body .storage-mode-selector p {
-  color: var(--secondary-color);
-}
-
 .mode-button {
   display: flex;
   flex-direction: column;
