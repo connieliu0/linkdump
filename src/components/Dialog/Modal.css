@@ -94,7 +94,7 @@
   gap: 8px;
 }
 
-
+textarea,
 .dialog-content .input-field {
   width: 100%;
   box-sizing: border-box;
@@ -107,6 +107,8 @@
   font-family: 'Decompositionphase1';
   font-size: 1rem;
 }
+
+textarea:focus,
 .dialog-content .input-field:focus {
   outline: none;
   background: linear-gradient(to top, rgba(211, 211, 211, 0.5), transparent);

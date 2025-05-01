@@ -43,7 +43,6 @@ const fetchChannelBlocks = async (channelSlug) => {
       }
       
       const data = await response.json();
-      console.log(`Received ${data.contents?.length || 0} blocks from page ${page}`);
       
       // Add this page's blocks to our collection
       if (data.contents && data.contents.length > 0) {
@@ -116,9 +115,7 @@ const convertBlocksToCanvasItems = (blocks) => {
   
   let uniqueId = 1;
   
-  return blocks.map(block => {
-    console.log('Converting block:', block);
-    
+  return blocks.map(block => {    
     // Ensure we have a valid ID
     const blockId = block?.id || `arena-${uniqueId++}`;
     
@@ -154,7 +151,8 @@ const convertBlocksToCanvasItems = (blocks) => {
         convertedItem = {
           ...baseItem,
           type: 'image',
-          content: imageUrl
+          content: imageUrl, // This becomes the 'src' prop in ImageCard
+          sourceUrl: block.title + block.description // This becomes the 'sourceUrl' prop in ImageCard
         };
         break;
       
@@ -178,7 +176,7 @@ const convertBlocksToCanvasItems = (blocks) => {
         convertedItem = {
           ...baseItem,
           type: 'newText',
-          content: textContent
+          content: textContent +" -" +block.title
         };
         break;
       
@@ -197,7 +195,6 @@ const convertBlocksToCanvasItems = (blocks) => {
       return null;
     }
     
-    console.log('Converted item:', convertedItem);
     
     return convertedItem;
   }).filter(Boolean); // Remove any null items

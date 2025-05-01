@@ -134,4 +134,20 @@ export class IndexedDBAdapter extends StorageAdapter {
       return false;
     }
   }
+
+  // Add method to check if board is expired
+  async isBoardExpired() {
+    try {
+      await this.ensureDB();
+      const settings = await this.getTimeSettings();
+      if (!settings) return false;
+      
+      const now = Date.now();
+      const expiryTime = settings.startTime + (settings.duration * 60 * 1000);
+      return now >= expiryTime;
+    } catch (error) {
+      console.error('Error checking board expiry:', error);
+      return false;
+    }
+  }
 }

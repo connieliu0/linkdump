@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react';
 import Modal from './Modal';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
+import useMeasure from 'react-use-measure';
 import { handleImageFile, extractImageFromClipboard } from '../../utils/imageProcessing';
 import { detectImageSource } from '../../utils/linkProcessing';
 import { createImageCard, createTextCard, createLinkCard } from '../../utils/cardManagement';
@@ -9,10 +11,13 @@ const AddContentDialog = ({ isOpen, onClose, onAddContent }) => {
   const [imageDataUrl, setImageDataUrl] = useState(null);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
+  const [ref, bounds] = useMeasure();
 
   const handleTextChange = (e) => {
-    setTextValue(e.target.value);
-    if (e.target.value && imageDataUrl) {
+    const newValue = e.target.value;
+    setTextValue(newValue);
+    // If user starts typing and there's an image, clear it
+    if (newValue && imageDataUrl) {
       setImageDataUrl(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -69,7 +74,11 @@ const AddContentDialog = ({ isOpen, onClose, onAddContent }) => {
 
   const handleAddClick = () => {
     if (imageDataUrl) {
-      onAddContent({ type: 'image', content: imageDataUrl });
+      onAddContent({ 
+        type: 'image', 
+        content: imageDataUrl,
+        sourceUrl: textValue.trim() // Use text input as source URL for images
+      });
       resetState();
     } else if (textValue.trim()) {
       const trimmedText = textValue.trim();
@@ -100,54 +109,127 @@ const AddContentDialog = ({ isOpen, onClose, onAddContent }) => {
     resetState();
   };
 
-
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} className="add-content-dialog" title="Add Content"
-    primaryButton={{
-      label: "Add",
-      onClick: handleAddClick
-    }}
-   >
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
-        <input
-          type="file"
-          accept="image/*"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          style={{ display: 'none' }}
-        />
-        <button onClick={handleImageUploadClick} disabled={!!textValue.trim()}> 
-          {imageDataUrl ? 'Change Image' : 'Upload Image'}
-        </button>
-        {imageDataUrl && (
-          <button onClick={() => { setImageDataUrl(null); fileInputRef.current.value = '';}} style={{marginLeft: '10px'}}>
-            Clear Image
-          </button>
-        )}
-      </div>
-      <textarea
-        value={textValue}
-        onChange={handleTextChange}
-        onPaste={handleTextPaste}
-        placeholder="Paste text, link, or image here..."
-        rows={4}
-        style={{ width: '100%', marginBottom: '1rem', resize: 'vertical' }}
-        disabled={!!imageDataUrl}
-      />
+    <Modal 
+      isOpen={isOpen} 
+      onClose={handleClose} 
+      className="add-content-dialog" 
+      title="Add Content"
+      primaryButton={{
+        label: "Add",
+        onClick: handleAddClick
+      }}
+    >
+      <MotionConfig transition={{ duration: 0.5, type: "spring", bounce: 0 }}>
+        <motion.div
+          animate={{ height: bounds.height > 0 ? bounds.height : 'auto' }}
+          style={{ overflow: 'hidden' }}
+        >
+          <div ref={ref}>
+            {error && (
+              <motion.p 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{ color: 'red', marginBottom: '1rem' }}
+              >
+                {error}
+              </motion.p>
+            )}
 
-     
+            <div style={{ marginBottom: '1rem', flexDirection: 'row', display:'flex', alignSelf: 'stretch', width: '100%', alignItems:'flex-start'}}>
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+              />
+              <AnimatePresence>
+                {!textValue.trim() && (
+                  <motion.button 
+                    onClick={handleImageUploadClick}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15, ease: "easeInOut" }}
+                    style={{flex: "1 0 0"}}
+                  >
+                    {imageDataUrl ? 'Change Image' : 'Upload Image'}
+                  </motion.button>
+                )}
+              
+                {imageDataUrl && (
+                  <motion.button
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    transition={{ duration: 0.15, ease: "easeInOut" }}
+                    onClick={() => { 
+                      setImageDataUrl(null); 
+                      fileInputRef.current.value = '';
+                    }}
+                    style={{ marginLeft: imageDataUrl && !textValue.trim() ? '10px' : '0px', flex: "1 0 0"}}
+                  >
+                    Clear Image
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
 
-      {imageDataUrl && (
-        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-          <img 
-            src={imageDataUrl} 
-            alt="Preview" 
-            style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', margin: '0 auto' }} 
-          />
-        </div>
-      )}
-
+            <AnimatePresence mode="wait">
+              {imageDataUrl ? (
+                <motion.div
+                  key="image-view"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                >
+                  <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                    <img 
+                      src={imageDataUrl} 
+                      alt="Preview" 
+                      style={{ maxWidth: '100%', maxHeight: '150px', display: 'block', margin: '0 auto' }} 
+                    />
+                  </div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1, duration: 0.2, ease: "easeOut" }}
+                  >
+                    <textarea
+                      value={textValue}
+                      onChange={handleTextChange}
+                      placeholder="Add image source or description..."
+                      rows={2}
+                      style={{ width: '100%', resize: 'vertical' }}
+                    />
+                  </motion.div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="text-view"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                >
+                  <textarea
+                    value={textValue}
+                    onChange={handleTextChange}
+                    onPaste={handleTextPaste}
+                    placeholder="Paste text, link, or image here..."
+                    rows={4}
+                    style={{ width: '100%', resize: 'vertical' }}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.div>
+      </MotionConfig>
     </Modal>
   );
 };

@@ -71,14 +71,14 @@ export class FirebaseAdapter extends StorageAdapter {
   async generateBoardId(customId = null) {
     try {
       if (customId) {
-        // Check if the board exists and is expired
+        // Check if the board exists
         const isAvailable = await this.checkUrlAvailability(customId);
         
         if (!isAvailable) {
-          throw new Error("This board name is already taken by an active board");
+          throw new Error("This board name is already taken");
         }
         
-        // Use the custom ID (either it's new or we've already cleared the expired board)
+        // Use the custom ID
         this.setBoardId(customId);
         
         // Initialize the board with empty structure
@@ -252,59 +252,49 @@ export class FirebaseAdapter extends StorageAdapter {
       
       // Check if board exists
       const snapshot = await get(ref(db, `boards/${customId}`));
-      if (!snapshot.exists()) {
-        return true; // Board doesn't exist, so ID is available
-      }
-      
-      // If board exists, check if it's expired
-      const timeSettings = snapshot.val()?.timeSettings;
-      if (!timeSettings) {
-        return true; // No time settings means board is incomplete/invalid
-      }
-
-      const currentTime = Date.now();
-      const endTime = timeSettings.startTime + (timeSettings.duration * 60 * 1000);
-      
-      // If board is expired, it can be recycled
-      if (currentTime > endTime) {
-        // Optional: Clear the old board data
-        await this.deleteExpiredBoard(customId);
-        return true;
-      }
-      
-      // Board exists and isn't expired
-      return false;
+      return !snapshot.exists(); // Return true if board doesn't exist
     } catch (error) {
       console.error('Error checking URL availability:', error);
       throw error;
     }
   }
 
-  // Add this method to handle deleting expired boards
   async deleteExpiredBoard(boardId) {
     try {
-      // Delete all items and settings for this board
       await remove(ref(db, `boards/${boardId}`));
-      console.log(`Deleted expired board: ${boardId}`);
       return true;
     } catch (error) {
-      console.error(`Error deleting expired board ${boardId}:`, error);
-      throw error;
+      console.error('Error deleting expired board:', error);
+      return false;
     }
   }
 
   async clearBoard() {
     try {
-      if (!this.boardId) {
-        return false;
-      }
-
-      const boardRef = ref(db, `boards/${this.boardId}`);
-      await remove(boardRef); // This will remove the entire board node, including items and timeSettings
-      console.log('Board cleared successfully in Firebase');
+      if (!this.boardId) throw new Error("No board ID set");
+      
+      // Clear both items and time settings
+      await remove(ref(db, `boards/${this.boardId}`));
+      
+      console.log('[FirebaseAdapter] Board cleared successfully');
       return true;
     } catch (error) {
-      console.error('Error clearing board in Firebase:', error);
+      console.error('[FirebaseAdapter] Error clearing board:', error);
+      return false;
+    }
+  }
+
+  // Add method to check if board is expired
+  async isBoardExpired() {
+    try {
+      const settings = await this.getTimeSettings();
+      if (!settings) return false;
+      
+      const now = Date.now();
+      const expiryTime = settings.startTime + (settings.duration * 60 * 1000);
+      return now >= expiryTime;
+    } catch (error) {
+      console.error('Error checking board expiry:', error);
       return false;
     }
   }
