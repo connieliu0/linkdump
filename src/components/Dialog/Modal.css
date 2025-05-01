@@ -131,7 +131,7 @@ textarea:focus,
 .dialog-content .button-container button {
   flex: 1;
   padding: 12px;
-  border: 1.5px solid var(--primary-color);
+  border: 1px solid var(--secondary-color);
   background: rgba(255, 255, 255, 0.20);
   cursor: pointer;
   transition: all 0.2s ease;

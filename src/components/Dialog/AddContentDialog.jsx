@@ -148,8 +148,6 @@ const AddContentDialog = ({ isOpen, onClose, onAddContent }) => {
                 {!textValue.trim() && (
                   <motion.button 
                     onClick={handleImageUploadClick}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -220,7 +218,7 @@ const AddContentDialog = ({ isOpen, onClose, onAddContent }) => {
                     value={textValue}
                     onChange={handleTextChange}
                     onPaste={handleTextPaste}
-                    placeholder="Paste text, link, or image here..."
+                    placeholder="Or paste text or link..."
                     rows={4}
                     style={{ width: '100%', resize: 'vertical' }}
                   />
