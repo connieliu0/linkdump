@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import frame1 from '../assets/timepasses/frame 1.webp';
-import frame2 from '../assets/timepasses/frame 2.webp';
-import frame3 from '../assets/timepasses/frame 3.webp';
-import frame4 from '../assets/timepasses/frame 4.webp';
+import frame1 from '../assets/timepasses/frame1.webp';
+import frame2 from '../assets/timepasses/frame2.webp';
+import frame3 from '../assets/timepasses/frame3.webp';
+import frame4 from '../assets/timepasses/frame4.webp';
 
-const FRAME_DURATION = 700; // 2 seconds per frame
+const FRAME_DURATION = 700; // 700ms per frame
 const frames = [frame1, frame2, frame3, frame4];
 
 const AnimatedBackground = () => {
@@ -13,18 +13,29 @@ const AnimatedBackground = () => {
   const [isForward, setIsForward] = useState(true);
   const [imagesLoaded, setImagesLoaded] = useState(false);
 
+  // Debug log the current frame URL
+  useEffect(() => {
+    console.log('Current frame URL:', frames[currentFrame]);
+  }, [currentFrame]);
+
   // Preload images on mount
   useEffect(() => {
     let loadedCount = 0;
     const totalImages = frames.length;
+    console.log('Starting to load images...');
 
-    frames.forEach(src => {
+    frames.forEach((src, index) => {
       const img = new Image();
       img.onload = () => {
         loadedCount++;
+        console.log(`Image ${index + 1} loaded:`, src);
         if (loadedCount === totalImages) {
+          console.log('All images loaded!');
           setImagesLoaded(true);
         }
+      };
+      img.onerror = (e) => {
+        console.error(`Error loading image ${index + 1}:`, src, e);
       };
       img.src = src;
     });
@@ -68,14 +79,19 @@ const AnimatedBackground = () => {
 
   // Show nothing or loading state until images are loaded
   if (!imagesLoaded) {
-    return <div className="animated-background soft-edge-blur" />;
+    return <div className="animated-background" style={{ backgroundColor: '#f5f5f5' }} />;
   }
 
   return (
     <div
-      className="animated-background soft-edge-blur"
+      className="animated-background"
       style={{
-        backgroundImage: `url(${frames[currentFrame]})`
+        backgroundImage: `url(${frames[currentFrame]})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        width: '100%',
+        height: '100%'
       }}
     />
   );
