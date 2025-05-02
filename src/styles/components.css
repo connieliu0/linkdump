@@ -8,12 +8,10 @@
   font-weight: normal;
   font-style: normal;
   font-display: swap;
-  font-display: fallback;
 }
 
 /* Fallback font stack */
 :root {
-  --font-decomposition: 'Decompositionphase1';
   --primary-color: #351C1C;
   --secondary-color: #645a5a; 
   --tertiary-color: #8f8989;
@@ -312,7 +310,6 @@ button {
   border-radius: 0;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-family: var(--font-decomposition);
 }
 
 
@@ -431,7 +428,6 @@ button:hover {
   border: 1px solid rgba(0, 0, 0, 0.2);
   background: transparent; /* Transparent background */
   cursor: pointer;
-  font-family: var(--font-decomposition);
   transition: all 0.2s ease;
   border-radius: 0;
   white-space: nowrap;
@@ -459,7 +455,6 @@ button:hover {
 /* Project name styles */
 .project-name {
   font-size: 1.1em;
-  font-family: var(--font-decomposition);
   word-wrap: break-word;
   word-break: break-word;
   max-width: 100%;
@@ -746,7 +741,6 @@ main {
   border: 1px solid rgba(0, 0, 0, 0.2);
   background: transparent;
   color: var(--primary-color);
-  font-family: var(--font-decomposition);
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
