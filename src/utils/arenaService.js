@@ -170,7 +170,8 @@ const convertBlocksToCanvasItems = (blocks) => {
         convertedItem = {
           ...baseItem,
           type: 'link',
-          content: linkUrl
+          content: linkUrl,
+          sourceUrl: null
         };
         break;
       
@@ -181,7 +182,8 @@ const convertBlocksToCanvasItems = (blocks) => {
         convertedItem = {
           ...baseItem,
           type: 'newText',
-          content: textContent +" -" +block.title
+          content: textContent +" -" +block.title,
+          sourceUrl: null
         };
         break;
       
@@ -190,7 +192,8 @@ const convertBlocksToCanvasItems = (blocks) => {
         convertedItem = {
           ...baseItem,
           type: 'text',
-          content: defaultContent
+          content: defaultContent,
+          sourceUrl: null
         };
     }
     
