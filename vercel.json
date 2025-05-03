@@ -1,5 +1,8 @@
 {
     "buildCommand": "npm install --no-package-lock && npm run build",
     "outputDirectory": "dist",
-    "installCommand": "npm install --force"
+    "installCommand": "npm install --force",
+    "rewrites": [
+      { "source": "/(.*)", "destination": "/index.html" }
+    ]
   }
