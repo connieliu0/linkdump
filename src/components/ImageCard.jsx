@@ -2,8 +2,9 @@
 // This wraps the image in a container to better support the fading border effect
 
 import React, { useState, useEffect } from 'react';
+import { throttle } from 'lodash';
 
-const ImageCard = ({ src, itemId, sourceUrl: initialSourceUrl, storage }) => {
+const ImageCard = React.memo(function ImageCard({ src, itemId, sourceUrl: initialSourceUrl, storage }) {
   const [compressedSrc, setCompressedSrc] = useState(src);
   const [isEditing, setIsEditing] = useState(false);
   const [sourceUrl, setSourceUrl] = useState(initialSourceUrl || '');
@@ -93,6 +94,10 @@ const ImageCard = ({ src, itemId, sourceUrl: initialSourceUrl, storage }) => {
     }
   };
 
+  const handleMouseMove = throttle((e) => {
+    // ... your code ...
+  }, 16); // ~60fps
+
   return (
     <div className="image-container">
       {imageError ? (
@@ -135,6 +140,6 @@ const ImageCard = ({ src, itemId, sourceUrl: initialSourceUrl, storage }) => {
       </div>
     </div>
   );
-};
+});
 
 export default ImageCard;

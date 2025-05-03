@@ -2,9 +2,9 @@
 
 @font-face {
   font-family: 'font-decomposition';
-  src: url('/Decompositionphase1.woff2') format('woff2'),
-       url('/Decompositionphase1.woff') format('woff'),
-       url('/Decompositionphase1.ttf') format('truetype');
+  src: url('../assets/fonts/Decompositionphase1.woff2') format('woff2'),
+       url('../assets/fonts/Decompositionphase1.woff') format('woff'),
+       url('../assets/fonts/Decompositionphase1.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -70,8 +70,8 @@ body {
 /* Content styles */
 .canvas-area {
   position: relative;
-  width: 100vw;
-  height: 100vh;
+  width: 110vw;
+  height: 110vh;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -310,6 +310,7 @@ button {
   border-radius: 0;
   cursor: pointer;
   transition: all 0.3s ease;
+  font-family: 'Decompositionphase1';
 }
 
 
@@ -677,6 +678,7 @@ button:hover {
   width: 550px;
   max-width: 100%;
   margin: 0 auto;
+  padding: 6px;
 }
 
 .tweet-card .twitter-tweet {
@@ -823,4 +825,84 @@ main {
     min-width: 100px;
     font-size: 0.85em;
   }
+}
+
+/*
+============================================
+Aging Effect Classes (used by useAgingEffect.js)
+Each element gets a random combination of these classes for visual aging effects.
+You can find the assignment logic in useAgingEffect.js.
+============================================
+*/
+
+/* Sepia variation */
+.sepia-var-1 { --sepia-mult: 0.7; }
+.sepia-var-2 { --sepia-mult: 1.0; }
+.sepia-var-3 { --sepia-mult: 1.3; }
+
+/* Grayscale variation */
+.grayscale-var-1 { --grayscale-mult: 0.5; }
+.grayscale-var-2 { --grayscale-mult: 1.0; }
+.grayscale-var-3 { --grayscale-mult: 1.5; }
+
+/* Blur variation */
+.blur-var-1 { --blur-mult: 0.8; }
+.blur-var-2 { --blur-mult: 1.0; }
+.blur-var-3 { --blur-mult: 1.2; }
+
+/* Minimum opacity variation */
+.min-opacity-6 { --min-opacity: 0.6; }
+.min-opacity-7 { --min-opacity: 0.7; }
+.min-opacity-8 { --min-opacity: 0.8; }
+
+/* Opacity fade effect */
+.aging-opacity-fade {
+  opacity: calc(1 - (var(--aging-progress, 0) * (1 - var(--min-opacity, 1))));
+  transition: opacity 1.5s linear;
+}
+
+/* Blur aging style */
+.aging-blur {
+  filter: blur(calc(var(--aging-progress, 0) * 1.5px * var(--blur-mult, 1)));
+  text-shadow: none;
+  transition: filter 1.5s linear;
+}
+
+/* Shadow aging style */
+.aging-shadow {
+  filter: none;
+  text-shadow: 0px 0px calc(var(--aging-progress, 0) * 15px * var(--blur-mult, 1)) rgba(50, 30, 0, 0.8);
+  transition: text-shadow 1.5s linear;
+}
+
+/* Vignette effect */
+.aging-vignette {
+  box-shadow: inset 0 0 calc(var(--aging-progress, 0) * 60px) rgba(0,0,0,calc(var(--aging-progress, 0) * 0.3));
+  position: relative;
+  isolation: isolate;
+  transition: box-shadow 1.5s linear;
+}
+
+/* Sepia and grayscale for images */
+.pasted-image {
+  filter:
+    sepia(calc(var(--aging-progress, 0) * 100% * var(--sepia-mult, 1)))
+    grayscale(calc(var(--aging-progress, 0) * 50% * var(--grayscale-mult, 1)))
+    brightness(1.1);
+  border-radius: calc(var(--aging-progress, 0) * 8px);
+  transition: filter 1.5s linear, border-radius 1.5s linear;
+}
+
+/* Example for text-content and link-preview background color */
+.text-content, .link-preview {
+  background-color: rgba(255, 255, calc(255 - var(--aging-progress, 0) * 60), calc(1 - var(--aging-progress, 0) * 0.3));
+  transition: background-color 1.5s linear;
+}
+
+/* Example for card background and border */
+.card {
+  background-color: rgba(255, 255, calc(255 - var(--aging-progress, 0) * 80), calc(1 - var(--aging-progress, 0) * 0.3));
+  box-shadow: 0 10px 15px -3px rgba(70, 50, 0, 0.1);
+  border: 1px solid rgba(220, 200, 150, 0.6);
+  transition: background-color 1.5s linear, box-shadow 1.5s linear, border 1.5s linear;
 }

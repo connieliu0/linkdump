@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const TextCard = ({ content, itemId, sourceUrl: initialSourceUrl, isEmpty, showSourceUrl = false, onInputActiveChange, type, storage }) => {
+const TextCard = React.memo(function TextCard({ content, itemId, sourceUrl: initialSourceUrl, isEmpty, showSourceUrl = false, onInputActiveChange, type, storage }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isContentEditing, setIsContentEditing] = useState(false);
   const [sourceUrl, setSourceUrl] = useState(initialSourceUrl || '');
@@ -158,6 +158,6 @@ const TextCard = ({ content, itemId, sourceUrl: initialSourceUrl, isEmpty, showS
       )}
     </div>
   );
-};
+});
 
 export default TextCard; 

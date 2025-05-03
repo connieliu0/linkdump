@@ -8,9 +8,17 @@ body{
   background-size: cover;
   background-attachment: fixed;
   font-family: 'Decompositionphase1';
-  src: url('.../public/Decompositionphase1.ttf') format('ttf');
+ font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Decompositionphase1';
+  src: url('./assets/fonts/Decompositionphase1.woff2') format('woff2'),
+       url('./assets/fonts/Decompositionphase1.woff') format('woff'),
+       url('./assets/fonts/Decompositionphase1.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
+  font-display: swap;
 }
 .canvas-area {
   position: relative;

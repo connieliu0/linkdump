@@ -112,7 +112,7 @@ const Toolbar = ({
     if (content.type === 'text') {
       onAddEmptyCard({ content: content.content, type: 'newText', isEmpty: false });
     } else if (content.type === 'image') {
-      onAddEmptyCard({ content: content.content, type: 'image' });
+      onAddEmptyCard({ content: content.content, type: 'image', sourceUrl: content.sourceUrl });
     }
   };
 

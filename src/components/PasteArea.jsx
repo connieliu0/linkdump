@@ -84,7 +84,6 @@ const PasteArea = ({ onExport }) => {
   const [isSelecting, setIsSelecting] = useState(false);
   const panzoomRef = useRef();
   const activeItemRef = useRef(null);
-  const [initialPosition, setInitialPosition] = useState({ x: 100, y: 100 });
   const [timeSettings, setTimeSettings] = useState(null);
   const [isExpired, setIsExpired] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(null);
@@ -97,7 +96,6 @@ const PasteArea = ({ onExport }) => {
     // Don't show time input initially if we're in collaborative mode
     return !urlBoardId;
   });
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Add a ref to track if we're clearing
   const isClearingRef = useRef(false);
@@ -345,7 +343,7 @@ const PasteArea = ({ onExport }) => {
   const addEmptyCard = async (cardData = { position: { x: 100, y: 100 } }) => {
     try {
       const newItem = cardData.type === 'image' 
-        ? createImageCard(cardData.content, cardData.position)
+        ? createImageCard(cardData.content, cardData.position, cardData.sourceUrl)
         : createTextCard(cardData.content, cardData.position, cardData.isEmpty);
 
       await saveAndUpdateItems(storage, newItem, setItems);

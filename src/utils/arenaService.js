@@ -113,15 +113,20 @@ const extractChannelSlug = (input) => {
 const convertBlocksToCanvasItems = (blocks) => {
   if (!blocks || !Array.isArray(blocks)) return [];
   
-  let uniqueId = 1;
+  const usedIds = new Set();
   
-  return blocks.map(block => {    
-    // Ensure we have a valid ID
-    const blockId = block?.id || `arena-${uniqueId++}`;
+  return blocks.map((block, index) => {    
+    let baseId = block?.id ? `arena-${block.id}` : `arena-fallback-${index}`;
+    let uniqueId = baseId;
+    let suffix = 1;
+    while (usedIds.has(uniqueId)) {
+      uniqueId = `${baseId}-${suffix++}`;
+    }
+    usedIds.add(uniqueId);
     
     // Common properties for all block types
     const baseItem = {
-      id: `arena-${blockId}`,
+      id: uniqueId,
       position: { x: 0, y: 0 }, // Will be positioned by layout algorithm
       originalData: block,
       metadata: {
@@ -152,7 +157,7 @@ const convertBlocksToCanvasItems = (blocks) => {
           ...baseItem,
           type: 'image',
           content: imageUrl, // This becomes the 'src' prop in ImageCard
-          sourceUrl: block.title + block.description // This becomes the 'sourceUrl' prop in ImageCard
+          sourceUrl: (block.title || '') + (block.description || '')
         };
         break;
       

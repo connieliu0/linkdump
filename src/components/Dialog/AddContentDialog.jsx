@@ -16,13 +16,6 @@ const AddContentDialog = ({ isOpen, onClose, onAddContent }) => {
   const handleTextChange = (e) => {
     const newValue = e.target.value;
     setTextValue(newValue);
-    // If user starts typing and there's an image, clear it
-    if (newValue && imageDataUrl) {
-      setImageDataUrl(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
     setError('');
   };
 
@@ -77,7 +70,7 @@ const AddContentDialog = ({ isOpen, onClose, onAddContent }) => {
       onAddContent({ 
         type: 'image', 
         content: imageDataUrl,
-        sourceUrl: textValue.trim() // Use text input as source URL for images
+        sourceUrl: textValue.trim()
       });
       resetState();
     } else if (textValue.trim()) {
@@ -145,19 +138,16 @@ const AddContentDialog = ({ isOpen, onClose, onAddContent }) => {
                 style={{ display: 'none' }}
               />
               <AnimatePresence>
-                {!textValue.trim() && (
-                  <motion.button 
-                    onClick={handleImageUploadClick}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15, ease: "easeInOut" }}
-                    style={{flex: "1 0 0"}}
-                  >
-                    {imageDataUrl ? 'Change Image' : 'Upload Image'}
-                  </motion.button>
-                )}
-              
+                <motion.button 
+                  onClick={handleImageUploadClick}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15, ease: "easeInOut" }}
+                  style={{flex: "1 0 0"}}
+                >
+                  {imageDataUrl ? 'Change Image' : 'Upload Image'}
+                </motion.button>
                 {imageDataUrl && (
                   <motion.button
                     initial={{ opacity: 0, x: -10 }}
@@ -168,7 +158,7 @@ const AddContentDialog = ({ isOpen, onClose, onAddContent }) => {
                       setImageDataUrl(null); 
                       fileInputRef.current.value = '';
                     }}
-                    style={{ marginLeft: imageDataUrl && !textValue.trim() ? '10px' : '0px', flex: "1 0 0"}}
+                    style={{ marginLeft: imageDataUrl ? '10px' : '0px', flex: "1 0 0"}}
                   >
                     Clear Image
                   </motion.button>
