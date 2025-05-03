@@ -51,12 +51,10 @@ const AnimatedBackground = () => {
           setRepeatCount(count => count + 1);
           return 0; // Stay on frame 1
         }
-        
         // Reset repeat count when moving from frame 1
         if (prev === 0) {
           setRepeatCount(0);
         }
-
         // Handle direction changes
         if (isForward) {
           if (prev === frames.length - 1) {
@@ -79,21 +77,40 @@ const AnimatedBackground = () => {
 
   // Show nothing or loading state until images are loaded
   if (!imagesLoaded) {
-    return <div className="animated-background" style={{ backgroundColor: '#f5f5f5' }} />;
+    return <div className="animated-background" style={{ backgroundColor: '#f5f5f5', width: '100%', height: '100%' }} />;
   }
 
+  // Render all frames as absolutely positioned <img> elements, crossfading with opacity
   return (
     <div
       className="animated-background"
       style={{
-        backgroundImage: `url(${frames[currentFrame]})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
+        position: 'relative',
         width: '100%',
         height: '100%'
       }}
-    />
+    >
+      {frames.map((src, idx) => (
+        <img
+          key={idx}
+          src={src}
+          alt=""
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            opacity: idx === currentFrame ? 1 : 0,
+            transition: 'opacity 0.3s linear',
+            pointerEvents: 'none',
+            userSelect: 'none'
+          }}
+          draggable={false}
+        />
+      ))}
+    </div>
   );
 };
 
