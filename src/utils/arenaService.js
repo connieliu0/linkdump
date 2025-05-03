@@ -130,8 +130,8 @@ const convertBlocksToCanvasItems = (blocks) => {
       position: { x: 0, y: 0 }, // Will be positioned by layout algorithm
       originalData: block,
       metadata: {
-        title: block.title || block.generated_title || 'Untitled',
-        description: block.description || 'Untitled'
+        title: block.title || block.generated_title || '',
+        description: block.description ?? ''
       }
     };
     

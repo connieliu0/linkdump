@@ -686,6 +686,7 @@ const PasteArea = ({ onExport }) => {
     window.history.replaceState({}, '', '/');
   }, []);
 
+
   return (
     <>
       {!timeSettings && (
@@ -794,7 +795,7 @@ const PasteArea = ({ onExport }) => {
                   
                   {items.filter(item => item?.id).map(item => (
                     <Element
-                      key={item.id}
+                      key={item.id + '-outer'}
                       id={item.id}
                       className={`paste-item ${selectedId === item.id ? 'selected' : ''}`}
                       onClick={(e) => {

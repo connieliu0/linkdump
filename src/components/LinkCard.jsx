@@ -16,12 +16,18 @@ const LinkCard = React.memo(function LinkCard({ url, itemId, initialMetadata, st
         const data = await fetchMetadata(url);
         setMetadata({ ...data, isLoading: false });
         if (storage) {
-          await storage.updateItem(itemId, { metadata: data });
+          await storage.updateItem(itemId, {
+            metadata: {
+              ...data,
+              title: data.title ?? '',
+              description: data.description ?? ''
+            }
+          });
         }
       } catch (error) {
         console.error('Error in LinkCard:', error);
         setMetadata({
-          title: url,
+          title: url ?? '',
           isLoading: false
         });
       }
