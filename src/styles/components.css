@@ -551,6 +551,8 @@ button:hover {
   right: 0;
   bottom: 0;
   z-index: 10000;
+  width: 100vw;
+  height: 100vh;
   cursor: pointer;
   display: flex;
   opacity: 0;
