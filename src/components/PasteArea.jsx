@@ -588,7 +588,7 @@ const PasteArea = ({ onExport }) => {
     if (timeSettings) {
       inactivityTimer.current = setTimeout(() => {
         setIsInactive(true);
-      }, 1000); // 3 minutes
+      }, 180000); // 3 minutes in milliseconds
     }
   }, [timeSettings]);
 
