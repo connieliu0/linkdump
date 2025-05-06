@@ -1,5 +1,5 @@
 // src/components/PasteArea.jsx
-import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import PanZoom, { Element } from '@sasza/react-panzoom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStorageAdapter } from '../utils/storage/StorageFactory';
@@ -11,6 +11,8 @@ import { useAgingEffect } from '../hooks/useAgingEffect';
 import { usePaperAgingEffect } from '../hooks/usePaperAgingEffect';
 import TextCard from './TextCard';
 import InactivityOverlay from './InactivityOverlay';
+import shadowSvg from '../assets/timepasses/shadow.svg';
+import shadowSvg2 from '../assets/timepasses/shadow2.svg';
 import { FirebaseAdapter } from '../utils/storage/FirebaseAdapter';
 import { processImage, extractImageFromClipboard, handleImageFile } from '../utils/imageProcessing';
 import { detectImageSource } from '../utils/linkProcessing';
@@ -18,9 +20,6 @@ import { createImageCard, createTextCard, createLinkCard } from '../utils/cardMa
 import { saveAndUpdateItems, updateAndRefreshItems, deleteAndRemoveItem } from '../utils/storageOperations';
 import { layoutArenaItems } from '../utils/layoutUtils';
 import MergedDialog from './Dialog/MergedDialog';
-
-const ShadowSvg = React.lazy(() => import('../assets/timepasses/shadow.svg'));
-const ShadowSvg2 = React.lazy(() => import('../assets/timepasses/shadow2.svg'));
 
 // Helper to get/set visited boards
 const getVisitedBoards = () => {
@@ -386,7 +385,7 @@ const PasteArea = ({ onExport }) => {
         const file = imageItem.getAsFile();
         const processedDataUrl = await processImage(file);
         const newItem = createImageCard(processedDataUrl, { x, y }, imageItem.type === 'image' ? imageItem.sourceUrl : null);
-            await saveAndUpdateItems(storage, newItem, setItems);
+        await saveAndUpdateItems(storage, newItem, setItems);
         return;
       }
 
@@ -618,9 +617,9 @@ const PasteArea = ({ onExport }) => {
         const alreadyVisited = (!urlBoardId && localStorage.getItem('localBoardActive') === 'true') ||
           (urlBoardId && getVisitedBoards().includes(urlBoardId));
         if (!alreadyVisited) {
-    const hasVisited = localStorage.getItem('hasVisitedBefore');
-    if (!hasVisited) {
-      setShowTimeInput(false);
+          const hasVisited = localStorage.getItem('hasVisitedBefore');
+          if (!hasVisited) {
+            setShowTimeInput(false);
             setLoadingTimeSettings(false);
             return;
           }
@@ -711,28 +710,24 @@ const PasteArea = ({ onExport }) => {
             onMouseMove={handleMouseMove}
             tabIndex={0}
           >
-            <Suspense fallback={<div style={{width: '100%', height: '100px'}} />}> 
             <div 
               className="leaf-shadows-container sway1"
               style={{
+                backgroundImage: `url(${shadowSvg})`,
                 backgroundSize: 'cover',
                 backgroundRepeat: 'no-repeat',
                 rotate: '180deg',
               }}
-              >
-                <ShadowSvg style={{ width: '100%', height: '100%' }} />
-              </div>
+            ></div>
             <div 
               className="leaf-shadows-container sway2"
               style={{
+                backgroundImage: `url(${shadowSvg2})`,
                 backgroundSize: 'cover',
                 backgroundRepeat: 'no-repeat',
                 rotate: '180deg',
               }}
-              >
-                <ShadowSvg2 style={{ width: '100%', height: '100%' }} />
-              </div>
-            </Suspense>
+            ></div>
             <Toolbar 
               panzoomRef={panzoomRef} 
               onExport={onExport} 
