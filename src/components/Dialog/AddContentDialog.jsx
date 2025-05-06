@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import Modal from './Modal';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import useMeasure from 'react-use-measure';
-import { handleImageFile, extractImageFromClipboard } from '../../utils/imageProcessing';
+import { handleImageFile, extractImageFromClipboard, processImage } from '../../utils/imageProcessing';
 import { detectImageSource } from '../../utils/linkProcessing';
 import { createImageCard, createTextCard, createLinkCard } from '../../utils/cardManagement';
 
@@ -27,18 +27,21 @@ const AddContentDialog = ({ isOpen, onClose, onAddContent }) => {
       e.preventDefault();
       const file = imageItem.getAsFile();
       const sourceUrl = await detectImageSource(clipboardData);
-      
-      handleImageFile(
-        file,
-        (resizedDataUrl) => {
-          setImageDataUrl(resizedDataUrl);
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const processedDataUrl = await processImage(reader.result);
+          setImageDataUrl(processedDataUrl);
           setTextValue('');
           setError('');
-        },
-        (errorMessage) => {
-          setError(errorMessage);
+        } catch (err) {
+          setError('Failed to process image file.');
         }
-      );
+      };
+      reader.onerror = () => {
+        setError('Failed to read image file.');
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -48,21 +51,33 @@ const AddContentDialog = ({ isOpen, onClose, onAddContent }) => {
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
-    handleImageFile(
-      file,
-      (resizedDataUrl) => {
-        setImageDataUrl(resizedDataUrl);
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
+        const processedDataUrl = await processImage(reader.result);
+        setImageDataUrl(processedDataUrl);
         setTextValue('');
         setError('');
-      },
-      (errorMessage) => {
-        setError(errorMessage);
+      } catch (err) {
+        setError('Failed to process image file.');
         setImageDataUrl(null);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
       }
-    );
+    };
+    reader.onerror = () => {
+      setError('Failed to read image file.');
+      setImageDataUrl(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    };
+    if (file && file.type.startsWith('image/')) {
+      reader.readAsDataURL(file);
+    } else if (file) {
+      setError('Please select a valid image file.');
+    }
   };
 
   const handleAddClick = () => {

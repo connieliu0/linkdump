@@ -1,20 +1,16 @@
 // src/components/PasteArea.jsx
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
 import PanZoom, { Element } from '@sasza/react-panzoom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStorageAdapter } from '../utils/storage/StorageFactory';
 import LinkCard from './LinkCard';
 import ImageCard from './ImageCard';
 import Toolbar from './Toolbar';
-// import TimeInputDialog from './Dialog/TimeInputDialog';
 import ExpiryDialog from './Dialog/ExpiryDialog';
 import { useAgingEffect } from '../hooks/useAgingEffect';
 import { usePaperAgingEffect } from '../hooks/usePaperAgingEffect';
 import TextCard from './TextCard';
 import InactivityOverlay from './InactivityOverlay';
-// import OnboardingDialog from './Dialog/OnboardingDialog';
-import shadowSvg from '../assets/timepasses/shadow.svg';
-import shadowSvg2 from '../assets/timepasses/shadow2.svg';
 import { FirebaseAdapter } from '../utils/storage/FirebaseAdapter';
 import { processImage, extractImageFromClipboard, handleImageFile } from '../utils/imageProcessing';
 import { detectImageSource } from '../utils/linkProcessing';
@@ -23,29 +19,23 @@ import { saveAndUpdateItems, updateAndRefreshItems, deleteAndRemoveItem } from '
 import { layoutArenaItems } from '../utils/layoutUtils';
 import MergedDialog from './Dialog/MergedDialog';
 
-const extractSourceFromHtml = (html) => {
-  if (!html) return null;
-  
+const ShadowSvg = React.lazy(() => import('../assets/timepasses/shadow.svg'));
+const ShadowSvg2 = React.lazy(() => import('../assets/timepasses/shadow2.svg'));
+
+// Helper to get/set visited boards
+const getVisitedBoards = () => {
   try {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = html;
-    
-    // Try to find image source
-    const img = tempDiv.querySelector('img');
-    if (img) {
-      return img.src || img.getAttribute('data-source');
-    }
-    
-    // Try to find link source
-    const link = tempDiv.querySelector('a');
-    if (link) {
-      return link.href;
-    }
-    
-    return null;
-  } catch (error) {
-    console.error('Error extracting source from HTML:', error);
-    return null;
+    return JSON.parse(localStorage.getItem('visitedBoards')) || [];
+  } catch {
+    return [];
+  }
+};
+
+const addVisitedBoard = (boardId) => {
+  const boards = getVisitedBoards();
+  if (!boards.includes(boardId)) {
+    boards.push(boardId);
+    localStorage.setItem('visitedBoards', JSON.stringify(boards));
   }
 };
 
@@ -90,12 +80,8 @@ const PasteArea = ({ onExport }) => {
   const [isInputActive, setIsInputActive] = useState(false);
   const [isInactive, setIsInactive] = useState(false);
   let inactivityTimer = useRef(null);
-  const [showTimeInput, setShowTimeInput] = useState(() => {
-    const pathParts = window.location.pathname.split('/').filter(Boolean);
-    const urlBoardId = pathParts[0] || null;
-    // Don't show time input initially if we're in collaborative mode
-    return !urlBoardId;
-  });
+  const [showTimeInput, setShowTimeInput] = useState(false);
+  const [loadingTimeSettings, setLoadingTimeSettings] = useState(true);
 
   // Add a ref to track if we're clearing
   const isClearingRef = useRef(false);
@@ -352,10 +338,6 @@ const PasteArea = ({ onExport }) => {
     }
   };
 
-  // Define addCard function
-  const addCard = async (cardData) => {
-    await saveAndUpdateItems(storage, cardData, setItems);
-  };
 
   // Define updateCard function
   const updateCard = async (id, updates) => {
@@ -402,18 +384,9 @@ const PasteArea = ({ onExport }) => {
       
       if (imageItem) {
         const file = imageItem.getAsFile();
-        const sourceUrl = await detectImageSource(clipboardData, file);
-        
-        handleImageFile(
-          file,
-          async (resizedDataUrl) => {
-            const newItem = createImageCard(resizedDataUrl, { x, y }, sourceUrl);
+        const processedDataUrl = await processImage(file);
+        const newItem = createImageCard(processedDataUrl, { x, y }, imageItem.type === 'image' ? imageItem.sourceUrl : null);
             await saveAndUpdateItems(storage, newItem, setItems);
-          },
-          (error) => {
-            console.error('Error processing image:', error);
-          }
-        );
         return;
       }
 
@@ -631,13 +604,34 @@ const PasteArea = ({ onExport }) => {
     resetInactivityTimer();
   };
 
-  // Check for first visit
+  // Delay and await timeSettings query before showing the time dialog
   useEffect(() => {
+    let isMounted = true;
+    const checkTimeSettings = async () => {
+      setLoadingTimeSettings(true);
+      // Wait 0.5 seconds before checking
+      await new Promise(res => setTimeout(res, 300));
+      if (!isMounted) return;
+      if (!timeSettings) {
+        const pathParts = window.location.pathname.split('/').filter(Boolean);
+        const urlBoardId = pathParts[0] || null;
+        const alreadyVisited = (!urlBoardId && localStorage.getItem('localBoardActive') === 'true') ||
+          (urlBoardId && getVisitedBoards().includes(urlBoardId));
+        if (!alreadyVisited) {
     const hasVisited = localStorage.getItem('hasVisitedBefore');
     if (!hasVisited) {
       setShowTimeInput(false);
-    }
-  }, []);
+            setLoadingTimeSettings(false);
+            return;
+          }
+        }
+        setShowTimeInput(true);
+      }
+      setLoadingTimeSettings(false);
+    };
+    checkTimeSettings();
+    return () => { isMounted = false; };
+  }, [timeSettings]);
 
   useEffect(() => {
     // Add paste event listener to the window
@@ -677,19 +671,19 @@ const PasteArea = ({ onExport }) => {
     }
   };
 
-  const handleCreateNewBoard = useCallback(() => {
-    // Reset storage mode to local
-    handleStorageModeChange('local');
-    // Show time input dialog
-    setShowTimeInput(true);
-    // Clear the URL
-    window.history.replaceState({}, '', '/');
+  useEffect(() => {
+    if (boardId) addVisitedBoard(boardId);
+  }, [boardId]);
+
+  useEffect(() => {
+    localStorage.setItem('localBoardActive', 'true');
   }, []);
 
+  const visibleItems = useMemo(() => items.filter(item => item?.id), [items]);
 
   return (
     <>
-      {!timeSettings && (
+      {loadingTimeSettings ? null : !timeSettings && (
         <MergedDialog
           isOpen={!timeSettings}
           onClose={() => setShowTimeInput(false)}
@@ -717,24 +711,28 @@ const PasteArea = ({ onExport }) => {
             onMouseMove={handleMouseMove}
             tabIndex={0}
           >
+            <Suspense fallback={<div style={{width: '100%', height: '100px'}} />}> 
             <div 
               className="leaf-shadows-container sway1"
               style={{
-                backgroundImage: `url(${shadowSvg})`,
                 backgroundSize: 'cover',
                 backgroundRepeat: 'no-repeat',
                 rotate: '180deg',
               }}
-            ></div>
+              >
+                <ShadowSvg style={{ width: '100%', height: '100%' }} />
+              </div>
             <div 
               className="leaf-shadows-container sway2"
               style={{
-                backgroundImage: `url(${shadowSvg2})`,
                 backgroundSize: 'cover',
                 backgroundRepeat: 'no-repeat',
                 rotate: '180deg',
               }}
-            ></div>
+              >
+                <ShadowSvg2 style={{ width: '100%', height: '100%' }} />
+              </div>
+            </Suspense>
             <Toolbar 
               panzoomRef={panzoomRef} 
               onExport={onExport} 
@@ -793,7 +791,7 @@ const PasteArea = ({ onExport }) => {
                     </div>
                   )}
                   
-                  {items.filter(item => item?.id).map(item => (
+                  {visibleItems.map(item => (
                     <Element
                       key={item.id + '-outer'}
                       id={item.id}
