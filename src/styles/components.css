@@ -141,7 +141,7 @@ body {
 box-shadow: 0px 0px 22.2px 0px #FFCB7D;
 }
 .paste-item {
-  max-width: 300px;
+  max-width: 400px;
   width: fit-content;
   background: white;
   border-radius: 0.25rem;
@@ -320,75 +320,136 @@ button:hover {
 
 /* Toolbar styles */
 .toolbar {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  z-index: 8000;
+  pointer-events: none;
+  color: var(--primary-color);
+}
+.more-section button {
+  background-image: url('../assets/crumpled-paper.webp');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: rgba(255, 255, 255, 0.5);
+  border: none;
+  width: 50px;  /* Fixed width */
+  height: 50px; /* Fixed height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5em;
+  padding: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.more-section .more-header button:hover {
+  filter: sepia(0.2);
+}
+
+
+/* Keep the general button styles for menu items */
+.more-section .more-menu button {
+  width: 100%;
+  text-align: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 0;
+  font-size: 1em;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.more-section .more-menu a {
+  text-decoration: none;
+}
+.more-section .more-menu button:hover {
+  transform: translateX(-8px);
+  opacity:1;
+}
+
+/* Bottom toolbar (existing behavior) */
+.bottom-toolbar {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  display: flex;
-  justify-content: space-between;
-  padding: 20px;
-  z-index: 8000;
-  pointer-events: none;
   opacity: 0;
   transform: translateY(100%);
   transition: opacity 1s ease, transform 1s ease;
-  color: var(--primary-color);
 }
 
-.toolbar.visible {
+.bottom-toolbar.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Top toolbar (new) */
+.top-toolbar {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  opacity: 0;
+  transform: translateY(-100%);
+  transition: opacity 1s ease, transform 1s ease;
+}
+
+.top-toolbar.visible {
   opacity: 1;
   transform: translateY(0);
 }
 
 .toolbar-section {
-  background-image: url('../assets/crumpled-paper.webp');
-  background-size: cover;
-  background-position: center;
-  padding: 20px;
   border-radius: 4px;
   position: absolute;
   bottom: 20px;
-  max-width: 300px;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  max-width: 400px;
   pointer-events: auto;
 }
-
+.more-section {
+  position: absolute;
+  right: 20px;
+  top: 0;
+  line-height: 1.4;
+  transform: translateY(calc(100% - 60px));
+  transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* Align content to the right */
+}
+.more-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end; /* Align dropdown items to the right */
+  text-align: right;
+  margin-top: 8px;
+}
 /* Time section - left side */
 .time-section {
+  padding: 20px;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
   left: 20px;
   line-height: 1.4;
   transform: translateY(calc(100% - 60px));
   transition: transform 0.3s ease;
   rotate: -2deg;
+  background-size: cover;
+  background-position: center;
 }
-
-.time-section:hover {
-  transform: translateY(0);
-}
-
-/* Project section - center */
-.project-section {
-  left: 48%;
-  text-align: center;
-  min-width: 200px;
-  max-width: 300px;
-  height: 120px; /* Make it taller */
-  transform: translateX(-50%) translateY(calc(100% - 40px));
-  display: flex;
-  align-items: flex-start; /* Align content to top */
-  justify-content: center;
-  padding-top: 20px; /* Add some padding at the top */
-}
-.project-header {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
+.time-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('../assets/crumpled-paper.webp');
+  opacity: 0.7;
+  z-index: -1;
 }
 
 /* Actions section - right side */
 .actions-section {
+  padding: 20px;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
   right: 20px;
   min-width: 200px;
   text-align: left;
@@ -403,11 +464,6 @@ button:hover {
   transform: translateY(0);
 }
 
-/* Hover effects */
-.time-section:hover,
-.actions-section:hover {
-  transform: translateY(0);
-}
 
 .actions-header {
   margin-bottom: 15px;
@@ -455,9 +511,9 @@ button:hover {
 
 /* Project name styles */
 .project-name {
-  font-size: 1.1em;
   word-wrap: break-word;
   word-break: break-word;
+  color: var(--secondary-color);
   max-width: 100%;
   line-height: 1.4;
 }
@@ -734,11 +790,26 @@ main {
   right: calc(50% - 250px); /* Position 6px to the right of project-section */
   text-align: center;
   min-width: 120px;
-  transform: translateY(calc(100% - 50px));
+  transform: translateY(calc(100% - 30px));
   transition: transform 0.3s ease;
   rotate: 2deg;
+  filter: sepia(0.15);
 }
-
+.add-section {
+  right: calc(50% - 200px); /* Position 6px to the right of project-section */
+  text-align: center;
+  min-width: 120px;
+  transform: translateY(calc(100% - 50px));
+  transition: transform 0.3s ease;
+}
+.import-section {
+  filter: sepia(0.1);
+  right: calc(50% - 150px); /* Position 6px to the right of project-section */
+  text-align: center;
+  min-width: 120px;
+  transform: translateY(calc(100% - 30px));
+  transition: transform 0.3s ease;
+}
 
 .share-button {
   padding: 8px 16px;
@@ -907,4 +978,54 @@ You can find the assignment logic in useAgingEffect.js.
   box-shadow: 0 10px 15px -3px rgba(70, 50, 0, 0.1);
   border: 1px solid rgba(220, 200, 150, 0.6);
   transition: background-color 1.5s linear, box-shadow 1.5s linear, border 1.5s linear;
+}
+
+.clickable-div {
+  padding: 22px 28px 18px 28px;
+  pointer-events: auto;
+  background: url('../assets/crumpled-paper.webp');
+  background-size: cover;
+  background-position: center;
+  color: var(--primary-color);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(.4,2,.6,1);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10), 0 1.5px 0 #fff inset;
+  min-width: 120px;
+  min-height: 48px;
+  flex-direction:column;
+  display: flex;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  text-align: center;
+  user-select: none;
+  rotate: -2deg;
+}
+
+/* Unique rotations for each card */
+.clickable-div.add-content {
+  rotate: 2deg;
+  z-index: 4;
+}
+.clickable-div.import-arena {
+  rotate: -3deg;
+  position: relative;
+  left: 10px;
+}
+.clickable-div.share-board {
+  rotate: 1deg;
+  position: relative;
+  left: -10px;
+}
+
+.clickable-div:hover {
+  transform: translateY(-10px);
+}
+
+.add-content .lines-svg {
+  display: block;
+  width: 90%;
+  max-width: 140px;
+  margin: 12px auto 0 auto;
+  position: relative;
+  bottom: 0;
 }

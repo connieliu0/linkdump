@@ -23,9 +23,9 @@ export const getTimePhase = (currentTime, startTime, halfwayPoint) => {
 export const getTimeMessage = (timePhase) => {
   switch (timePhase) {
     case 'early':
-      return "the sun is shining, grow your files";
+      return "the sun rises, grow your files";
     case 'late':
-      return "the sun is setting, process your files before they decay";
+      return "the sun sets, process your files before full decay";
     default:
       return '';
   }

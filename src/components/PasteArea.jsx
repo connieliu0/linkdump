@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getStorageAdapter } from '../utils/storage/StorageFactory';
 import LinkCard from './LinkCard';
 import ImageCard from './ImageCard';
-import Toolbar from './Toolbar';
+import BottomToolbar from './Toolbar/BottomToolbar';
+import TopToolbar from './Toolbar/TopToolbar';
 import ExpiryDialog from './Dialog/ExpiryDialog';
 import { useAgingEffect } from '../hooks/useAgingEffect';
 import { usePaperAgingEffect } from '../hooks/usePaperAgingEffect';
@@ -728,7 +729,14 @@ const PasteArea = ({ onExport }) => {
                 rotate: '180deg',
               }}
             ></div>
-            <Toolbar 
+            <TopToolbar 
+              panzoomRef={panzoomRef} 
+              onExport={onExport} 
+              timeRemaining={timeRemaining}
+              timeSettings={timeSettings}
+              projectDescription={timeSettings?.description}
+            />
+            <BottomToolbar 
               panzoomRef={panzoomRef} 
               onExport={onExport} 
               timeRemaining={timeRemaining}
@@ -739,6 +747,7 @@ const PasteArea = ({ onExport }) => {
               isExpired={isExpired}
               boardId={boardId}
               onImportArenaItems={handleImportArenaItems}
+              isCollaborative={storageMode === 'collaborative'}
             />
             
             <AnimatePresence>
