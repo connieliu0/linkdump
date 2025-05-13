@@ -328,10 +328,14 @@ const PasteArea = ({ onExport }) => {
   // Define addEmptyCard function
   const addEmptyCard = async (cardData = { position: { x: 100, y: 100 } }) => {
     try {
-      const newItem = cardData.type === 'image' 
-        ? createImageCard(cardData.content, cardData.position, cardData.sourceUrl)
-        : createTextCard(cardData.content, cardData.position, cardData.isEmpty);
-
+      let newItem;
+      if (cardData.type === 'image') {
+        newItem = createImageCard(cardData.content, cardData.position, cardData.sourceUrl);
+      } else if (cardData.type === 'link') {
+        newItem = createLinkCard(cardData.content, cardData.position);
+      } else {
+        newItem = createTextCard(cardData.content, cardData.position, cardData.isEmpty);
+      }
       await saveAndUpdateItems(storage, newItem, setItems);
     } catch (error) {
       console.error('Error adding empty card:', error);
@@ -392,7 +396,7 @@ const PasteArea = ({ onExport }) => {
 
       const text = clipboardData.getData('text');
       if (text) {
-        const isUrl = text.startsWith('http://') || text.startsWith('https://');
+        const isUrl = /^(https?:\/\/[^\s]+)$/.test(text);
         const newItem = isUrl 
           ? createLinkCard(text, { x, y })
           : createTextCard(text, { x, y }, false);

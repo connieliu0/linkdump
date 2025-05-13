@@ -12,7 +12,8 @@ const Modal = memo(({
   primaryButton,
   secondaryButton,
   className = '',
-  hasOverlay = false
+  hasOverlay = false,
+  initialFocusRef
 }) => {
   const [isClosing, setIsClosing] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -38,6 +39,16 @@ const Modal = memo(({
       return () => clearTimeout(timer);
     }
   }, [isOpen, shouldRender]);
+
+  // Focus the initialFocusRef after modal is visible
+  useEffect(() => {
+    if (isVisible && initialFocusRef && initialFocusRef.current) {
+      setTimeout(() => {
+        console.log('Focusing:', initialFocusRef.current);
+        if (initialFocusRef.current) initialFocusRef.current.focus();
+      }, 0);
+    }
+  }, [isVisible, initialFocusRef]);
 
   const handleBackdropClick = useCallback((e) => {
     if (!preventBackdropClick && e.target === e.currentTarget) {

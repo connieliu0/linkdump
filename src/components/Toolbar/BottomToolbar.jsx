@@ -7,22 +7,19 @@ import LinesSvg from '../../assets/Lines.svg';
 import { motion, AnimatePresence } from 'framer-motion';
 
 
-const Toolbar = ({ 
-  timeRemaining,
-  timeSettings,
-  projectDescription,
-  onClearCanvas,
-  isExpired,
+const BottomToolbar = ({ 
   boardId,
-  onOpenAddContentModal,
-  onOpenImportArena,
+  onAddEmptyCard,
   onImportArenaItems,
   isCollaborative
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [showAddContentModal, setShowAddContentModal] = useState(false);
+  const [addContentMode, setAddContentMode] = useState('text');
   const [showImportArena, setShowImportArena] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [imageDataUrl, setImageDataUrl] = useState(null);
+  const fileInputRef = React.useRef(null);
 
   // Animation variants
   const variants = {
@@ -35,8 +32,6 @@ const Toolbar = ({
     const timer = setTimeout(() => setIsVisible(true), 100);
     return () => clearTimeout(timer);
   }, []);
-
-  console.log('isCollaborative:', isCollaborative);
 
   const handleShare = async () => {
     const shareUrl = `${window.location.origin}?board=${boardId}`;
@@ -64,52 +59,93 @@ const Toolbar = ({
     setShowImportArena(false);
   };
 
+  const handleAddImageClick = () => {
+    setAddContentMode('image');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImageDataUrl(reader.result);
+      setShowAddContentModal(true);
+    };
+    if (file && file.type.startsWith('image/')) {
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <>
+      <input
+        type="file"
+        accept="image/*"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
       <div className={`toolbar bottom-toolbar${isVisible ? ' visible' : ''}`}>
-      <div className="action import-section">
+        <div className="action import-section">
           <div className="clickable-div import-arena" onClick={() => setShowImportArena(true)}>Import Are.na</div>
-      </div>
-      <div className="action add-section">
-          <div className="clickable-div add-content" onClick={() => setShowAddContentModal(true)}>
-            Add content
+        </div>
+        <div className="action add-section">
+          <div className="clickable-div add-text" onClick={() => { setAddContentMode('text'); setShowAddContentModal(true); }}>
+            Add text
             <img src={LinesSvg} alt="" className="lines-svg" />
           </div>
-      </div>
-      {isCollaborative && (
-        <div className="action share-section">
-          <div className="clickable-div share-board" onClick={handleShare}>
-            <AnimatePresence mode="wait" initial={false}>
-              {copied ? (
-                <motion.span
-                  key="copied"
-                  variants={variants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="hidden"
-                >
-                  ✓ Copied!
-                </motion.span>
-              ) : (
-                <motion.span
-                  key="share"
-                  variants={variants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="hidden"
-                >
-                  Share board
-                </motion.span>
-              )}
-            </AnimatePresence>
+        </div>
+        <div className="action add-section">
+          <div className="clickable-div add-image" onClick={handleAddImageClick}>
+            Add image
+            <div style={{ 
+              width: '100%', 
+              maxWidth: '200px', 
+              height: '200px', 
+              backgroundColor: 'rgba(0, 0, 0, 0.2)', 
+              margin: '4px auto 0 auto' 
+            }} />
           </div>
         </div>
-      )}
+        {isCollaborative && (
+          <div className="action share-section">
+            <div className="clickable-div share-board" onClick={handleShare}>
+              <AnimatePresence mode="wait" initial={false}>
+                {copied ? (
+                  <motion.span
+                    key="copied"
+                    variants={variants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="hidden"
+                  >
+                    ✓ Copied!
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="share"
+                    variants={variants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="hidden"
+                  >
+                    Share board
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        )}
       </div>
       <AddContentDialog 
         isOpen={showAddContentModal} 
-        onClose={() => setShowAddContentModal(false)}
+        onClose={() => { setShowAddContentModal(false); setImageDataUrl(null); }}
         onAddContent={handleAddContent}
+        mode={addContentMode}
+        imageDataUrl={imageDataUrl}
       />
       <ImportArenaDialog
         isOpen={showImportArena}
@@ -120,4 +156,4 @@ const Toolbar = ({
   );
 };
 
-export default Toolbar;
+export default BottomToolbar;

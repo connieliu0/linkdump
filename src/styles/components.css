@@ -334,8 +334,8 @@ button:hover {
   background-repeat: no-repeat;
   background-color: rgba(255, 255, 255, 0.5);
   border: none;
-  width: 50px;  /* Fixed width */
-  height: 50px; /* Fixed height */
+  width: 40px;  /* Fixed width */
+  height: 40px; /* Fixed height */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -981,7 +981,7 @@ You can find the assignment logic in useAgingEffect.js.
 }
 
 .clickable-div {
-  padding: 22px 28px 18px 28px;
+  padding: 12px 18px 12px 18px;
   pointer-events: auto;
   background: url('../assets/crumpled-paper.webp');
   background-size: cover;
@@ -996,9 +996,9 @@ You can find the assignment logic in useAgingEffect.js.
   display: flex;
   line-height: 1.2;
   letter-spacing: 0.01em;
-  text-align: center;
+  text-align: left;
   user-select: none;
-  rotate: -2deg;
+  gap: 4px;
 }
 
 /* Unique rotations for each card */
@@ -1014,11 +1014,21 @@ You can find the assignment logic in useAgingEffect.js.
 .clickable-div.share-board {
   rotate: 1deg;
   position: relative;
-  left: -10px;
+  left: -20px;
 }
-
+.clickable-div.add-text {
+  rotate: -2deg;
+  position: relative;
+  left: -10px;
+  bottom:10px;
+}
+.clickable-div.add-image {
+  rotate: 2deg;
+  position: relative;
+  left: -20px;
+}
 .clickable-div:hover {
-  transform: translateY(-10px);
+  transform: translateY(-20px);
 }
 
 .add-content .lines-svg {
