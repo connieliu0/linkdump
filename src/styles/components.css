@@ -341,10 +341,14 @@ button:hover {
   justify-content: center;
   font-size: 1.5em;
   padding: 0;
+  text-align: right;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 .more-section .more-header button:hover {
   filter: sepia(0.2);
+}
+.more-section .more-header button {
+  color: var(--secondary-color);
 }
 
 
@@ -358,6 +362,7 @@ button:hover {
   border-radius: 0;
   font-size: 1em;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: var(--secondary-color);
 }
 .more-section .more-menu a {
   text-decoration: none;
@@ -793,7 +798,6 @@ main {
   transform: translateY(calc(100% - 30px));
   transition: transform 0.3s ease;
   rotate: 2deg;
-  filter: sepia(0.15);
 }
 .add-section {
   right: calc(50% - 200px); /* Position 6px to the right of project-section */
@@ -803,7 +807,6 @@ main {
   transition: transform 0.3s ease;
 }
 .import-section {
-  filter: sepia(0.1);
   right: calc(50% - 150px); /* Position 6px to the right of project-section */
   text-align: center;
   min-width: 120px;
@@ -999,6 +1002,8 @@ You can find the assignment logic in useAgingEffect.js.
   text-align: left;
   user-select: none;
   gap: 4px;
+  font-size: 1.1em;
+  color: var(--secondary-color);
 }
 
 /* Unique rotations for each card */
@@ -1021,11 +1026,13 @@ You can find the assignment logic in useAgingEffect.js.
   position: relative;
   left: -10px;
   bottom:10px;
+  filter: sepia(0.15);
 }
 .clickable-div.add-image {
   rotate: 2deg;
   position: relative;
   left: -20px;
+  filter: sepia(0.1);
 }
 .clickable-div:hover {
   transform: translateY(-20px);

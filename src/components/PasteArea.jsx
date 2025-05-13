@@ -328,14 +328,9 @@ const PasteArea = ({ onExport }) => {
   // Define addEmptyCard function
   const addEmptyCard = async (cardData = { position: { x: 100, y: 100 } }) => {
     try {
-      let newItem;
-      if (cardData.type === 'image') {
-        newItem = createImageCard(cardData.content, cardData.position, cardData.sourceUrl);
-      } else if (cardData.type === 'link') {
-        newItem = createLinkCard(cardData.content, cardData.position);
-      } else {
-        newItem = createTextCard(cardData.content, cardData.position, cardData.isEmpty);
-      }
+      const newItem = cardData.type === 'image' 
+        ? createImageCard(cardData.content, cardData.position, cardData.sourceUrl)
+        : createTextCard(cardData.content, cardData.position, cardData.isEmpty);
       await saveAndUpdateItems(storage, newItem, setItems);
     } catch (error) {
       console.error('Error adding empty card:', error);
@@ -384,13 +379,26 @@ const PasteArea = ({ onExport }) => {
     const { x, y } = mousePosition;
     
     try {
+      console.log('Clipboard items:', clipboardData.items);
       const imageItem = extractImageFromClipboard(clipboardData);
+      console.log('Extracted image item:', imageItem);
       
       if (imageItem) {
         const file = imageItem.getAsFile();
-        const processedDataUrl = await processImage(file);
-        const newItem = createImageCard(processedDataUrl, { x, y }, imageItem.type === 'image' ? imageItem.sourceUrl : null);
-        await saveAndUpdateItems(storage, newItem, setItems);
+        console.log('Clipboard file:', file);
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          console.log('Clipboard file data URL:', reader.result);
+          try {
+            const processedDataUrl = await processImage(reader.result);
+            const newItem = createImageCard(processedDataUrl, { x, y }, imageItem.type === 'image' ? imageItem.sourceUrl : null);
+            console.log('New image card id:', newItem.id);
+            await saveAndUpdateItems(storage, newItem, setItems);
+          } catch (error) {
+            console.error('Error saving item:', error);
+          }
+        };
+        reader.readAsDataURL(file);
         return;
       }
 
@@ -400,7 +408,7 @@ const PasteArea = ({ onExport }) => {
         const newItem = isUrl 
           ? createLinkCard(text, { x, y })
           : createTextCard(text, { x, y }, false);
-        
+        console.log('New text/link card id:', newItem.id);
         await saveAndUpdateItems(storage, newItem, setItems);
       }
     } catch (error) {
@@ -683,7 +691,21 @@ const PasteArea = ({ onExport }) => {
     localStorage.setItem('localBoardActive', 'true');
   }, []);
 
-  const visibleItems = useMemo(() => items.filter(item => item?.id), [items]);
+  const visibleItems = useMemo(() => {
+    const seen = new Set();
+    return items.filter(item => {
+      if (!item?.id || seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+  }, [items]);
+
+  // Add this log before rendering the items list
+  useEffect(() => {
+    if (items && items.length > 0) {
+      console.log('All item IDs:', items.map(item => item.id));
+    }
+  }, [items]);
 
   return (
     <>
@@ -739,6 +761,7 @@ const PasteArea = ({ onExport }) => {
               timeRemaining={timeRemaining}
               timeSettings={timeSettings}
               projectDescription={timeSettings?.description}
+              onClearCanvas={handleClearCanvas}
             />
             <BottomToolbar 
               panzoomRef={panzoomRef} 

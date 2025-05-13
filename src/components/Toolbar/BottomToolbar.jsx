@@ -34,7 +34,7 @@ const BottomToolbar = ({
   }, []);
 
   const handleShare = async () => {
-    const shareUrl = `${window.location.origin}?board=${boardId}`;
+    const shareUrl = `${window.location.origin}/${boardId}`;
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
@@ -105,8 +105,8 @@ const BottomToolbar = ({
               width: '100%', 
               maxWidth: '200px', 
               height: '200px', 
-              backgroundColor: 'rgba(0, 0, 0, 0.2)', 
-              margin: '4px auto 0 auto' 
+              backgroundColor: 'rgba(0, 0, 0, 0.3)', 
+              margin: '12px auto 0 auto' 
             }} />
           </div>
         </div>

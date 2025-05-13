@@ -24,7 +24,7 @@ const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription }) => {
 };
 
 
-const MoreMenu = ({ onClearCanvas, onShowRoadmap, onOpenAddContentModal, onOpenImportArena }) => {
+const MoreMenu = ({ onClearCanvas, onShowRoadmap }) => {
   const [open, setOpen] = useState(false);
 
   const variants = {

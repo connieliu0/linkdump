@@ -6,6 +6,7 @@ export const createNewCard = (type, content, position = DEFAULT_POSITION, option
     : DEFAULT_POSITION;
 
   return {
+    id: options.id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     type,
     content,
     position: cardPosition,
