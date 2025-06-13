@@ -4,6 +4,8 @@ import { fetchMetadata, getBaseDomain } from '../utils/urlMetadata';
 
 const LinkCard = React.memo(function LinkCard({ url, itemId, initialMetadata, storage }) {
   const [metadata, setMetadata] = useState(initialMetadata || {});
+  const [tweetHtml, setTweetHtml] = useState('');
+  const [error, setError] = useState(null);
   const domain = getBaseDomain(url);
   const tweetRef = useRef(null);
 
@@ -37,20 +39,60 @@ const LinkCard = React.memo(function LinkCard({ url, itemId, initialMetadata, st
   }, [url, itemId, initialMetadata, storage]);
 
   useEffect(() => {
-    // Check if it's a Twitter URL
-    if (url.includes('twitter.com') || url.includes('x.com')) {
-      // Create tweet embed
-      if (window.twttr && tweetRef.current) {
-        window.twttr.widgets.load(tweetRef.current);
+    const fetchTweetEmbed = async () => {
+      if (!url.includes('twitter.com') && !url.includes('x.com')) return;
+      
+      try {
+        // Convert Twitter URL to oEmbed URL
+        const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}&theme=light&dnt=true`;
+        console.log('Fetching tweet from:', oembedUrl);
+        
+        const response = await fetch(oembedUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Tweet data received:', data);
+        
+        if (data.html) {
+          setTweetHtml(data.html);
+          setError(null);
+        } else {
+          throw new Error('No HTML content in response');
+        }
+      } catch (error) {
+        console.error('Error fetching tweet embed:', error);
+        setError(error.message);
+        setTweetHtml(`<a href="${url}" target="_blank" rel="noopener noreferrer">View tweet on Twitter</a>`);
       }
-    }
+    };
+
+    fetchTweetEmbed();
   }, [url]);
 
   // If it's a Twitter URL, render the tweet embed
   if (url.includes('twitter.com') || url.includes('x.com')) {
     return (
       <div className="link-card tweet-card" ref={tweetRef}>
-          <a href={url}></a>
+        {!tweetHtml ? (
+          <div className="tweet-loading">Loading tweet...</div>
+        ) : error ? (
+          <div className="tweet-error">
+            <p>Unable to load tweet: {error}</p>
+            <a href={url} target="_blank" rel="noopener noreferrer" className="tweet-fallback-link">
+              View tweet on Twitter
+            </a>
+          </div>
+        ) : (
+          <div dangerouslySetInnerHTML={{ __html: tweetHtml }} />
+        )}
       </div>
     );
   }

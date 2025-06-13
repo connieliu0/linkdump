@@ -755,6 +755,10 @@ button:hover {
   max-width: 100%;
   margin: 0 auto;
   padding: 6px;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tweet-card .twitter-tweet {
@@ -1068,4 +1072,39 @@ You can find the assignment logic in useAgingEffect.js.
   box-sizing: border-box;
   resize: none;
   overflow: hidden;
+}
+
+.tweet-loading {
+  color: var(--secondary-color);
+  font-family: 'Decompositionphase1';
+  font-size: 1.1em;
+  text-align: center;
+  padding: 20px;
+}
+
+.tweet-error {
+  color: var(--secondary-color);
+  font-family: 'Decompositionphase1';
+  font-size: 1.1em;
+  text-align: center;
+  padding: 20px;
+}
+
+.tweet-error p {
+  margin-bottom: 10px;
+}
+
+.tweet-fallback-link {
+  color: #1DA1F2;
+  text-decoration: none;
+  border: 1px solid #1DA1F2;
+  padding: 8px 16px;
+  border-radius: 4px;
+  display: inline-block;
+  transition: all 0.2s ease;
+}
+
+.tweet-fallback-link:hover {
+  background: #1DA1F2;
+  color: white;
 }
