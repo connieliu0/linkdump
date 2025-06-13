@@ -70,8 +70,8 @@ body {
 /* Content styles */
 .canvas-area {
   position: relative;
-  width: 110vw;
-  height: 110vh;
+  width: 100vw;
+  height: 100vh;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -84,8 +84,8 @@ body {
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   position: relative;
-  width: 200vw;
-  height: 200vh;
+  width: 100vw;
+  height: 100vh;
   transform: translate(-50%, -50%);
   background: rgba(255, 255, 255, 0.5);
   isolation: isolate;
@@ -137,17 +137,14 @@ body {
   transition: box-shadow 2s ease;
 }
 
-.paste-item:hover {
-box-shadow: 0px 0px 22.2px 0px #FFCB7D;
-}
 .paste-item {
   max-width: 400px;
+  min-width: auto;
   width: fit-content;
   background: white;
   border-radius: 0.25rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   cursor: move;
-  will-change: transform;
   user-select: none;
   overflow: hidden;
   position: relative;
@@ -155,11 +152,25 @@ box-shadow: 0px 0px 22.2px 0px #FFCB7D;
   z-index: 2;
 }
 .paste-item.selected {
-  outline: 3px solid #E49B3F;  /* Make outline thicker */
-  outline-offset: 2px;         /* Add spacing between the element and the outline */
-  z-index: 10;                 /* Bring selected items to front */
-  box-shadow: 0 10px 30px -3px rgba(0, 0, 0, 0.2);  /* Enhanced shadow for selected state */
+  outline: 3px solid #E49B3F;
+  outline-offset: 2px;
+  z-index: 10;
+  box-shadow: 0 10px 30px -3px rgba(0, 0, 0, 0.2);
+  transform: translate3d(0, 0, 0); /* Maintain GPU acceleration */
 }
+
+/* Add a class for when item is being dragged */
+.paste-item.dragging {
+  will-change: transform; /* Only when needed */
+  transition: none !important;
+  box-shadow: 0 10px 30px -3px rgba(0, 0, 0, 0.2);
+  outline: 3px solid #E49B3F;
+  outline-offset: 2px;
+  z-index: 10;
+  transform: translate3d(0, 0, 0); /* Maintain GPU acceleration */
+  pointer-events: none; /* Prevent interference during drag */
+}
+
 .pasted-image {
   display: block;
   max-width: 100%;
@@ -167,6 +178,7 @@ box-shadow: 0px 0px 22.2px 0px #FFCB7D;
   border-radius: 4px 4px 0 0;
   transition: all 2s ease;
   margin-bottom: 0;
+  object-fit: contain;
 }
 
 /* Update source URL styles */
@@ -206,10 +218,11 @@ box-shadow: 0px 0px 22.2px 0px #FFCB7D;
 .text-content {
   padding: 8px;
   line-height: 1.5;
-  background-color: rgba(255, 255, 255, 0.9);
   border-radius: 4px;
   width: 100%;
+  min-width: 384px;
   box-sizing: border-box;
+  transition: background-color 1.5s linear;
 }
 
 /* Link Card styles */
@@ -851,7 +864,8 @@ main {
   
   /* Add responsive styles for cards and images */
   .paste-item {
-    max-width: 200px; /* Reduce max-width on mobile */
+    max-width: 300px; /* Slightly larger on mobile */
+    min-width: auto;
   }
 
   .text-content {
@@ -969,18 +983,18 @@ You can find the assignment logic in useAgingEffect.js.
   transition: filter 1.5s linear, border-radius 1.5s linear;
 }
 
-/* Example for text-content and link-preview background color */
+/* Base styles for text content and link preview */
 .text-content, .link-preview {
-  background-color: rgba(255, 255, calc(255 - var(--aging-progress, 0) * 60), calc(1 - var(--aging-progress, 0) * 0.3));
+  background-color: rgba(255, 255, 255, 0.9);
   transition: background-color 1.5s linear;
 }
 
-/* Example for card background and border */
-.card {
-  background-color: rgba(255, 255, calc(255 - var(--aging-progress, 0) * 80), calc(1 - var(--aging-progress, 0) * 0.3));
-  box-shadow: 0 10px 15px -3px rgba(70, 50, 0, 0.1);
-  border: 1px solid rgba(220, 200, 150, 0.6);
-  transition: background-color 1.5s linear, box-shadow 1.5s linear, border 1.5s linear;
+/* Aging effect styles - make more specific */
+.text-content.aging, 
+.link-preview.aging,
+.text-content[data-aging-classes], 
+.link-preview[data-aging-classes] {
+  background-color: rgba(255, 255, calc(255 - var(--aging-progress, 0) * 60), calc(1 - var(--aging-progress, 0) * 0.3)) !important;
 }
 
 .clickable-div {
@@ -1045,4 +1059,13 @@ You can find the assignment logic in useAgingEffect.js.
   margin: 12px auto 0 auto;
   position: relative;
   bottom: 0;
+}
+
+/* Add styles for textarea in edit mode */
+.text-content textarea.content-input {
+  width: 100%;
+  min-width: 384px; /* Match text-content min-width */
+  box-sizing: border-box;
+  resize: none;
+  overflow: hidden;
 }

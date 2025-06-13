@@ -13,7 +13,9 @@ export const saveAndUpdateItems = async (storage, newItem, setItems) => {
 
 export const updateAndRefreshItems = async (storage, id, updates, setItems) => {
   try {
+    console.log('Storage update - ID:', id, 'Updates:', updates);
     await storage.updateItem(id, updates);
+    console.log('Storage update successful');
     setItems(prev => prev.map(item => 
       item.id === id ? { ...item, ...updates } : item
     ));

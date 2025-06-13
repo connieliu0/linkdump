@@ -1,14 +1,173 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
-const TextCard = React.memo(function TextCard({ content, itemId, sourceUrl: initialSourceUrl, isEmpty, showSourceUrl = false, onInputActiveChange, type, storage }) {
+const TextCard = React.memo(function TextCard({ 
+  content, 
+  itemId, 
+  sourceUrl: initialSourceUrl, 
+  isEmpty, 
+  showSourceUrl = false, 
+  onInputActiveChange,
+  type, 
+  storage, 
+  isSelected, 
+  wasDragged,
+  onDoubleClick 
+}) {
   const [isEditing, setIsEditing] = useState(false);
   const [isContentEditing, setIsContentEditing] = useState(false);
   const [sourceUrl, setSourceUrl] = useState(initialSourceUrl || '');
   const [cardContent, setCardContent] = useState(content || '');
   const contentRef = useRef(null);
-
-  // Add ref for text length
   const textLength = useRef(null);
+  const clickCountRef = useRef(0);
+  const isBlurringRef = useRef(false);
+  const isMouseDownRef = useRef(false);
+  const blurTimeoutRef = useRef(null);
+
+  // Notify parent when editing state changes
+  useEffect(() => {
+    onInputActiveChange(isContentEditing || isEditing);
+  }, [isContentEditing, isEditing, onInputActiveChange]);
+
+  // Add mouse event listeners to track mouse state
+  useEffect(() => {
+    const handleMouseDown = (e) => {
+      if (e.target.closest('.text-container')) {
+        isMouseDownRef.current = true;
+      }
+    };
+
+    const handleMouseUp = () => {
+      isMouseDownRef.current = false;
+    };
+
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
+  // Cleanup blur timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (blurTimeoutRef.current) {
+        clearTimeout(blurTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleContentClick = useCallback((e) => {
+    e.stopPropagation();
+    
+    if (isContentEditing) return;
+    
+    if (!isSelected) {
+      if (onDoubleClick) {
+        onDoubleClick();
+      }
+      return;
+    }
+
+    clickCountRef.current += 1;
+
+    if (clickCountRef.current === 2 && !wasDragged) {
+      setIsContentEditing(true);
+      clickCountRef.current = 0;
+    }
+  }, [isSelected, wasDragged, onDoubleClick, isContentEditing]);
+
+  const handleSourceClick = useCallback((e) => {
+    e.stopPropagation();
+    
+    if (isEditing) return;
+    
+    if (!isSelected) {
+      if (onDoubleClick) {
+        onDoubleClick();
+      }
+      return;
+    }
+
+    clickCountRef.current += 1;
+
+    if (clickCountRef.current === 2 && !wasDragged) {
+      setIsEditing(true);
+      clickCountRef.current = 0;
+    }
+  }, [isSelected, wasDragged, onDoubleClick, isEditing]);
+
+  // Reset click count when selection changes
+  useEffect(() => {
+    clickCountRef.current = 0;
+  }, [isSelected]);
+
+  const handleContentChange = useCallback(async (e) => {
+    const newContent = e.target.value;
+    setCardContent(newContent);
+    if (contentRef.current) {
+      contentRef.current.style.height = 'auto';
+      contentRef.current.style.height = `${contentRef.current.scrollHeight}px`;
+    }
+    await storage.updateItem(itemId, { 
+      content: newContent,
+      isEmpty: newContent.trim() === ''
+    });
+  }, [itemId, storage]);
+
+  const handleSourceChange = useCallback(async (e) => {
+    const newSource = e.target.value;
+    setSourceUrl(newSource);
+    await storage.updateItem(itemId, { sourceUrl: newSource });
+  }, [itemId, storage]);
+
+  const handleContentKeyDown = useCallback((e) => {
+    e.stopPropagation();
+    if (e.key === 'Enter') {
+      setIsContentEditing(false);
+    }
+  }, []);
+
+  const handleSourceKeyDown = useCallback((e) => {
+    e.stopPropagation();
+    if (e.key === 'Enter') {
+      setIsEditing(false);
+    }
+  }, []);
+
+  const handleFocus = useCallback((e) => {
+    e.stopPropagation();
+    isBlurringRef.current = false;
+  }, []);
+
+  const handleBlur = useCallback((e) => {
+    if (blurTimeoutRef.current) {
+      clearTimeout(blurTimeoutRef.current);
+    }
+
+    if (isMouseDownRef.current) {
+      e.preventDefault();
+      e.target.focus();
+      return;
+    }
+
+    if (isBlurringRef.current) {
+      return;
+    }
+
+    isBlurringRef.current = true;
+
+    blurTimeoutRef.current = setTimeout(() => {
+      if (e.target.classList.contains('content-input')) {
+        setIsContentEditing(false);
+      } else {
+        setIsEditing(false);
+      }
+      isBlurringRef.current = false;
+    }, 200);
+  }, []);
 
   // Determine if any input is active
   const isInputActive = isContentEditing || isEditing;
@@ -19,86 +178,18 @@ const TextCard = React.memo(function TextCard({ content, itemId, sourceUrl: init
     }
   }, [isEmpty]);
 
+  // Only set cursor position when first entering edit mode
+  const isFirstEdit = useRef(true);
   useEffect(() => {
-    onInputActiveChange(isContentEditing || isEditing);
-  }, [isContentEditing, isEditing, onInputActiveChange]);
-
-  useEffect(() => {
-    // Move caret to end when editing starts
-    if ((isContentEditing || isEditing) && contentRef.current) {
+    if ((isContentEditing || isEditing) && contentRef.current && isFirstEdit.current) {
       contentRef.current.selectionStart = contentRef.current.value.length;
       contentRef.current.selectionEnd = contentRef.current.value.length;
+      isFirstEdit.current = false;
+    }
+    if (!isContentEditing && !isEditing) {
+      isFirstEdit.current = true;
     }
   }, [isContentEditing, isEditing]);
-
-  // Add function to adjust height
-  const adjustTextareaHeight = (element) => {
-    element.style.height = 'auto';
-    element.style.height = `${element.scrollHeight}px`;
-  };
-
-  const handleContentClick = (e) => {
-    // Allow editing for both newText and pastedText types
-    e.stopPropagation();
-    setIsContentEditing(true);
-  };
-
-  const handleContentChange = async (e) => {
-    const newContent = e.target.value;
-    setCardContent(newContent);
-    adjustTextareaHeight(e.target);
-    await storage.updateItem(itemId, { 
-      content: newContent,
-      isEmpty: newContent.trim() === ''
-    });
-  };
-
-  const handleContentKeyDown = (e) => {
-    e.stopPropagation();
-    if (e.key === 'Enter') {
-      setIsContentEditing(false);
-    }
-  };
-
-  const handleContentPaste = (e) => {
-    e.stopPropagation();
-  };
-
-  const handleSourceClick = (e) => {
-    e.stopPropagation();
-    setIsEditing(true);
-  };
-
-  const handleSourceChange = async (e) => {
-    const newSource = e.target.value;
-    setSourceUrl(newSource);
-    await storage.updateItem(itemId, { sourceUrl: newSource });
-  };
-
-  const handleSourceKeyDown = (e) => {
-    e.stopPropagation();
-    if (e.key === 'Enter') {
-      setIsEditing(false);
-    }
-  };
-
-  const handleSourcePaste = (e) => {
-    e.stopPropagation();
-  };
-
-  const handleFocus = (e) => {
-    e.stopPropagation();
-    onInputActiveChange(true);
-  };
-
-  const handleBlur = (e) => {
-    onInputActiveChange(false);
-    if (e.target.classList.contains('content-input')) {
-      setIsContentEditing(false);
-    } else {
-      setIsEditing(false);
-    }
-  };
 
   return (
     <div className={`text-container ${isInputActive ? 'input-active' : ''}`}>
@@ -109,14 +200,16 @@ const TextCard = React.memo(function TextCard({ content, itemId, sourceUrl: init
             value={cardContent}
             onChange={handleContentChange}
             onKeyDown={handleContentKeyDown}
-            onFocus={(e) => {
-              handleFocus(e);
-              adjustTextareaHeight(e.target);
-            }}
+            onFocus={handleFocus}
             onBlur={handleBlur}
             className={`input-field content-input ${type === 'newText' ? 'new-text' : 'pasted-text'}`}
             placeholder={isEmpty ? "Click to edit" : ""}
-            style={{ height: textLength.current ? `${textLength.current}px` : 'auto' }}
+            style={{ 
+              height: textLength.current ? `${textLength.current}px` : 'auto',
+              width: '100%',
+              resize: 'none',
+              boxSizing: 'border-box'
+            }}
             autoFocus
           />
         ) : (

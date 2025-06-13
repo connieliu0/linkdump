@@ -78,10 +78,16 @@ const PasteArea = ({ onExport }) => {
   const [isExpired, setIsExpired] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [isInputActive, setIsInputActive] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [isInactive, setIsInactive] = useState(false);
   let inactivityTimer = useRef(null);
   const [showTimeInput, setShowTimeInput] = useState(false);
   const [loadingTimeSettings, setLoadingTimeSettings] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
+  const wasDraggedRef = useRef(false);
+  const isDraggingRef = useRef(false);
+  const lastClickTimeRef = useRef(0);
+  const lastSelectedIdRef = useRef(null);
 
   // Add a ref to track if we're clearing
   const isClearingRef = useRef(false);
@@ -199,7 +205,7 @@ const PasteArea = ({ onExport }) => {
   }, [storageMode, boardId]);
 
   const handleStorageModeChange = (mode) => {
-    console.log('Handling storage mode change:', mode);
+    // console.log('Handling storage mode change:', mode);
     setStorageMode(mode);
     localStorage.setItem('storageMode', mode);
     
@@ -211,7 +217,7 @@ const PasteArea = ({ onExport }) => {
   };
 
   const handleTimeSet = async (settings) => {
-    console.log('Handling time set:', settings);
+    // console.log('Handling time set:', settings);
     try {
       // Ensure we have all the required fields
       const timeSettings = {
@@ -266,7 +272,7 @@ const PasteArea = ({ onExport }) => {
       setTimeSettings(timeSettings);
       resetInactivityTimer();
     } catch (error) {
-      console.error('Error saving time settings:', error);
+      // console.error('Error saving time settings:', error);
     }
   };
 
@@ -284,7 +290,7 @@ const PasteArea = ({ onExport }) => {
           resetInactivityTimer();
         }
       } catch (error) {
-        console.error('Error loading time settings:', error);
+        // console.error('Error loading time settings:', error);
       }
     }
   };
@@ -340,7 +346,13 @@ const PasteArea = ({ onExport }) => {
 
   // Define updateCard function
   const updateCard = async (id, updates) => {
-    await updateAndRefreshItems(storage, id, updates, setItems);
+    // console.log('Updating card:', id, updates);
+    try {
+      await updateAndRefreshItems(storage, id, updates, setItems);
+      // console.log('Card updated successfully');
+    } catch (error) {
+      // console.error('Error updating card:', error);
+    }
   };
 
   // Define deleteCard function
@@ -357,9 +369,10 @@ const PasteArea = ({ onExport }) => {
       
       try {
         const savedItems = await storage.loadItems();
+        // console.log('Loaded items:', savedItems);
         setItems(savedItems || []);
       } catch (error) {
-        console.error('Error loading items:', error);
+        // console.error('Error loading items:', error);
       }
     };
     fetchItems();
@@ -379,23 +392,23 @@ const PasteArea = ({ onExport }) => {
     const { x, y } = mousePosition;
     
     try {
-      console.log('Clipboard items:', clipboardData.items);
+      // console.log('Clipboard items:', clipboardData.items);
       const imageItem = extractImageFromClipboard(clipboardData);
-      console.log('Extracted image item:', imageItem);
+      // console.log('Extracted image item:', imageItem);
       
       if (imageItem) {
         const file = imageItem.getAsFile();
-        console.log('Clipboard file:', file);
+        // console.log('Clipboard file:', file);
         const reader = new FileReader();
         reader.onloadend = async () => {
-          console.log('Clipboard file data URL:', reader.result);
+          // console.log('Clipboard file data URL:', reader.result);
           try {
             const processedDataUrl = await processImage(reader.result);
             const newItem = createImageCard(processedDataUrl, { x, y }, imageItem.type === 'image' ? imageItem.sourceUrl : null);
-            console.log('New image card id:', newItem.id);
+            // console.log('New image card id:', newItem.id);
             await saveAndUpdateItems(storage, newItem, setItems);
           } catch (error) {
-            console.error('Error saving item:', error);
+            // console.error('Error saving item:', error);
           }
         };
         reader.readAsDataURL(file);
@@ -408,34 +421,34 @@ const PasteArea = ({ onExport }) => {
         const newItem = isUrl 
           ? createLinkCard(text, { x, y })
           : createTextCard(text, { x, y }, false);
-        console.log('New text/link card id:', newItem.id);
+        // console.log('New text/link card id:', newItem.id);
         await saveAndUpdateItems(storage, newItem, setItems);
       }
     } catch (error) {
-      console.error('Error saving item:', error);
+      // console.error('Error saving item:', error);
     }
   }, [mousePosition, storage]);
 
   // Handle board restart
   const handleRestart = async () => {
-    console.log('[PasteArea] Starting board restart...');
+    // console.log('[PasteArea] Starting board restart...');
     
     // Set clearing flag to prevent realtime updates
     isClearingRef.current = true;
     
     try {
       if (!storage) {
-        console.error('[PasteArea] No storage adapter available');
+        // console.error('[PasteArea] No storage adapter available');
         return;
       }
 
       // For local mode, we need to clear the settings from IndexedDB
       if (storageMode === 'local') {
-        console.log('[PasteArea] Clearing local storage settings...');
+        // console.log('[PasteArea] Clearing local storage settings...');
         const success = await storage.clearBoard();
         
         if (!success) {
-          console.error('[PasteArea] Failed to clear local storage settings');
+          // console.error('[PasteArea] Failed to clear local storage settings');
           return;
         }
         
@@ -444,15 +457,15 @@ const PasteArea = ({ onExport }) => {
         setShowTimeInput(true);
       } else {
         // For collaborative mode, clear the entire board
-        console.log('[PasteArea] Clearing board in storage...');
+        // console.log('[PasteArea] Clearing board in storage...');
         const success = await storage.clearBoard();
         
         if (!success) {
-          console.error('[PasteArea] Failed to clear board in storage');
+          // console.error('[PasteArea] Failed to clear board in storage');
           return;
         }
         
-        console.log('[PasteArea] Board cleared, resetting state...');
+        // console.log('[PasteArea] Board cleared, resetting state...');
         
         // Reset URL and storage mode
         const newPath = '/';
@@ -470,12 +483,83 @@ const PasteArea = ({ onExport }) => {
         setShowTimeInput(true);
       }
     } catch (error) {
-      console.error('[PasteArea] Error during restart:', error);
+      // console.error('[PasteArea] Error during restart:', error);
     } finally {
       // Reset clearing flag
       isClearingRef.current = false;
     }
   };
+
+  // Add mouse up handler to detect drag end
+  useEffect(() => {
+    const handleMouseUp = () => {
+      // console.log('Mouse up detected', { 
+      //   isDragging: isDraggingRef.current, 
+      //   activeItemRef: activeItemRef.current,
+      //   hasStorage: !!storage
+      // });
+      
+      if (!storage) {
+        // console.error('No storage available for position update');
+        return;
+      }
+      
+      if (isDraggingRef.current && activeItemRef.current && panzoomRef.current) {
+        // console.log('Drag ended via mouse up');
+        // Get the current elements from PanZoom
+        const elements = panzoomRef.current.getElements();
+        if (elements && elements[activeItemRef.current]) {
+          const elementData = elements[activeItemRef.current];
+          // console.log('Current element data:', elementData);
+          
+          // Get position from the position object
+          const position = elementData.position;
+          if (!position) {
+            // console.error('No position data found in element:', elementData);
+            return;
+          }
+          
+          // Validate position values
+          const x = Number(position.x);
+          const y = Number(position.y);
+          
+          if (isNaN(x) || isNaN(y)) {
+            // console.error('Invalid position values:', { x: position.x, y: position.y });
+            return;
+          }
+
+          const newPosition = {
+            x: Math.round(x),
+            y: Math.round(y)
+          };
+          
+          // console.log('Saving position from mouse up:', newPosition);
+          
+          // Update both local state and storage
+          setItems(prevItems => 
+            prevItems.map(item => 
+              item.id === activeItemRef.current 
+                ? { ...item, position: newPosition }
+                : item
+            )
+          );
+          
+          // Save to storage
+          updateCard(activeItemRef.current, { 
+            position: newPosition
+          });
+        }
+        setIsDragging(false);
+        isDraggingRef.current = false;
+        wasDraggedRef.current = false;
+      }
+    };
+
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [storage]);
 
   // Track mouse position relative to panzoom
   const handleMouseMove = (e) => {
@@ -522,6 +606,7 @@ const PasteArea = ({ onExport }) => {
 
   const handleInputActiveChange = (active) => {
     setIsInputActive(active);
+    setIsEditing(active);
   };
 
   const handleClearCanvas = async () => {
@@ -547,19 +632,19 @@ const PasteArea = ({ onExport }) => {
     try {
       // Then clear the storage
       if (storage) {
-        console.log('[PasteArea] Clearing items from storage...');
+        // console.log('[PasteArea] Clearing items from storage...');
         const success = await storage.clearItems();
         if (!success) {
-          console.error('[PasteArea] Failed to clear items from storage');
+          // console.error('[PasteArea] Failed to clear items from storage');
           return;
         }
       }
 
-      console.log('[PasteArea] Updating state after clear...');
+      // console.log('[PasteArea] Updating state after clear...');
       // Only clear items, keep time settings
       setItems([]);
     } catch (error) {
-      console.error('[PasteArea] Error during clear:', error);
+      // console.error('[PasteArea] Error during clear:', error);
     } finally {
       // Reset clearing flag after everything is done
       isClearingRef.current = false;
@@ -674,12 +759,12 @@ const PasteArea = ({ onExport }) => {
           // Use saveAndUpdateItems which will handle both saving and state updates
           await saveAndUpdateItems(storage, newItem, setItems);
         } catch (error) {
-          console.error('Error saving individual item:', error);
+          // console.error('Error saving individual item:', error);
           // Continue with other items even if one fails
         }
       }
     } catch (error) {
-      console.error('Error importing Are.na items:', error);
+      // console.error('Error importing Are.na items:', error);
     }
   };
 
@@ -700,12 +785,47 @@ const PasteArea = ({ onExport }) => {
     });
   }, [items]);
 
-  // Add this log before rendering the items list
-  useEffect(() => {
-    if (items && items.length > 0) {
-      console.log('All item IDs:', items.map(item => item.id));
+  // // Add this log before rendering the items list
+  // useEffect(() => {
+  //   if (items && items.length > 0) {
+  //     console.log('All item IDs:', items.map(item => item.id));
+  //   }
+  // }, [items]);
+
+  const onElementsChangeStart = useCallback((elements) => {
+    if (isInputActive || isEditing) return;
+
+    const element = elements[0];
+    if (element) {
+      setIsDragging(true);
+      setActiveItemRef(element.id);
+      wasDraggedRef.current = true;
     }
-  }, [items]);
+  }, [isInputActive, isEditing]);
+
+  const onElementsChange = useCallback((elements) => {
+    if (isInputActive || isEditing) return;
+
+    const element = elements[0];
+    if (element && activeItemRef === element.id) {
+      const newPosition = {
+        x: Math.round(element.x),
+        y: Math.round(element.y)
+      };
+      
+      setItems(prevItems => {
+        const updatedItems = [...prevItems];
+        const index = updatedItems.findIndex(item => item.id === element.id);
+        if (index !== -1) {
+          updatedItems[index] = {
+            ...updatedItems[index],
+            position: newPosition
+          };
+        }
+        return updatedItems;
+      });
+    }
+  }, [activeItemRef, isInputActive, isEditing]);
 
   return (
     <>
@@ -783,28 +903,142 @@ const PasteArea = ({ onExport }) => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                style={{ width: '100%', height: '100%' }}
+                style={{ width: '2160px', height: '1200px' }}
               >
                 <PanZoom 
                   selecting={isSelecting}
-                  zoomInitial={1}
-                  zoomMin={0.9}
-                  zoomMax={3}
+                  zoomInitial={0.7}
+                  zoomMin={0.5}
+                  zoomMax={2}
                   ref={panzoomRef}
                   className="canvas-area"
-                  style={{ width: '100%', height: '100%' }}
                   onContainerClick={() => setSelectedId(null)}
-                  disabled={isInputActive || isExpired}
+                  disabled={isInputActive || isEditing}
+                  draggable={!isInputActive && !isEditing}
                   containerClassNames={{
                     outer: 'canvas-area',
                     inner: 'canvas-area__in'
                   }}
                   onElementsChange={(element) => {
+                    console.log('PasteArea: PanZoom onElementsChange', {
+                      isInputActive,
+                      isEditing,
+                      element
+                    });
+                    
+                    // Don't handle element changes if input is active
+                    if (isInputActive || isEditing) {
+                      console.log('PasteArea: Element change prevented - input is active');
+                      return;
+                    }
+                    
                     if (!activeItemRef.current) return;
                     const elementData = element[activeItemRef.current];
                     if (elementData) {
+                      // Validate position values
+                      const x = Number(elementData.x);
+                      const y = Number(elementData.y);
+                      
+                      if (isNaN(x) || isNaN(y)) {
+                        return;
+                      }
+
+                      // If this is the first position change, it means we're starting to drag
+                      if (!isDraggingRef.current) {
+                        setIsDragging(true);
+                        isDraggingRef.current = true;
+                        wasDraggedRef.current = true;
+                        const element = document.getElementById(activeItemRef.current);
+                        if (element) {
+                          element.classList.add('dragging');
+                        }
+                      }
+
+                      // Update local state immediately for smooth dragging
+                      setItems(prevItems => 
+                        prevItems.map(item => 
+                          item.id === activeItemRef.current 
+                            ? { ...item, position: { x, y } }
+                            : item
+                        )
+                      );
+                    }
+                  }}
+                  onElementsChangeStart={(elements) => {
+                    console.log('PasteArea: PanZoom onElementsChangeStart', {
+                      isInputActive,
+                      isEditing,
+                      elements
+                    });
+                    
+                    // Don't start dragging if any item is being edited
+                    if (isInputActive || isEditing) {
+                      console.log('PasteArea: Drag start prevented - input is active');
+                      return;
+                    }
+
+                    const element = elements[0];
+                    if (element) {
+                      setIsDragging(true);
+                      setActiveItemRef(element.id);
+                      wasDraggedRef.current = true;
+                      console.log('PasteArea: Drag started:', { elementId: element.id });
+                    }
+                  }}
+                  onElementsChangeEnd={(element) => {
+                    console.log('PasteArea: PanZoom onElementsChangeEnd', {
+                      isInputActive,
+                      isEditing,
+                      element
+                    });
+                    
+                    // Don't handle element changes if input is active
+                    if (isInputActive || isEditing) {
+                      console.log('PasteArea: Element change end prevented - input is active');
+                      return;
+                    }
+                    
+                    setIsDragging(false);
+                    isDraggingRef.current = false;
+                    if (activeItemRef.current) {
+                      const element = document.getElementById(activeItemRef.current);
+                      if (element) {
+                        element.classList.remove('dragging');
+                      }
+                    }
+                    // Reset drag flag after a short delay
+                    setTimeout(() => {
+                      wasDraggedRef.current = false;
+                    }, 100);
+                    
+                    // Save position to storage when drag ends
+                    if (!activeItemRef.current) return;
+                    
+                    const elementData = element[activeItemRef.current];
+                    if (elementData) {
+                      // Validate and ensure we have valid coordinates
+                      const x = Number(elementData.x);
+                      const y = Number(elementData.y);
+                      
+                      if (isNaN(x) || isNaN(y)) return;
+
+                      const newPosition = {
+                        x: Math.round(x),
+                        y: Math.round(y)
+                      };
+                      
+                      // Update both local state and storage
+                      setItems(prevItems => 
+                        prevItems.map(item => 
+                          item.id === activeItemRef.current 
+                            ? { ...item, position: newPosition }
+                            : item
+                        )
+                      );
+                      
+                      // Save to storage
                       updateCard(activeItemRef.current, { 
-                        position: { x: elementData.x, y: elementData.y } 
+                        position: newPosition
                       });
                     }
                   }}
@@ -826,11 +1060,33 @@ const PasteArea = ({ onExport }) => {
                     <Element
                       key={item.id + '-outer'}
                       id={item.id}
-                      className={`paste-item ${selectedId === item.id ? 'selected' : ''}`}
+                      className={`paste-item ${selectedId === item.id ? 'selected' : ''} ${isDragging && selectedId === item.id ? 'dragging' : ''}`}
                       onClick={(e) => {
                         if (!isExpired) {
-                          setSelectedId(item.id);
-                          activeItemRef.current = item.id;
+                          const now = Date.now();
+                          const timeSinceLastClick = now - lastClickTimeRef.current;
+                          
+                          // console.log('Item clicked:', { 
+                          //   itemId: item.id, 
+                          //   activeItemRef: activeItemRef.current,
+                          //   timeSinceLastClick,
+                          //   lastSelectedId: lastSelectedIdRef.current
+                          // });
+                          
+                          // If clicking the same item within 300ms, it's a double click
+                          if (lastSelectedIdRef.current === item.id && timeSinceLastClick < 300) {
+                            // Double click - do nothing, let TextCard handle it
+                            // console.log('Double click detected, letting TextCard handle it');
+                            lastClickTimeRef.current = 0;
+                            lastSelectedIdRef.current = null;
+                          } else {
+                            // Single click - select the item
+                            // console.log('Single click detected, selecting item');
+                            setSelectedId(item.id);
+                            activeItemRef.current = item.id;
+                            lastClickTimeRef.current = now;
+                            lastSelectedIdRef.current = item.id;
+                          }
                         }
                       }}
                       x={item.position?.x || 0}
@@ -860,6 +1116,8 @@ const PasteArea = ({ onExport }) => {
                           onInputActiveChange={handleInputActiveChange}
                           type="pastedText"
                           storage={storage}
+                          isSelected={selectedId === item.id}
+                          wasDragged={wasDraggedRef.current}
                         />
                       ) : item.type === 'newText' ? (
                         <TextCard
@@ -870,6 +1128,8 @@ const PasteArea = ({ onExport }) => {
                           onInputActiveChange={handleInputActiveChange}
                           type="newText"
                           storage={storage}
+                          isSelected={selectedId === item.id}
+                          wasDragged={wasDraggedRef.current}
                         />
                       ) : null}
                     </Element>

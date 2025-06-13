@@ -4,6 +4,20 @@ import { useEffect } from 'react';
 // Helper function to generate a random integer between min and max (inclusive)
 const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
+// Helper function to get the appropriate interval based on duration
+const getAgingInterval = (durationMinutes) => {
+  const ONE_HOUR = 60;
+  const ONE_DAY = 24 * 60;
+  
+  if (durationMinutes >= ONE_DAY) {
+    return 20 * 60 * 1000; // 20 minutes in milliseconds
+  } else if (durationMinutes >= ONE_HOUR) {
+    return 3 * 60 * 1000; // 3 minutes in milliseconds
+  } else {
+    return 1500; // Default 1.5 seconds
+  }
+};
+
 // Assign random aging classes to an element if not already assigned
 const assignAgingClasses = (element) => {
   if (!element.dataset.agingClasses) {
@@ -71,7 +85,7 @@ export const useAgingEffect = (timeSettings) => {
     };
 
     applyAgingEffects();
-    const interval = setInterval(applyAgingEffects, 1500);
+    const interval = setInterval(applyAgingEffects, getAgingInterval(timeSettings.duration));
     return () => clearInterval(interval);
   }, [timeSettings]);
 };

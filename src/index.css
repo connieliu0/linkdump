@@ -22,6 +22,8 @@ body{
 }
 .canvas-area {
   position: relative;
+  width: 120vw;
+  height: 120vh;
 }
 
 .canvas-area__in {
