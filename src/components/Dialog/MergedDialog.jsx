@@ -3,6 +3,9 @@ import Modal from './Modal';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { getStorageAdapter } from '../../utils/storage/StorageFactory';
 import useMeasure from 'react-use-measure';
+import { logEvent } from 'firebase/analytics';
+import { analytics } from '../../utils/storage/firebase';
+
 
 const STEPS = {
   ONBOARD: 0,
@@ -35,6 +38,7 @@ const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) => {
     if (mode === storageMode) return;
     setStorageMode(mode);
     onStorageModeSelect(mode);
+    logEvent(analytics, 'storage_mode_selected', { mode });
   }, [storageMode, onStorageModeSelect]);
 
   const handleInputChange = useCallback((setter) => (e) => {
@@ -84,6 +88,11 @@ const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) => {
     }
     const totalSeconds = (daysValue * 86400) + (hoursValue * 3600) + (minutesValue * 60) + secondsValue;
     const startTime = Date.now();
+    logEvent(analytics, 'project_started', {
+      mode: storageMode,
+      has_custom_url: !!customUrl.trim(),
+     duration_minutes: totalSeconds / 60
+    });
     onTimeSet({
       description: description.trim(),
       startTime,
@@ -140,20 +149,20 @@ const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) => {
   const onboardingContent = (
     <div className="dialog-body">
       <div className="onboarding-steps">
-        <div className="step">
-          <p>👋 Read more about the project <a href="https://decay.connie.surf" target="_blank" rel="noopener noreferrer">here</a></p>
-        </div>
-        <div className="step">
+      <div className="step">
           <p>📋 Paste images, links, or text on the canvas</p>
         </div>
         <div className="step">
-          <p>⌛ Your content will age and fade with time</p>
+          <p>🌟 Import and sort collection from Are.na</p>
         </div>
         <div className="step">
           <p>✍️ Add your own notes with empty cards</p>
         </div>
         <div className="step">
-          <p>⏰ If you leave, time will still pass</p>
+          <p>⏰ Your content fades as time passes</p>
+        </div>
+        <div className="step">
+          <p>📖 Read more about the project <a href="https://decay.connie.surf" target="_blank" rel="noopener noreferrer">here</a></p>
         </div>
       </div>
     </div>

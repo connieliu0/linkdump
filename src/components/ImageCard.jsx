@@ -129,12 +129,12 @@ const ImageCard = React.memo(function ImageCard({ src, itemId, sourceUrl: initia
             onKeyDown={handleKeyDown}
             onBlur={() => setIsEditing(false)}
             className="input-field source-input"
-            placeholder="Add source URL"
+            placeholder="Add caption or source"
             autoFocus
           />
         ) : (
           <div className="source-text">
-            {sourceUrl ? sourceUrl : 'Click to add source'}
+            {sourceUrl ? sourceUrl : 'Click to add caption or source'}
           </div>
         )}
       </div>

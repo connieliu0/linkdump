@@ -295,6 +295,22 @@ const PasteArea = ({ onExport }) => {
     }
   };
 
+  const updateProjectDescription = async (newDescription) => {
+    if (!timeSettings || !storage) return;
+    
+    try {
+      const updatedSettings = {
+        ...timeSettings,
+        description: newDescription
+      };
+      
+      await storage.saveTimeSettings(updatedSettings);
+      setTimeSettings(updatedSettings);
+    } catch (error) {
+      console.error('Error updating project description:', error);
+    }
+  };
+
   // Load time settings when storage changes
   const loadTimeSettingsRef = useRef(loadTimeSettings);
   useEffect(() => {
@@ -882,6 +898,7 @@ const PasteArea = ({ onExport }) => {
               timeSettings={timeSettings}
               projectDescription={timeSettings?.description}
               onClearCanvas={handleClearCanvas}
+              onProjectDescriptionChange={updateProjectDescription}
             />
             <BottomToolbar 
               panzoomRef={panzoomRef} 

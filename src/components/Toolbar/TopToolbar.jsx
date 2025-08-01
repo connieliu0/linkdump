@@ -5,7 +5,10 @@ import ImportArenaDialog from '../Dialog/ImportArenaDialog';
 import { formatTimeRemaining, getTimePhase, getTimeMessage } from '../../utils/timeFormatting';
 import { AnimatePresence, motion } from 'framer-motion';
 
-const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription }) => {
+const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription, onProjectDescriptionChange }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState('');
+
   const getMessage = () => {
     if (!timeSettings) return '';
     const now = Date.now();
@@ -13,11 +16,104 @@ const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription }) => {
     return getTimeMessage(timePhase);
   };
 
+  const adjustTextareaHeight = (textarea) => {
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = textarea.scrollHeight + 'px';
+    }
+  };
+
+  const [inputWidth, setInputWidth] = useState('auto');
+
+  const handleClick = () => {
+    if (onProjectDescriptionChange) {
+      const newValue = projectDescription || '';
+      setEditValue(newValue);
+      setIsEditing(true);
+      // Measure the display text width
+      const displayElement = document.querySelector('.project-name-display');
+      if (displayElement) {
+        const width = displayElement.getBoundingClientRect().width;
+        setInputWidth(`${width}px`);
+      }
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (onProjectDescriptionChange) {
+      onProjectDescriptionChange(editValue.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      setIsEditing(false);
+      setEditValue('');
+    }
+  };
+
+  const handleBlur = () => {
+    if (editValue.trim() !== (projectDescription || '')) {
+      if (onProjectDescriptionChange) {
+        onProjectDescriptionChange(editValue.trim());
+      }
+    }
+    setIsEditing(false);
+  };
+
   return (
     <div className="toolbar-section time-section">
-    <div className="project-name">{projectDescription || 'Project Name here'}
-    <div>{getMessage()}</div>
-    </div>
+      <div className="project-name">
+        {isEditing ? (
+          <form onSubmit={handleSubmit}>
+            <textarea
+              value={editValue}
+              onChange={(e) => {
+                setEditValue(e.target.value);
+                adjustTextareaHeight(e.target);
+              }}
+              onBlur={handleBlur}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e);
+                } else {
+                  handleKeyDown(e);
+                }
+              }}
+              autoFocus
+              ref={(textarea) => {
+                if (textarea) {
+                  textarea.focus();
+                  adjustTextareaHeight(textarea);
+                }
+              }}
+              className="project-name-input"
+              style={{ width: inputWidth }}
+              placeholder="Project Name here"
+              rows={1}
+            />
+          </form>
+        ) : (
+          <div className="project-name-container">
+            <span 
+              onClick={handleClick}
+              className={`project-name-display ${onProjectDescriptionChange ? 'editable' : ''}`}
+              title={onProjectDescriptionChange ? 'Click to edit' : ''}
+            >
+              {projectDescription || 'Project Name here'}
+            </span>
+            {onProjectDescriptionChange && (
+              <span className="edit-icon" onClick={handleClick}>
+                ✎
+              </span>
+            )}
+          </div>
+        )}
+        <div><em>{getMessage()}</em></div>
+      </div>
       <div>{formatTimeRemaining(timeRemaining)}</div>
     </div>
   );
@@ -99,6 +195,7 @@ const Toolbar = ({
   projectDescription,
   onClearCanvas,
   isExpired,
+  onProjectDescriptionChange,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
@@ -127,6 +224,7 @@ const Toolbar = ({
           timeRemaining={timeRemaining} 
           timeSettings={timeSettings} 
           projectDescription={projectDescription}
+          onProjectDescriptionChange={onProjectDescriptionChange}
         />
         <MoreMenu 
           onClearCanvas={handleClear}

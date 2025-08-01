@@ -197,7 +197,7 @@ body {
 
 .image-container .source-text {
   color: var(--secondary-color);
-  font-size: 12px;
+  font-size: 1.2em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -211,7 +211,7 @@ body {
   border: none;
   padding: 0;
   margin: 0;
-  font-size: 12px;
+  font-size: 1.2em;
   color: var(--secondary-color);
 }
 
@@ -421,7 +421,7 @@ button:hover {
   border-radius: 4px;
   position: absolute;
   bottom: 20px;
-  max-width: 400px;
+  max-width: 300px;
   pointer-events: auto;
 }
 .more-section {
@@ -532,8 +532,72 @@ button:hover {
   word-wrap: break-word;
   word-break: break-word;
   color: var(--secondary-color);
-  max-width: 100%;
+  width: 310px; /* Fixed width for both display and edit modes */
   line-height: 1.4;
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+.project-name form {
+  width: 100%; /* Take full width of parent */
+}
+
+.project-name-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-height: 1.4em;
+  width: 100%; /* Take full width of parent */
+}
+
+.project-name-display.editable {
+  cursor: pointer;
+  transition: border-bottom 0.2s ease;
+  border-bottom: 1px solid transparent;
+  white-space: pre-wrap;
+  width: 100%;
+  display: block; /* Ensure block display */
+}
+
+.project-name-display.editable:hover {
+  border-bottom: 1px solid var(--secondary-color);
+}
+
+.edit-icon {
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  font-size: 1em;
+  user-select: none;
+  width: 1.2em;
+  text-align: center;
+  flex-shrink: 0;
+  margin-top: 0.2em;
+}
+
+.project-name-container:hover .edit-icon {
+  opacity: 0.6;
+}
+
+.edit-icon:hover {
+  opacity: 1 !important;
+}
+
+.project-name-input {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--secondary-color);
+  padding: 2px 0;
+  font-size: inherit;
+  font-family: inherit;
+  color: inherit;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  resize: none;
+  overflow-y: hidden;
+  min-height: 1.4em;
+  display: block;
+  max-width: 100%; /* Prevent expanding beyond container */
 }
 
 /* Add specific styles for new text cards */

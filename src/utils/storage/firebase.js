@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
+import { getAnalytics, setAnalyticsCollectionEnabled } from "firebase/analytics";
 import { getDatabase } from "firebase/database";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -20,7 +20,13 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
-// Initialize Realtime Database and export it
 export const db = getDatabase(app);
+export const analytics = getAnalytics(app);
+
+// Enable analytics debug mode in development
+if (import.meta.env.DEV) {
+  setAnalyticsCollectionEnabled(analytics, true);
+  window.gtag('config', firebaseConfig.measurementId, {
+    debug_mode: true
+  });
+}
