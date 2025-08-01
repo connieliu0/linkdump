@@ -112,9 +112,9 @@ const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription, onProjec
             )}
           </div>
         )}
-        <div><em>{getMessage()}</em></div>
+        {/* <div><em>{getMessage()}</em></div> */}
       </div>
-      <div>{formatTimeRemaining(timeRemaining)}</div>
+      <div>{formatTimeRemaining(timeRemaining)}<span style={{color: 'var(--secondary-color)'}}> until full decay</span></div>
     </div>
   );
 };
