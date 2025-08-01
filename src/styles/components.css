@@ -122,7 +122,7 @@ body {
   display: block;
   margin: 0;
   background: transparent;
-  width: fit-content;
+  width: max-content;
 }
 
 .image-container:before {
@@ -140,7 +140,7 @@ body {
 .paste-item {
   max-width: 400px;
   min-width: auto;
-  width: fit-content;
+  width: max-content;
   background: white;
   border-radius: 0.25rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
@@ -187,25 +187,30 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  width: 100%;
   box-sizing: border-box;
   padding: 8px;
   background-color: rgba(255, 255, 255, 0.9);
   border-radius: 0 0 4px 4px;
   margin-top: -1px;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .image-container .source-text {
   color: var(--secondary-color);
   font-size: 1.2em;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  box-sizing: border-box;
+  display: block;
+  padding: 0;
+  margin: 0;
   width: 100%;
 }
 
 .image-container .source-input {
-  width: 100%;
   box-sizing: border-box;
   background: transparent;
   border: none;
@@ -213,6 +218,10 @@ body {
   margin: 0;
   font-size: 1.2em;
   color: var(--secondary-color);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  display: block;
+  width: 100%;
 }
 
 .text-content {
