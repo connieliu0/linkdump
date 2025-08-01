@@ -1067,7 +1067,8 @@ const PasteArea = ({ onExport }) => {
                       left: '50%', 
                       transform: 'translateX(-50%)',
                       color: 'black',
-                      pointerEvents: 'none'
+                      pointerEvents: 'none',
+                      fontSize: '1.5rem',
                     }}>
                       Paste an image or link here; Hold down shift to drag and select multiple 
                     </div>
