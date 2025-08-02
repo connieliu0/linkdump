@@ -299,6 +299,18 @@ const PasteArea = ({ onExport }) => {
     }
   };
 
+  const updateTimeSettings = async (newTimeSettings) => {
+    if (!storage) return;
+    
+    try {
+      await storage.saveTimeSettings(newTimeSettings);
+      setTimeSettings(newTimeSettings);
+    } catch (error) {
+      console.error('Error updating time settings:', error);
+      throw error; // Re-throw to allow component to handle error
+    }
+  };
+
   // Load time settings when storage changes
   const loadTimeSettingsRef = useRef(loadTimeSettings);
   useEffect(() => {
@@ -555,7 +567,7 @@ const PasteArea = ({ onExport }) => {
       await storage.clearBoard(); // Clear IndexedDB
       localStorage.removeItem('localBoardActive'); // Remove local board flag
 
-      console.log('Successfully converted to collaborative mode');
+      // console.log('Successfully converted to collaborative mode');
       return newBoardId;
     } catch (error) {
       console.error('Error converting to collaborative mode:', error);
@@ -1009,6 +1021,7 @@ const PasteArea = ({ onExport }) => {
                 rotate: '180deg',
               }}
             ></div>
+
             <TopToolbar 
               panzoomRef={panzoomRef} 
               onExport={onExport} 
@@ -1017,8 +1030,12 @@ const PasteArea = ({ onExport }) => {
               projectDescription={timeSettings?.description}
               onClearCanvas={handleClearCanvas}
               onProjectDescriptionChange={updateProjectDescription}
+              onTimeSettingsUpdate={updateTimeSettings}
               onConvertToCollaborative={() => setShowCollaborativeDialog(true)}
               storageMode={storageMode}
+              isOnboardingBoard={timeSettings?.description === "Your first project"}
+              hasEditedTime={timeSettings?.hasEditedTime || false}
+              canEditTime={!timeSettings?.hasEditedTime}
             />
             <BottomToolbar 
               panzoomRef={panzoomRef} 
@@ -1059,15 +1076,15 @@ const PasteArea = ({ onExport }) => {
                     inner: 'canvas-area__in'
                   }}
                   onElementsChange={(element) => {
-                    console.log('PasteArea: PanZoom onElementsChange', {
-                      isInputActive,
-                      isEditing,
-                      element
-                    });
+                    // console.log('PasteArea: PanZoom onElementsChange', {
+                    //   isInputActive,
+                    //   isEditing,
+                    //   element
+                    // });
                     
                     // Don't handle element changes if input is active
                     if (isInputActive || isEditing) {
-                      console.log('PasteArea: Element change prevented - input is active');
+                      // console.log('PasteArea: Element change prevented - input is active');
                       return;
                     }
                     
@@ -1104,15 +1121,15 @@ const PasteArea = ({ onExport }) => {
                     }
                   }}
                   onElementsChangeStart={(elements) => {
-                    console.log('PasteArea: PanZoom onElementsChangeStart', {
-                      isInputActive,
-                      isEditing,
-                      elements
-                    });
+                    // console.log('PasteArea: PanZoom onElementsChangeStart', {
+                    //   isInputActive,
+                    //   isEditing,
+                    //   elements
+                    // });
                     
                     // Don't start dragging if any item is being edited
                     if (isInputActive || isEditing) {
-                      console.log('PasteArea: Drag start prevented - input is active');
+                      // console.log('PasteArea: Drag start prevented - input is active');
                       return;
                     }
 
@@ -1121,19 +1138,19 @@ const PasteArea = ({ onExport }) => {
                       setIsDragging(true);
                       setActiveItemRef(element.id);
                       wasDraggedRef.current = true;
-                      console.log('PasteArea: Drag started:', { elementId: element.id });
+                      // console.log('PasteArea: Drag started:', { elementId: element.id });
                     }
                   }}
                   onElementsChangeEnd={(element) => {
-                    console.log('PasteArea: PanZoom onElementsChangeEnd', {
-                      isInputActive,
-                      isEditing,
-                      element
-                    });
+                    // console.log('PasteArea: PanZoom onElementsChangeEnd', {
+                    //   isInputActive,
+                    //   isEditing,
+                    //   element
+                    // });
                     
                     // Don't handle element changes if input is active
                     if (isInputActive || isEditing) {
-                      console.log('PasteArea: Element change end prevented - input is active');
+                      // console.log('PasteArea: Element change end prevented - input is active');
                       return;
                     }
                     

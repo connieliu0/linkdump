@@ -10,7 +10,8 @@ export const createDefaultTimeSettings = () => {
     startTime,
     endTime: startTime + (durationInSeconds * 1000),
     halfwayPoint: startTime + (durationInSeconds * 500),
-    duration: durationInMinutes
+    duration: durationInMinutes,
+    hasEditedTime: false
   };
 };
 

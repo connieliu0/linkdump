@@ -610,6 +610,140 @@ button:hover {
   max-width: 100%; /* Prevent expanding beyond container */
 }
 
+/* Time display container and editable styles */
+.time-display-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: fit-content;
+}
+
+.time-remaining-display {
+  transition: all 0.2s ease;
+  width: fit-content;
+}
+
+.time-remaining-display.editable {
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  transition: all 0.2s ease;
+}
+
+.time-remaining-display.editable:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Native tooltip styling */
+.time-remaining-display[title] {
+  cursor: help;
+}
+
+/* Visible tooltip for time editing */
+.time-edit-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  padding: 6px 10px;
+  font-size: 0.85em;
+  color: var(--secondary-color);
+  width: 220px;
+  line-height: 1.4;
+  z-index: 1000;
+  white-space: normal;
+  font-family: 'Decompositionphase1';
+  animation: tooltip-appear 0.3s ease-out;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid var(--tertiary-color);
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+
+
+@keyframes tooltip-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Time editing form styles */
+.time-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.time-edit-input-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.time-edit-input {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--secondary-color);
+  padding: 2px;
+  font-size: inherit;
+  font-family: inherit;
+  color: inherit;
+  outline: none;
+  width: 40px;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+
+.time-edit-input::-webkit-outer-spin-button,
+.time-edit-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.time-edit-input:focus {
+  border-bottom-color: var(--primary-color);
+}
+
+.time-edit-unit {
+  color: var(--secondary-color);
+  font-size: 0.9em;
+  margin-right: 4px;
+  user-select: none;
+}
+
+.time-edit-save {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0 4px;
+  font-size: 1.1em;
+  color: var(--secondary-color);
+  transition: all 0.2s ease;
+  margin-left: 4px;
+  opacity: 0.6;
+}
+
+.time-edit-save:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.time-edit-error {
+  color: var(--error-color);
+  font-size: 0.8em;
+  margin-top: 2px;
+  font-family: 'Decompositionphase1';
+}
+
 /* Add specific styles for new text cards */
 .text-content .editable.new-text,
 .text-content .content-input.new-text {

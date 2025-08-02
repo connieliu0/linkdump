@@ -81,7 +81,8 @@ export class IndexedDBAdapter extends StorageAdapter {
         description: settings.description || '',
         startTime: Number(settings.startTime),
         duration: Number(settings.duration), // Duration in minutes
-        halfwayPoint: Number(settings.halfwayPoint)
+        halfwayPoint: Number(settings.halfwayPoint),
+        hasEditedTime: settings.hasEditedTime || false
       };
       await this.db.settings.put(timeSettings);
       return true;
