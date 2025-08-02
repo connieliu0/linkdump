@@ -12,9 +12,10 @@ export class IndexedDBAdapter extends StorageAdapter {
   async initDB() {
     this.db = new Dexie('CanvasDB');
     // Define database schema
-    this.db.version(1).stores({
+    this.db.version(2).stores({
       items: '++id,type,content,position,sourceUrl',
-      settings: 'id,endTime,halfwayPoint,totalSeconds,description'
+      settings: 'id,endTime,halfwayPoint,totalSeconds,description',
+      preferences: 'key,value'
     });
     await this.db.open();
   }
@@ -131,6 +132,31 @@ export class IndexedDBAdapter extends StorageAdapter {
       return true;
     } catch (error) {
       console.error('[IndexDBAdapter] Error clearing board:', error);
+      return false;
+    }
+  }
+
+  async getCustomUrlBackhalf() {
+    try {
+      await this.ensureDB();
+      const pref = await this.db.preferences.get('customUrlBackhalf');
+      return pref?.value || null;
+    } catch (error) {
+      console.error('Error getting custom URL backhalf from IndexDB:', error);
+      return null;
+    }
+  }
+
+  async saveCustomUrlBackhalf(backhalf) {
+    try {
+      await this.ensureDB();
+      await this.db.preferences.put({
+        key: 'customUrlBackhalf',
+        value: backhalf
+      });
+      return true;
+    } catch (error) {
+      console.error('Error saving custom URL backhalf to IndexDB:', error);
       return false;
     }
   }

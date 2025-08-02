@@ -127,10 +127,12 @@ textarea:focus,
   margin-top: auto;
   justify-content: space-between;
 }
-.dialog-content a{
+
+.dialog-content a {
   color: var(--secondary-color);
   text-decoration: wavy underline;
 }
+
 .dialog-content .button-container button {
   flex: 1;
   padding: 12px;
@@ -150,6 +152,26 @@ textarea:focus,
 .dialog-content .button-container button:hover {
   background: rgba(255, 255, 255, 0.30);
   transform: translateY(-1px);
+}
+
+.button-container button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes buttonSuccess {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.button-container button:active {
+  animation: buttonSuccess 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Input container styles */
@@ -187,6 +209,7 @@ label {
   gap: 8px;
   margin-top: 8px;
 }
+
 .mode-button {
   display: flex;
   flex-direction: column;
@@ -221,7 +244,117 @@ label {
 .error-message {
   color: var(--error-color);
   font-family: 'Decompositionphase1';
-} 
+}
+
+/* Collaborative Dialog Styles */
+.url-input-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 16px 0;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 12px;
+  border: var(--border-style);
+}
+
+.url-prefix {
+  color: var(--primary-color);
+  font-family: 'Decompositionphase1';
+  opacity: 0.7;
+  font-size: 1.1em;
+}
+
+.description {
+  margin: 0;
+  color: var(--primary-color);
+  font-family: 'Decompositionphase1';
+  font-size: 1.1em;
+}
+
+.url-hint {
+  margin: 8px 0 0;
+  color: var(--primary-color);
+  font-family: 'Decompositionphase1';
+  font-size: 0.9em;
+  opacity: 0.7;
+  font-style: italic;
+}
+
+input.error {
+  border-color: var(--error-color);
+}
+
+.success-section {
+  text-align: center;
+  width: 100%;
+}
+
+.url-success-box {
+  font-family: 'Decompositionphase1';
+  padding: 16px;
+  margin-bottom: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px dashed var(--secondary-color);
+  border-radius: 4px;
+  text-align: center;
+  word-break: break-all;
+  color: var(--secondary-color);
+  font-size: 1.1em;
+}
+
+.copy-button {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.2);
+  border: var(--border-style);
+  cursor: pointer;
+  font-family: 'Decompositionphase1';
+  color: var(--primary-color);
+  transition: all 0.2s ease;
+}
+
+.copy-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.modal-section {
+  width: 100%;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 16px;
+  width: 100%;
+}
+
+.primary-button,
+.secondary-button {
+  padding: 12px;
+  border: 1.5px solid var(--secondary-color);
+  background: rgba(255, 255, 255, 0.20);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 0;
+  color: var(--primary-color);
+  font-family: 'Decompositionphase1';
+  font-size: 1rem;
+}
+
+.primary-button:hover,
+.secondary-button:hover {
+  background: rgba(255, 255, 255, 0.30);
+  transform: translateY(-1px);
+}
+
+.primary-button:disabled,
+.secondary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
 
 @media (max-width: 480px) {
   .dialog-content {
@@ -244,5 +377,10 @@ label {
 
   .dialog-content .input-field {
     padding: 8px 6px;
+  }
+
+  .url-display {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

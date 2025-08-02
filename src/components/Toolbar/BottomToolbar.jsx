@@ -11,7 +11,9 @@ const BottomToolbar = ({
   boardId,
   onAddEmptyCard,
   onImportArenaItems,
-  isCollaborative
+  isCollaborative,
+  onConvertToCollaborative,
+  storageMode
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [showAddContentModal, setShowAddContentModal] = useState(false);
@@ -110,6 +112,23 @@ const BottomToolbar = ({
             }} />
           </div>
         </div>
+        {storageMode === 'local' && (
+          <div className="action share-section">
+            <div className="clickable-div share-board" onClick={onConvertToCollaborative}>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key="collaborate"
+                  variants={variants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="hidden"
+                >
+                  Make Collaborative
+                </motion.span>
+              </AnimatePresence>
+            </div>
+          </div>
+        )}
         {isCollaborative && (
           <div className="action share-section">
             <div className="clickable-div share-board" onClick={handleShare}>

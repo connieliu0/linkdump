@@ -120,7 +120,7 @@ const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription, onProjec
 };
 
 
-const MoreMenu = ({ onClearCanvas, onShowRoadmap }) => {
+const MoreMenu = ({ onClearCanvas, onShowRoadmap, onConvertToCollaborative, storageMode }) => {
   const [open, setOpen] = useState(false);
 
   const variants = {
@@ -196,6 +196,8 @@ const Toolbar = ({
   onClearCanvas,
   isExpired,
   onProjectDescriptionChange,
+  onConvertToCollaborative,
+  storageMode,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
@@ -229,6 +231,8 @@ const Toolbar = ({
         <MoreMenu 
           onClearCanvas={handleClear}
           onShowRoadmap={() => setShowRoadmap(true)}
+          onConvertToCollaborative={onConvertToCollaborative}
+          storageMode={storageMode}
         />
       </div>
       

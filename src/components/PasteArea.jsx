@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import PanZoom, { Element } from '@sasza/react-panzoom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getStorageAdapter } from '../utils/storage/StorageFactory';
+import { getStorageAdapter, createCollaborativeBoard } from '../utils/storage/StorageFactory';
 import LinkCard from './LinkCard';
 import ImageCard from './ImageCard';
 import BottomToolbar from './Toolbar/BottomToolbar';
@@ -20,7 +20,10 @@ import { detectImageSource } from '../utils/linkProcessing';
 import { createImageCard, createTextCard, createLinkCard } from '../utils/cardManagement';
 import { saveAndUpdateItems, updateAndRefreshItems, deleteAndRemoveItem } from '../utils/storageOperations';
 import { layoutArenaItems } from '../utils/layoutUtils';
+import { createDefaultTimeSettings } from '../utils/timeFormatting';
+import { getDefaultHomepageItems } from '../utils/defaultItems';
 import MergedDialog from './Dialog/MergedDialog';
+import ConvertToCollaborativeDialog from './Dialog/ConvertToCollaborativeDialog';
 
 // Helper to get/set visited boards
 const getVisitedBoards = () => {
@@ -84,6 +87,7 @@ const PasteArea = ({ onExport }) => {
   const [showTimeInput, setShowTimeInput] = useState(false);
   const [loadingTimeSettings, setLoadingTimeSettings] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
+  const [showCollaborativeDialog, setShowCollaborativeDialog] = useState(false);
   const wasDraggedRef = useRef(false);
   const isDraggingRef = useRef(false);
   const lastClickTimeRef = useRef(0);
@@ -94,7 +98,6 @@ const PasteArea = ({ onExport }) => {
 
   // Initialize storage and load time settings
   useEffect(() => {
-    let timeoutId;
     let isMounted = true;
     
     const loadInitialTimeSettings = async () => {
@@ -106,21 +109,18 @@ const PasteArea = ({ onExport }) => {
           const settings = await adapter.getTimeSettings();
           
           if (settings) {
-            setTimeSettings(settings);
-          } else {
-            // Only show the time input dialog after a short delay
-            // if no settings were found and we're not in collaborative mode
-            timeoutId = setTimeout(() => {
-              if (isMounted && !timeSettings) {
-                const pathParts = window.location.pathname.split('/').filter(Boolean);
-                const urlBoardId = pathParts[0] || null;
-                // Only show time input if we're not in collaborative mode
-                if (!urlBoardId) {
-                  setShowTimeInput(true);
-                }
-                console.log('No time settings found after timeout');
-              }
-            }, 2000); // 2 second delay before showing time input
+            // Check if the settings have expired
+            const now = Date.now();
+            const expiryTime = settings.startTime + (settings.duration * 60 * 1000);
+            
+            if (now < expiryTime) {
+              // Settings haven't expired yet, use them
+              setTimeSettings(settings);
+            } else {
+              // Settings have expired, clear them
+              await adapter.clearBoard();
+              setTimeSettings(null);
+            }
           }
         }
       } catch (error) {
@@ -133,15 +133,14 @@ const PasteArea = ({ onExport }) => {
     // Cleanup function
     return () => {
       isMounted = false;
-      if (timeoutId) clearTimeout(timeoutId);
     };
   }, [storageMode, boardId]);
 
   // Initialize storage based on mode and boardId
   useEffect(() => {
     const initializeStorage = async () => {
-      // If we're at the root URL and have local storage mode set
-      if (window.location.pathname === '/' && storageMode === 'local') {
+      // If we're at the root URL or switching to local mode
+      if (window.location.pathname === '/' || storageMode === 'local') {
         const { adapter } = getStorageAdapter('local');
         setStorage(adapter);
         setBoardId(null);
@@ -160,30 +159,19 @@ const PasteArea = ({ onExport }) => {
 
       // Handle collaborative mode
       if (storageMode === 'collaborative') {
-        const { adapter, boardId: newBoardId } = getStorageAdapter('collaborative', boardId);
-        setStorage(adapter);
-        
-        if (!newBoardId && adapter instanceof FirebaseAdapter) {
-          try {
-            const generatedBoardId = await adapter.generateBoardId();
-            setBoardId(generatedBoardId);
-            
-            if (timeSettings) {
-              const newPath = `/${generatedBoardId}`;
-              window.history.replaceState({}, '', newPath);
-            }
-          } catch (error) {
-            console.error('Error generating board ID:', error);
-            return;
-          }
-        } else if (newBoardId) {
-          setBoardId(newBoardId);
-          
-          if (timeSettings) {
-            const newPath = `/${newBoardId}`;
-            window.history.replaceState({}, '', newPath);
-          }
+        const pathParts = window.location.pathname.split('/').filter(Boolean);
+        const urlBoardId = pathParts[0];
+
+        if (!urlBoardId) {
+          // If no board ID in URL but we're in collaborative mode,
+          // switch back to local mode
+          handleStorageModeChange('local');
+          return;
         }
+
+        const { adapter } = getStorageAdapter('collaborative', urlBoardId);
+        setStorage(adapter);
+        setBoardId(urlBoardId);
 
         // Set up realtime listener for collaborative mode
         const unsubscribe = adapter.setupRealtimeListener((items) => {
@@ -202,7 +190,7 @@ const PasteArea = ({ onExport }) => {
     };
 
     initializeStorage();
-  }, [storageMode, boardId]);
+  }, [storageMode]);
 
   const handleStorageModeChange = (mode) => {
     // console.log('Handling storage mode change:', mode);
@@ -506,6 +494,71 @@ const PasteArea = ({ onExport }) => {
     }
   };
 
+  // Function to convert from local to collaborative mode
+  const convertToCollaborative = async (customUrl = null) => {
+    try {
+      // Get all current items from local storage
+      const localItems = await storage.loadItems();
+      
+      // Get current time settings from local storage
+      const localTimeSettings = await storage.getTimeSettings();
+      
+      if (!localTimeSettings) {
+        console.error('No time settings found in local storage');
+        return;
+      }
+
+      // Create new collaborative board
+      const { adapter: firebaseAdapter } = getStorageAdapter('collaborative');
+      let newBoardId;
+
+      if (customUrl) {
+        try {
+          // Try to generate board with custom URL
+          newBoardId = await firebaseAdapter.generateBoardId(customUrl);
+        } catch (error) {
+          if (error.message === 'URL_TAKEN') {
+            throw error; // Re-throw to be handled by dialog
+          }
+          console.error('Error generating custom URL, falling back to random:', error);
+          newBoardId = await firebaseAdapter.generateBoardId();
+        }
+      } else {
+        newBoardId = await firebaseAdapter.generateBoardId();
+      }
+
+      firebaseAdapter.setBoardId(newBoardId);
+      
+      // Save time settings to Firebase
+      await firebaseAdapter.saveTimeSettings(localTimeSettings);
+      
+      // Copy all items to the new Firebase board
+      if (localItems && localItems.length > 0) {
+        for (const item of localItems) {
+          await firebaseAdapter.saveItem(item);
+        }
+      }
+      
+      // Update URL with new board ID
+      const newPath = `/${newBoardId}`;
+      window.history.replaceState({}, '', newPath);
+      
+      // Update storage mode
+      localStorage.setItem('storageMode', 'collaborative');
+      setStorageMode('collaborative');
+      
+      // Update storage adapter reference and board ID
+      setStorage(firebaseAdapter);
+      setBoardId(newBoardId);
+
+      console.log('Successfully converted to collaborative mode');
+      return newBoardId;
+    } catch (error) {
+      console.error('Error converting to collaborative mode:', error);
+      throw error; // Re-throw to be handled by dialog
+    }
+  };
+
   // Add mouse up handler to detect drag end
   useEffect(() => {
     const handleMouseUp = () => {
@@ -717,34 +770,62 @@ const PasteArea = ({ onExport }) => {
     resetInactivityTimer();
   };
 
-  // Delay and await timeSettings query before showing the time dialog
+  // Handle first-time users and returning users
   useEffect(() => {
     let isMounted = true;
     const checkTimeSettings = async () => {
       setLoadingTimeSettings(true);
-      // Wait 0.5 seconds before checking
-      await new Promise(res => setTimeout(res, 300));
-      if (!isMounted) return;
-      if (!timeSettings) {
+      
+      try {
         const pathParts = window.location.pathname.split('/').filter(Boolean);
         const urlBoardId = pathParts[0] || null;
-        const alreadyVisited = (!urlBoardId && localStorage.getItem('localBoardActive') === 'true') ||
-          (urlBoardId && getVisitedBoards().includes(urlBoardId));
-        if (!alreadyVisited) {
-          const hasVisited = localStorage.getItem('hasVisitedBefore');
-          if (!hasVisited) {
-            setShowTimeInput(false);
+        const hasVisited = localStorage.getItem('hasVisitedBefore');
+        const { adapter } = getStorageAdapter(storageMode, urlBoardId);
+
+        // Check if we have existing settings that haven't expired
+        const existingSettings = await adapter.getTimeSettings();
+        if (existingSettings) {
+          const now = Date.now();
+          const expiryTime = existingSettings.startTime + (existingSettings.duration * 60 * 1000);
+          
+          if (now < expiryTime) {
+            // Use existing settings if they haven't expired
+            setTimeSettings(existingSettings);
             setLoadingTimeSettings(false);
             return;
           }
         }
-        setShowTimeInput(true);
+
+        // For first-time users at root URL, create default board
+        if (!hasVisited && !urlBoardId) {
+          const defaultSettings = createDefaultTimeSettings();
+          
+          // Save time settings
+          await adapter.saveTimeSettings(defaultSettings);
+          setTimeSettings(defaultSettings);
+          
+          // Create default items
+          const defaultItems = getDefaultHomepageItems();
+          for (const item of defaultItems) {
+            await saveAndUpdateItems(adapter, item, setItems);
+          }
+          
+          localStorage.setItem('hasVisitedBefore', 'true');
+          localStorage.setItem('localBoardActive', 'true');
+        } else if (!urlBoardId && !existingSettings) {
+          // For returning users without active settings, show time input
+          setShowTimeInput(true);
+        }
+      } catch (error) {
+        console.error('Error in checkTimeSettings:', error);
       }
+      
       setLoadingTimeSettings(false);
     };
+
     checkTimeSettings();
     return () => { isMounted = false; };
-  }, [timeSettings]);
+  }, [storageMode]);
 
   useEffect(() => {
     // Add paste event listener to the window
@@ -788,9 +869,6 @@ const PasteArea = ({ onExport }) => {
     if (boardId) addVisitedBoard(boardId);
   }, [boardId]);
 
-  useEffect(() => {
-    localStorage.setItem('localBoardActive', 'true');
-  }, []);
 
   const visibleItems = useMemo(() => {
     const seen = new Set();
@@ -845,9 +923,15 @@ const PasteArea = ({ onExport }) => {
 
   return (
     <>
-      {loadingTimeSettings ? null : !timeSettings && (
+      <ConvertToCollaborativeDialog
+        isOpen={showCollaborativeDialog}
+        onClose={() => setShowCollaborativeDialog(false)}
+        onConvert={convertToCollaborative}
+        storage={storage}
+      />
+      {loadingTimeSettings ? null : !timeSettings && showTimeInput && (
         <MergedDialog
-          isOpen={!timeSettings}
+          isOpen={!timeSettings && showTimeInput}
           onClose={() => setShowTimeInput(false)}
           onTimeSet={(settings) => {
             handleTimeSet(settings);
@@ -900,6 +984,8 @@ const PasteArea = ({ onExport }) => {
               projectDescription={timeSettings?.description}
               onClearCanvas={handleClearCanvas}
               onProjectDescriptionChange={updateProjectDescription}
+              onConvertToCollaborative={() => setShowCollaborativeDialog(true)}
+              storageMode={storageMode}
             />
             <BottomToolbar 
               panzoomRef={panzoomRef} 
@@ -913,6 +999,8 @@ const PasteArea = ({ onExport }) => {
               boardId={boardId}
               onImportArenaItems={handleImportArenaItems}
               isCollaborative={storageMode === 'collaborative'}
+              onConvertToCollaborative={() => setShowCollaborativeDialog(true)}
+              storageMode={storageMode}
             />
             
             <AnimatePresence>
@@ -925,7 +1013,7 @@ const PasteArea = ({ onExport }) => {
               >
                 <PanZoom 
                   selecting={isSelecting}
-                  zoomInitial={0.7}
+                  zoomInitial={0.73}
                   zoomMin={0.5}
                   zoomMax={2}
                   ref={panzoomRef}
