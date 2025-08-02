@@ -551,6 +551,10 @@ const PasteArea = ({ onExport }) => {
       setStorage(firebaseAdapter);
       setBoardId(newBoardId);
 
+      // Clear local board data and flags after successful conversion
+      await storage.clearBoard(); // Clear IndexedDB
+      localStorage.removeItem('localBoardActive'); // Remove local board flag
+
       console.log('Successfully converted to collaborative mode');
       return newBoardId;
     } catch (error) {
@@ -771,6 +775,7 @@ const PasteArea = ({ onExport }) => {
   };
 
   // Handle first-time users and returning users
+  const [showCreateBoardModal, setShowCreateBoardModal] = useState(false);
   useEffect(() => {
     let isMounted = true;
     const checkTimeSettings = async () => {
@@ -779,42 +784,61 @@ const PasteArea = ({ onExport }) => {
       try {
         const pathParts = window.location.pathname.split('/').filter(Boolean);
         const urlBoardId = pathParts[0] || null;
-        const hasVisited = localStorage.getItem('hasVisitedBefore');
         const { adapter } = getStorageAdapter(storageMode, urlBoardId);
+        const hasVisited = localStorage.getItem('hasVisitedBefore');
 
-        // Check if we have existing settings that haven't expired
-        const existingSettings = await adapter.getTimeSettings();
-        if (existingSettings) {
-          const now = Date.now();
-          const expiryTime = existingSettings.startTime + (existingSettings.duration * 60 * 1000);
-          
-          if (now < expiryTime) {
-            // Use existing settings if they haven't expired
+        // If we're in collaborative mode with a URL board ID, handle it separately
+        if (urlBoardId && storageMode === 'collaborative') {
+          const existingSettings = await adapter.getTimeSettings();
+          if (existingSettings) {
             setTimeSettings(existingSettings);
-            setLoadingTimeSettings(false);
-            return;
+          } else {
+            setShowTimeInput(true);
           }
+          setLoadingTimeSettings(false);
+          return;
         }
 
-        // For first-time users at root URL, create default board
-        if (!hasVisited && !urlBoardId) {
-          const defaultSettings = createDefaultTimeSettings();
+        // For local mode or root URL
+        if (!urlBoardId) {
+          // First check if there's an existing local board
+          const existingSettings = await adapter.getTimeSettings();
+          const localBoardActive = localStorage.getItem('localBoardActive') === 'true';
           
-          // Save time settings
-          await adapter.saveTimeSettings(defaultSettings);
-          setTimeSettings(defaultSettings);
-          
-          // Create default items
-          const defaultItems = getDefaultHomepageItems();
-          for (const item of defaultItems) {
-            await saveAndUpdateItems(adapter, item, setItems);
+          if (existingSettings) {
+            const now = Date.now();
+            const expiryTime = existingSettings.startTime + (existingSettings.duration * 60 * 1000);
+            
+            if (now < expiryTime) {
+              // Use existing settings if they haven't expired
+              setTimeSettings(existingSettings);
+              setLoadingTimeSettings(false);
+              return;
+            }
           }
-          
-          localStorage.setItem('hasVisitedBefore', 'true');
-          localStorage.setItem('localBoardActive', 'true');
-        } else if (!urlBoardId && !existingSettings) {
-          // For returning users without active settings, show time input
-          setShowTimeInput(true);
+
+          // If we have an active local board but settings expired, show time input
+          if (localBoardActive) {
+            setShowTimeInput(true);
+          } else if (hasVisited) {
+            setShowCreateBoardModal(true);
+          } else {
+            // For first-time users or when no local board exists
+            const defaultSettings = createDefaultTimeSettings();
+            
+            // Save time settings
+            await adapter.saveTimeSettings(defaultSettings);
+            setTimeSettings(defaultSettings);
+            
+            // Create default items
+            const defaultItems = getDefaultHomepageItems();
+            for (const item of defaultItems) {
+              await saveAndUpdateItems(adapter, item, setItems);
+            }
+            
+            localStorage.setItem('localBoardActive', 'true');
+            localStorage.setItem('hasVisitedBefore', 'true');
+          }
         }
       } catch (error) {
         console.error('Error in checkTimeSettings:', error);
@@ -938,6 +962,15 @@ const PasteArea = ({ onExport }) => {
             setShowTimeInput(false);
           }}
           onStorageModeSelect={handleStorageModeChange}
+        />
+      )}
+      {showCreateBoardModal && (
+        <MergedDialog
+          isOpen={showCreateBoardModal}
+          onClose={() => setShowCreateBoardModal(false)}
+          onTimeSet={handleTimeSet}
+          onStorageModeSelect={handleStorageModeChange}
+          forceTimeInputStep={true}
         />
       )}
       {timeSettings && (

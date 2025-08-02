@@ -12,14 +12,18 @@ const STEPS = {
   TIME_INPUT: 1,
 };
 
-const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect }) => {
+const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect, forceTimeInputStep = false }) => {
   // Onboarding logic
-  const [currentStep, setCurrentStep] = useState(STEPS.ONBOARD);
+  const [currentStep, setCurrentStep] = useState(forceTimeInputStep ? STEPS.TIME_INPUT : STEPS.ONBOARD);
   const [ref, bounds] = useMeasure();
   useEffect(() => {
+    if (forceTimeInputStep) {
+      setCurrentStep(STEPS.TIME_INPUT);
+      return;
+    }
     const hasVisited = localStorage.getItem('hasVisitedBefore');
     if (hasVisited) setCurrentStep(STEPS.TIME_INPUT);
-  }, []);
+  }, [forceTimeInputStep]);
 
   // Time input state (from TimeInputDialog)
   const [description, setDescription] = useState('');
