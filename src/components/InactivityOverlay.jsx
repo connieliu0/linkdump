@@ -3,7 +3,9 @@ import AnimatedBackground from './AnimatedBackground';
 
 const TRANSITION_DURATION = 2000; // 2 seconds in milliseconds
 
-const InactivityOverlay = ({ isVisible, onDismiss }) => {
+import { formatTimeRemaining } from '../utils/timeFormatting';
+
+const InactivityOverlay = ({ isVisible, onDismiss, timeRemaining }) => {
   const [isLeaving, setIsLeaving] = useState(false);
 
   const handleClick = useCallback(() => {
@@ -25,6 +27,8 @@ const InactivityOverlay = ({ isVisible, onDismiss }) => {
       <div className="overlay-content">
         <p>time passes you gently</p>
         <p style={{ opacity: 0.75 }}>click anywhere to continue</p>
+        <p className="time-remaining">{formatTimeRemaining(timeRemaining)}</p>
+
       </div>
     </div>
   );

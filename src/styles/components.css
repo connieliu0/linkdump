@@ -140,7 +140,7 @@ body {
 .paste-item {
   max-width: 400px;
   min-width: auto;
-  width: max-content;
+  width: fit-content;
   background: white;
   border-radius: 0.25rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
@@ -228,8 +228,9 @@ body {
   padding: 8px;
   line-height: 1.5;
   border-radius: 4px;
-  width: 100%;
-  min-width: 384px;
+  width: fit-content;
+  max-width: 384px;
+  min-width: 200px;
   box-sizing: border-box;
   transition: background-color 1.5s linear;
 }
@@ -541,7 +542,7 @@ button:hover {
   word-wrap: break-word;
   word-break: break-word;
   color: var(--secondary-color);
-  width: 310px; /* Fixed width for both display and edit modes */
+  max-width: 310px; /* Fixed width for both display and edit modes */
   line-height: 1.4;
   flex-shrink: 0; /* Prevent shrinking */
 }
@@ -782,6 +783,13 @@ button:hover {
   transition: all 2s ease;
   margin-left: auto;
   margin-right: auto;
+}
+
+.inactivity-overlay .time-remaining {
+  font-size: 0.9em;
+  opacity: 0.85;
+  margin: 1em 0;
+  color: rgb(255, 234, 0, 0.85);
 }
 
 .inactivity-overlay.visible .overlay-content {
@@ -1141,7 +1149,8 @@ You can find the assignment logic in useAgingEffect.js.
 /* Add styles for textarea in edit mode */
 .text-content textarea.content-input {
   width: 100%;
-  min-width: 384px; /* Match text-content min-width */
+  max-width: 384px;
+  min-width: 200px;
   box-sizing: border-box;
   resize: none;
   overflow: hidden;

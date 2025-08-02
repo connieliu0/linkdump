@@ -6,13 +6,16 @@ export const formatTimeRemaining = (seconds) => {
   const minutes = Math.floor((seconds % (60 * 60)) / 60);
   const remainingSeconds = seconds % 60;
 
-  const parts = [];
-  if (days > 0) parts.push(`${days}d`);
-  if (hours > 0) parts.push(`${hours}h`);
-  if (minutes > 0) parts.push(`${minutes}m`);
-  if (remainingSeconds > 0 || parts.length === 0) parts.push(`${remainingSeconds}s`);
-
-  return parts.join(' ');
+  if (days > 0) {
+    return `${days} day${days > 1 ? 's' : ''} left`;
+  }
+  if (hours > 0) {
+    return `${hours} hour${hours > 1 ? 's' : ''} ${minutes} minute${minutes > 1 ? 's' : ''} left`;
+  }
+  if (minutes > 0) {
+    return `${minutes} minute${minutes > 1 ? 's' : ''} ${remainingSeconds} second${remainingSeconds > 1 ? 's' : ''} left`;
+  }
+  return `${remainingSeconds} second${remainingSeconds > 1 ? 's' : ''} left`;
 };
 
 export const getTimePhase = (currentTime, startTime, halfwayPoint) => {

@@ -866,6 +866,7 @@ const PasteArea = ({ onExport }) => {
           <InactivityOverlay 
             isVisible={isInactive} 
             onDismiss={handleDismissOverlay}
+            timeRemaining={timeRemaining}
           />
           <div 
             className="paste-container" 
