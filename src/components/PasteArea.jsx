@@ -541,8 +541,11 @@ const PasteArea = ({ onExport }) => {
 
       firebaseAdapter.setBoardId(newBoardId);
       
-      // Save time settings to Firebase
-      await firebaseAdapter.saveTimeSettings(localTimeSettings);
+      // Save time settings to Firebase with hasEditedTime flag preserved
+      await firebaseAdapter.saveTimeSettings({
+        ...localTimeSettings,
+        hasEditedTime: localTimeSettings.hasEditedTime || false
+      });
       
       // Copy all items to the new Firebase board
       if (localItems && localItems.length > 0) {

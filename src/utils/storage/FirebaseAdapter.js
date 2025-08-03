@@ -202,7 +202,8 @@ export class FirebaseAdapter extends StorageAdapter {
         startTime: Number(settings.startTime),
         duration: Number(settings.duration), // Duration in minutes
         halfwayPoint: Number(settings.halfwayPoint),
-        endTime: Number(settings.startTime) + (Number(settings.duration) * 60 * 1000) // Calculate end time in milliseconds
+        endTime: Number(settings.startTime) + (Number(settings.duration) * 60 * 1000), // Calculate end time in milliseconds
+        hasEditedTime: settings.hasEditedTime || false
       };
       
       // Validate that all numeric values are valid

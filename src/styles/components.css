@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Just+Me+Again+Down+Here&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Schoolbell&display=swap');
 
 @font-face {
   font-family: 'font-decomposition';
@@ -747,7 +747,7 @@ button:hover {
 /* Add specific styles for new text cards */
 .text-content .editable.new-text,
 .text-content .content-input.new-text {
-  font-family: "Just Me Again Down Here", cursive;
+  font-family: "Schoolbell", cursive;
   font-weight: 400;
   font-style: normal;
   font-size: 1.4em; /* Make it a bit larger for better readability */
