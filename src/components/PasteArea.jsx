@@ -812,17 +812,17 @@ const PasteArea = ({ onExport }) => {
   }, []); // Run once on mount
 
   useEffect(() => {
-    console.log('[First-time Init Effect] Starting initialization check, defaultItemsLoaded:', defaultItemsLoaded);
+    console.log('[First-time Init Effect] Starting initialization check, defaultItemsLoaded:', defaultItemsLoaded, 'storage:', !!storage);
     let isMounted = true;
     const checkTimeSettings = async () => {
+      if (!storage) {
+        console.log('[First-time Init Effect] No storage available, waiting for initialization');
+        return;
+      }
+      
       setLoadingTimeSettings(true);
       
       try {
-        if (!storage) {
-          console.log('[First-time Init Effect] No storage available, waiting for initialization');
-          return;
-        }
-
         const pathParts = window.location.pathname.split('/').filter(Boolean);
         const urlBoardId = pathParts[0] || null;
         const hasVisited = localStorage.getItem('hasVisitedBefore');
@@ -899,7 +899,7 @@ const PasteArea = ({ onExport }) => {
 
     checkTimeSettings();
     return () => { isMounted = false; };
-  }, [storageMode]);
+  }, [storageMode, storage, defaultItemsLoaded]);
 
   useEffect(() => {
     // Add paste event listener to the window
