@@ -2,6 +2,7 @@
 import { createTextCard, createLinkCard } from './cardManagement';
 
 export const getDefaultHomepageItems = () => {
+  console.log('Loading default items');
   // Board dimensions from PasteArea.jsx
   const BOARD_WIDTH = 2160;
   const BOARD_HEIGHT = 1200;

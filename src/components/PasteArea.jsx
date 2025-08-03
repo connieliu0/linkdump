@@ -138,9 +138,11 @@ const PasteArea = ({ onExport }) => {
 
   // Initialize storage based on mode and boardId
   useEffect(() => {
+    console.log('[Storage Init Effect] Starting storage initialization, mode:', storageMode);
     const initializeStorage = async () => {
       // If we're at the root URL or switching to local mode
       if (window.location.pathname === '/' || storageMode === 'local') {
+        console.log('[Storage Init Effect] Initializing local storage');
         const { adapter } = getStorageAdapter('local');
         setStorage(adapter);
         setBoardId(null);
@@ -378,10 +380,17 @@ const PasteArea = ({ onExport }) => {
 
   // Load items when storage is ready
   useEffect(() => {
+    console.log('[Items Load Effect] Starting items fetch, storage:', !!storage, 'mode:', storageMode, 'boardId:', boardId);
     const fetchItems = async () => {
-      if (!storage) return;
+      if (!storage) {
+        console.log('[Items Load Effect] No storage available, skipping fetch');
+        return;
+      }
       // In collaborative mode, we need both storage and boardId
-      if (storageMode === 'collaborative' && !boardId) return;
+      if (storageMode === 'collaborative' && !boardId) {
+        console.log('[Items Load Effect] Collaborative mode missing boardId, skipping fetch');
+        return;
+      }
       
       try {
         const savedItems = await storage.loadItems();
@@ -791,20 +800,36 @@ const PasteArea = ({ onExport }) => {
 
   // Handle first-time users and returning users
   const [showCreateBoardModal, setShowCreateBoardModal] = useState(false);
+  const [defaultItemsLoaded, setDefaultItemsLoaded] = useState(false);
+  
+  // Initialize storage on mount
   useEffect(() => {
+    if (!storage) {
+      const { adapter } = getStorageAdapter('local');
+      console.log('[Initial Setup] Setting initial local storage');
+      setStorage(adapter);
+    }
+  }, []); // Run once on mount
+
+  useEffect(() => {
+    console.log('[First-time Init Effect] Starting initialization check, defaultItemsLoaded:', defaultItemsLoaded);
     let isMounted = true;
     const checkTimeSettings = async () => {
       setLoadingTimeSettings(true);
       
       try {
+        if (!storage) {
+          console.log('[First-time Init Effect] No storage available, waiting for initialization');
+          return;
+        }
+
         const pathParts = window.location.pathname.split('/').filter(Boolean);
         const urlBoardId = pathParts[0] || null;
-        const { adapter } = getStorageAdapter(storageMode, urlBoardId);
         const hasVisited = localStorage.getItem('hasVisitedBefore');
 
         // If we're in collaborative mode with a URL board ID, handle it separately
         if (urlBoardId && storageMode === 'collaborative') {
-          const existingSettings = await adapter.getTimeSettings();
+          const existingSettings = await storage.getTimeSettings();
           if (existingSettings) {
             setTimeSettings(existingSettings);
           } else {
@@ -814,10 +839,10 @@ const PasteArea = ({ onExport }) => {
           return;
         }
 
-        // For local mode or root URL
-        if (!urlBoardId) {
-          // First check if there's an existing local board
-          const existingSettings = await adapter.getTimeSettings();
+                  // For local mode or root URL
+          if (!urlBoardId) {
+            // First check if there's an existing local board
+            const existingSettings = await storage.getTimeSettings();
           const localBoardActive = localStorage.getItem('localBoardActive') === 'true';
           
           if (existingSettings) {
@@ -839,20 +864,30 @@ const PasteArea = ({ onExport }) => {
             setShowCreateBoardModal(true);
           } else {
             // For first-time users or when no local board exists
-            const defaultSettings = createDefaultTimeSettings();
-            
-            // Save time settings
-            await adapter.saveTimeSettings(defaultSettings);
-            setTimeSettings(defaultSettings);
-            
-            // Create default items
-            const defaultItems = getDefaultHomepageItems();
-            for (const item of defaultItems) {
-              await saveAndUpdateItems(adapter, item, setItems);
+            if (!defaultItemsLoaded && storage) {
+              console.log('[First-time Init Effect] Creating default items (not loaded yet)');
+              const defaultSettings = createDefaultTimeSettings();
+              
+              // Save time settings
+              await storage.saveTimeSettings(defaultSettings);
+              setTimeSettings(defaultSettings);
+              
+              // Create default items
+              const defaultItems = getDefaultHomepageItems();
+              console.log('[First-time Init Effect] Default items created:', defaultItems.length);
+              
+              for (const item of defaultItems) {
+                await saveAndUpdateItems(storage, item, (items) => {
+                  console.log('[First-time Init Effect] Items updated:', items.length);
+                  setItems(items);
+                });
+              }
+              
+              localStorage.setItem('localBoardActive', 'true');
+              localStorage.setItem('hasVisitedBefore', 'true');
+              console.log('[First-time Init Effect] Setting defaultItemsLoaded to true');
+              setDefaultItemsLoaded(true);
             }
-            
-            localStorage.setItem('localBoardActive', 'true');
-            localStorage.setItem('hasVisitedBefore', 'true');
           }
         }
       } catch (error) {
