@@ -11,7 +11,8 @@ const TextCard = React.memo(function TextCard({
   storage, 
   isSelected, 
   wasDragged,
-  onDoubleClick 
+  onDoubleClick,
+  onContentChange
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isContentEditing, setIsContentEditing] = useState(false);
@@ -64,40 +65,18 @@ const TextCard = React.memo(function TextCard({
     
     if (isContentEditing) return;
     
-    if (!isSelected) {
-      if (onDoubleClick) {
-        onDoubleClick();
-      }
-      return;
-    }
-
-    clickCountRef.current += 1;
-
-    if (clickCountRef.current === 2 && !wasDragged) {
-      setIsContentEditing(true);
-      clickCountRef.current = 0;
-    }
-  }, [isSelected, wasDragged, onDoubleClick, isContentEditing]);
+    // Single click to start editing
+    setIsContentEditing(true);
+  }, [isContentEditing]);
 
   const handleSourceClick = useCallback((e) => {
     e.stopPropagation();
     
     if (isEditing) return;
     
-    if (!isSelected) {
-      if (onDoubleClick) {
-        onDoubleClick();
-      }
-      return;
-    }
-
-    clickCountRef.current += 1;
-
-    if (clickCountRef.current === 2 && !wasDragged) {
-      setIsEditing(true);
-      clickCountRef.current = 0;
-    }
-  }, [isSelected, wasDragged, onDoubleClick, isEditing]);
+    // Single click to start editing
+    setIsEditing(true);
+  }, [isEditing]);
 
   // Reset click count when selection changes
   useEffect(() => {
@@ -111,11 +90,18 @@ const TextCard = React.memo(function TextCard({
       contentRef.current.style.height = 'auto';
       contentRef.current.style.height = `${contentRef.current.scrollHeight}px`;
     }
+    
+    // Update ReactFlow node data
+    if (onContentChange) {
+      onContentChange(newContent);
+    }
+    
+    // Update storage
     await storage.updateItem(itemId, { 
       content: newContent,
       isEmpty: newContent.trim() === ''
     });
-  }, [itemId, storage]);
+  }, [itemId, storage, onContentChange]);
 
   const handleSourceChange = useCallback(async (e) => {
     const newSource = e.target.value;
@@ -194,59 +180,57 @@ const TextCard = React.memo(function TextCard({
   return (
     <div className={`text-container ${isInputActive ? 'input-active' : ''}`}>
       <div className="text-content">
-        {isContentEditing ? (
-          <textarea
-            ref={contentRef}
-            value={cardContent}
-            onChange={handleContentChange}
-            onKeyDown={handleContentKeyDown}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            className={`input-field content-input ${type === 'newText' ? 'new-text' : 'pasted-text'}`}
-            placeholder={isEmpty ? "Click to edit" : ""}
-            style={{ 
-              height: textLength.current ? `${textLength.current}px` : 'auto',
-              width: '100%',
-              resize: 'none',
-              boxSizing: 'border-box'
-            }}
-            autoFocus
-          />
-        ) : (
-          <div 
-            className={`${isEmpty ? 'empty-content' : ''} editable ${type === 'newText' ? 'new-text' : 'pasted-text'}`}
-            onClick={handleContentClick}
-            ref={el => {
-              if (el) textLength.current = el.clientHeight;
-            }}
-          >
-            {cardContent || (isEmpty ? 'Click to edit' : '')}
-          </div>
-        )}
+        <textarea
+          ref={contentRef}
+          value={cardContent}
+          onChange={handleContentChange}
+          onKeyDown={handleContentKeyDown}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onClick={handleContentClick}
+          className={`content-input nodrag ${isContentEditing ? 'editing' : ''}`}
+          placeholder="Type your text here..."
+          disabled={!isContentEditing}
+          style={{
+            resize: 'none',
+            border: 'none',
+            outline: 'none',
+            background: 'transparent',
+            width: '100%',
+            minHeight: '60px',
+            fontFamily: 'inherit',
+            fontSize: 'inherit',
+            lineHeight: 'inherit',
+            color: 'inherit',
+            cursor: isContentEditing ? 'text' : 'pointer'
+          }}
+        />
       </div>
       
-      {showSourceUrl && !isEmpty && (
-        <div 
-          className="source-url-container"
-          onClick={handleSourceClick}
-        >
-          {isEditing ? (
-            <input
-              type="text"
-              value={sourceUrl}
-              onChange={handleSourceChange}
-              onKeyDown={handleSourceKeyDown}
-              onFocus={handleFocus}
-              onBlur={handleBlur}
-              className="input-field source-input"
-              placeholder="Add source URL"
-              autoFocus
-            />
-          ) : (
-            <div className="source-text">
-              {sourceUrl ? sourceUrl : 'Click to add source'}
-            </div>
-          )}
+      {showSourceUrl && (
+        <div className="text-source">
+          <input
+            type="text"
+            value={sourceUrl}
+            onChange={handleSourceChange}
+            onKeyDown={handleSourceKeyDown}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            onClick={handleSourceClick}
+            className={`source-input nodrag ${isEditing ? 'editing' : ''}`}
+            placeholder="Source URL (optional)"
+            disabled={!isEditing}
+            style={{
+              border: 'none',
+              outline: 'none',
+              background: 'transparent',
+              width: '100%',
+              fontSize: '0.8em',
+              color: 'inherit',
+              opacity: 0.7,
+              cursor: isEditing ? 'text' : 'pointer'
+            }}
+          />
         </div>
       )}
     </div>

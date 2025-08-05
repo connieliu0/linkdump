@@ -1,6 +1,5 @@
 // src/components/PasteArea.jsx
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import PanZoom, { Element } from '@sasza/react-panzoom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStorageAdapter, createCollaborativeBoard } from '../utils/storage/StorageFactory';
 import LinkCard from './LinkCard';
@@ -24,6 +23,8 @@ import { createDefaultTimeSettings } from '../utils/timeFormatting';
 import { getDefaultHomepageItems } from '../utils/defaultItems';
 import MergedDialog from './Dialog/MergedDialog';
 import ConvertToCollaborativeDialog from './Dialog/ConvertToCollaborativeDialog';
+import ReactFlowCanvas from './ReactFlowCanvas';
+import CustomNode from './ReactFlow/CustomNode';
 
 // Helper to get/set visited boards
 const getVisitedBoards = () => {
@@ -75,8 +76,6 @@ const PasteArea = ({ onExport }) => {
   const [selectedId, setSelectedId] = useState(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isSelecting, setIsSelecting] = useState(false);
-  const panzoomRef = useRef();
-  const activeItemRef = useRef(null);
   const [timeSettings, setTimeSettings] = useState(null);
   const [isExpired, setIsExpired] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(null);
@@ -352,10 +351,13 @@ const PasteArea = ({ onExport }) => {
   // Define addEmptyCard function
   const addEmptyCard = async (cardData = { position: { x: 100, y: 100 } }) => {
     try {
+      console.log('Adding empty card with data:', cardData);
       const newItem = cardData.type === 'image' 
         ? createImageCard(cardData.content, cardData.position, cardData.sourceUrl)
         : createTextCard(cardData.content, cardData.position, cardData.isEmpty);
+      console.log('Created new item:', newItem);
       await saveAndUpdateItems(storage, newItem, setItems);
+      console.log('Item saved successfully');
     } catch (error) {
       console.error('Error adding empty card:', error);
     }
@@ -587,83 +589,33 @@ const PasteArea = ({ onExport }) => {
     }
   };
 
-  // Add mouse up handler to detect drag end
-  useEffect(() => {
-    const handleMouseUp = () => {
-      // console.log('Mouse up detected', { 
-      //   isDragging: isDraggingRef.current, 
-      //   activeItemRef: activeItemRef.current,
-      //   hasStorage: !!storage
-      // });
-      
-      if (!storage) {
-        // console.error('No storage available for position update');
-        return;
+  // Handle items change from ReactFlow
+  const handleItemsChange = useCallback((updatedItems) => {
+    setItems(updatedItems);
+    
+    // Save position changes to storage
+    updatedItems.forEach(item => {
+      if (item.position && storage) {
+        updateCard(item.id, { position: item.position });
       }
-      
-      if (isDraggingRef.current && activeItemRef.current && panzoomRef.current) {
-        // console.log('Drag ended via mouse up');
-        // Get the current elements from PanZoom
-        const elements = panzoomRef.current.getElements();
-        if (elements && elements[activeItemRef.current]) {
-          const elementData = elements[activeItemRef.current];
-          // console.log('Current element data:', elementData);
-          
-          // Get position from the position object
-          const position = elementData.position;
-          if (!position) {
-            // console.error('No position data found in element:', elementData);
-            return;
-          }
-          
-          // Validate position values
-          const x = Number(position.x);
-          const y = Number(position.y);
-          
-          if (isNaN(x) || isNaN(y)) {
-            // console.error('Invalid position values:', { x: position.x, y: position.y });
-            return;
-          }
-
-          const newPosition = {
-            x: Math.round(x),
-            y: Math.round(y)
-          };
-          
-          // console.log('Saving position from mouse up:', newPosition);
-          
-          // Update both local state and storage
-          setItems(prevItems => 
-            prevItems.map(item => 
-              item.id === activeItemRef.current 
-                ? { ...item, position: newPosition }
-                : item
-            )
-          );
-          
-          // Save to storage
-          updateCard(activeItemRef.current, { 
-            position: newPosition
-          });
-        }
-        setIsDragging(false);
-        isDraggingRef.current = false;
-        wasDraggedRef.current = false;
-      }
-    };
-
-    document.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
+    });
   }, [storage]);
 
-  // Track mouse position relative to panzoom
-  const handleMouseMove = (e) => {
-    if (panzoomRef.current) {
-      const { x, y } = panzoomRef.current.getPosition(e);
-      setMousePosition({ x, y });
+  // Handle selection change from ReactFlow
+  const handleSelectionChange = useCallback((selectionData) => {
+    const selectedNodes = selectionData?.nodes || [];
+    console.log('Selection changed:', selectedNodes.length > 0 ? selectedNodes[0].id : 'none');
+    if (selectedNodes.length > 0) {
+      setSelectedId(selectedNodes[0].id);
+    } else {
+      setSelectedId(null);
     }
+  }, []);
+
+  // Track mouse position relative to ReactFlow canvas
+  const handleMouseMove = (e) => {
+    // ReactFlow provides the position in the event
+    setMousePosition({ x: e.x, y: e.y });
   };
 
   const handleDelete = async (id) => {
@@ -676,11 +628,24 @@ const PasteArea = ({ onExport }) => {
     }
   };
 
+  // Handle delete key press for selected items
   const handleKeyDown = (e) => {
     if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && !isInputActive) {
       handleDelete(selectedId);
     }
   };
+
+  // Keep your existing useEffect for delete key handling
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && !isInputActive) {
+        handleDelete(selectedId);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedId, isInputActive, handleDelete]);
 
   // Add selection mode effect
   useEffect(() => {
@@ -960,40 +925,7 @@ const PasteArea = ({ onExport }) => {
   //   }
   // }, [items]);
 
-  const onElementsChangeStart = useCallback((elements) => {
-    if (isInputActive || isEditing) return;
 
-    const element = elements[0];
-    if (element) {
-      setIsDragging(true);
-      setActiveItemRef(element.id);
-      wasDraggedRef.current = true;
-    }
-  }, [isInputActive, isEditing]);
-
-  const onElementsChange = useCallback((elements) => {
-    if (isInputActive || isEditing) return;
-
-    const element = elements[0];
-    if (element && activeItemRef === element.id) {
-      const newPosition = {
-        x: Math.round(element.x),
-        y: Math.round(element.y)
-      };
-      
-      setItems(prevItems => {
-        const updatedItems = [...prevItems];
-        const index = updatedItems.findIndex(item => item.id === element.id);
-        if (index !== -1) {
-          updatedItems[index] = {
-            ...updatedItems[index],
-            position: newPosition
-          };
-        }
-        return updatedItems;
-      });
-    }
-  }, [activeItemRef, isInputActive, isEditing]);
 
   return (
     <>
@@ -1038,7 +970,6 @@ const PasteArea = ({ onExport }) => {
           <div 
             className="paste-container" 
             onKeyDown={handleKeyDown} 
-            onMouseMove={handleMouseMove}
             tabIndex={0}
           >
             <div 
@@ -1061,7 +992,6 @@ const PasteArea = ({ onExport }) => {
             ></div>
 
             <TopToolbar 
-              panzoomRef={panzoomRef} 
               onExport={onExport} 
               timeRemaining={timeRemaining}
               timeSettings={timeSettings}
@@ -1076,7 +1006,6 @@ const PasteArea = ({ onExport }) => {
               canEditTime={!timeSettings?.hasEditedTime}
             />
             <BottomToolbar 
-              panzoomRef={panzoomRef} 
               onExport={onExport} 
               timeRemaining={timeRemaining}
               timeSettings={timeSettings}
@@ -1099,237 +1028,35 @@ const PasteArea = ({ onExport }) => {
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 style={{ width: '2160px', height: '1200px' }}
               >
-                <PanZoom 
-                  selecting={isSelecting}
-                  zoomInitial={0.73}
-                  zoomMin={0.5}
-                  zoomMax={2}
-                  ref={panzoomRef}
-                  className="canvas-area"
-                  onContainerClick={() => setSelectedId(null)}
+                {!isExpired && (
+                  <div style={{ 
+                    position: 'fixed', 
+                    top: '1rem', 
+                    left: '50%', 
+                    transform: 'translateX(-50%)',
+                    color: 'black',
+                    pointerEvents: 'none',
+                    fontSize: '1.5rem',
+                    zIndex: 1000,
+                  }}>
+                    Paste an image or link here; Hold down shift to drag and select multiple 
+                  </div>
+                )}
+                
+                <ReactFlowCanvas
+                  items={visibleItems}
+                  onItemsChange={handleItemsChange}
+                  onSelectionChange={handleSelectionChange}
                   disabled={isInputActive || isEditing}
-                  draggable={!isInputActive && !isEditing}
-                  containerClassNames={{
-                    outer: 'canvas-area',
-                    inner: 'canvas-area__in'
-                  }}
-                  onElementsChange={(element) => {
-                    // console.log('PasteArea: PanZoom onElementsChange', {
-                    //   isInputActive,
-                    //   isEditing,
-                    //   element
-                    // });
-                    
-                    // Don't handle element changes if input is active
-                    if (isInputActive || isEditing) {
-                      // console.log('PasteArea: Element change prevented - input is active');
-                      return;
-                    }
-                    
-                    if (!activeItemRef.current) return;
-                    const elementData = element[activeItemRef.current];
-                    if (elementData) {
-                      // Validate position values
-                      const x = Number(elementData.x);
-                      const y = Number(elementData.y);
-                      
-                      if (isNaN(x) || isNaN(y)) {
-                        return;
-                      }
-
-                      // If this is the first position change, it means we're starting to drag
-                      if (!isDraggingRef.current) {
-                        setIsDragging(true);
-                        isDraggingRef.current = true;
-                        wasDraggedRef.current = true;
-                        const element = document.getElementById(activeItemRef.current);
-                        if (element) {
-                          element.classList.add('dragging');
-                        }
-                      }
-
-                      // Update local state immediately for smooth dragging
-                      setItems(prevItems => 
-                        prevItems.map(item => 
-                          item.id === activeItemRef.current 
-                            ? { ...item, position: { x, y } }
-                            : item
-                        )
-                      );
-                    }
-                  }}
-                  onElementsChangeStart={(elements) => {
-                    // console.log('PasteArea: PanZoom onElementsChangeStart', {
-                    //   isInputActive,
-                    //   isEditing,
-                    //   elements
-                    // });
-                    
-                    // Don't start dragging if any item is being edited
-                    if (isInputActive || isEditing) {
-                      // console.log('PasteArea: Drag start prevented - input is active');
-                      return;
-                    }
-
-                    const element = elements[0];
-                    if (element) {
-                      setIsDragging(true);
-                      setActiveItemRef(element.id);
-                      wasDraggedRef.current = true;
-                      // console.log('PasteArea: Drag started:', { elementId: element.id });
-                    }
-                  }}
-                  onElementsChangeEnd={(element) => {
-                    // console.log('PasteArea: PanZoom onElementsChangeEnd', {
-                    //   isInputActive,
-                    //   isEditing,
-                    //   element
-                    // });
-                    
-                    // Don't handle element changes if input is active
-                    if (isInputActive || isEditing) {
-                      // console.log('PasteArea: Element change end prevented - input is active');
-                      return;
-                    }
-                    
-                    setIsDragging(false);
-                    isDraggingRef.current = false;
-                    if (activeItemRef.current) {
-                      const element = document.getElementById(activeItemRef.current);
-                      if (element) {
-                        element.classList.remove('dragging');
-                      }
-                    }
-                    // Reset drag flag after a short delay
-                    setTimeout(() => {
-                      wasDraggedRef.current = false;
-                    }, 100);
-                    
-                    // Save position to storage when drag ends
-                    if (!activeItemRef.current) return;
-                    
-                    const elementData = element[activeItemRef.current];
-                    if (elementData) {
-                      // Validate and ensure we have valid coordinates
-                      const x = Number(elementData.x);
-                      const y = Number(elementData.y);
-                      
-                      if (isNaN(x) || isNaN(y)) return;
-
-                      const newPosition = {
-                        x: Math.round(x),
-                        y: Math.round(y)
-                      };
-                      
-                      // Update both local state and storage
-                      setItems(prevItems => 
-                        prevItems.map(item => 
-                          item.id === activeItemRef.current 
-                            ? { ...item, position: newPosition }
-                            : item
-                        )
-                      );
-                      
-                      // Save to storage
-                      updateCard(activeItemRef.current, { 
-                        position: newPosition
-                      });
-                    }
-                  }}
-                >
-                  {!isExpired && (
-                    <div style={{ 
-                      position: 'fixed', 
-                      top: '1rem', 
-                      left: '50%', 
-                      transform: 'translateX(-50%)',
-                      color: 'black',
-                      pointerEvents: 'none',
-                      fontSize: '1.5rem',
-                    }}>
-                      Paste an image or link here; Hold down shift to drag and select multiple 
-                    </div>
-                  )}
-                  
-                  {visibleItems.map(item => (
-                    <Element
-                      key={item.id + '-outer'}
-                      id={item.id}
-                      className={`paste-item ${selectedId === item.id ? 'selected' : ''} ${isDragging && selectedId === item.id ? 'dragging' : ''}`}
-                      onClick={(e) => {
-                        if (!isExpired) {
-                          const now = Date.now();
-                          const timeSinceLastClick = now - lastClickTimeRef.current;
-                          
-                          // console.log('Item clicked:', { 
-                          //   itemId: item.id, 
-                          //   activeItemRef: activeItemRef.current,
-                          //   timeSinceLastClick,
-                          //   lastSelectedId: lastSelectedIdRef.current
-                          // });
-                          
-                          // If clicking the same item within 300ms, it's a double click
-                          if (lastSelectedIdRef.current === item.id && timeSinceLastClick < 300) {
-                            // Double click - do nothing, let TextCard handle it
-                            // console.log('Double click detected, letting TextCard handle it');
-                            lastClickTimeRef.current = 0;
-                            lastSelectedIdRef.current = null;
-                          } else {
-                            // Single click - select the item
-                            // console.log('Single click detected, selecting item');
-                            setSelectedId(item.id);
-                            activeItemRef.current = item.id;
-                            lastClickTimeRef.current = now;
-                            lastSelectedIdRef.current = item.id;
-                          }
-                        }
-                      }}
-                      x={item.position?.x || 0}
-                      y={item.position?.y || 0}
-                    >
-                      {item.type === 'image' ? (
-                        <ImageCard 
-                          src={item.content} 
-                          itemId={item.id}
-                          sourceUrl={item.sourceUrl}
-                          storage={storage}
-                        />
-                      ) : item.type === 'link' ? (
-                        <LinkCard 
-                          url={item.content} 
-                          itemId={item.id}
-                          initialMetadata={item.metadata}
-                          storage={storage}
-                        />
-                      ) : item.type === 'pastedText' ? (
-                        <TextCard
-                          content={item.content}
-                          itemId={item.id}
-                          sourceUrl={item.sourceUrl}
-                          isEmpty={false}
-                          showSourceUrl={true}
-                          onInputActiveChange={handleInputActiveChange}
-                          type="pastedText"
-                          storage={storage}
-                          isSelected={selectedId === item.id}
-                          wasDragged={wasDraggedRef.current}
-                        />
-                      ) : item.type === 'newText' ? (
-                        <TextCard
-                          content={item.content}
-                          itemId={item.id}
-                          isEmpty={item.isEmpty}
-                          showSourceUrl={false}
-                          onInputActiveChange={handleInputActiveChange}
-                          type="newText"
-                          storage={storage}
-                          isSelected={selectedId === item.id}
-                          wasDragged={wasDraggedRef.current}
-                        />
-                      ) : null}
-                    </Element>
-                  ))}
-                </PanZoom>
+                  storage={storage}
+                  onInputActiveChange={handleInputActiveChange}
+                  onMouseMove={handleMouseMove}
+                  onPaneClick={() => setSelectedId(null)}
+                  selectedId={selectedId}
+                  isDragging={false}
+                  isInputActive={isInputActive}
+                  isEditing={isEditing}
+                />
               </motion.div>
             </AnimatePresence>
           </div>
