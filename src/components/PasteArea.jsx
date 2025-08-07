@@ -1,6 +1,7 @@
 // src/components/PasteArea.jsx
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import PanZoom, { Element } from '@sasza/react-panzoom';
+import { debounce } from 'lodash';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStorageAdapter, createCollaborativeBoard } from '../utils/storage/StorageFactory';
 import LinkCard from './LinkCard';
@@ -25,6 +26,10 @@ import { getDefaultHomepageItems } from '../utils/defaultItems';
 import MergedDialog from './Dialog/MergedDialog';
 import ConvertToCollaborativeDialog from './Dialog/ConvertToCollaborativeDialog';
 
+// =====================================================
+// HELPER FUNCTIONS
+// =====================================================
+
 // Helper to get/set visited boards
 const getVisitedBoards = () => {
   try {
@@ -43,7 +48,9 @@ const addVisitedBoard = (boardId) => {
 };
 
 const PasteArea = ({ onExport }) => {
-  // Get boardId from URL if present and determine storage mode
+  // =====================================================
+  // SECTION 1: STORAGE & BOARD MANAGEMENT
+  // =====================================================
   const [storageMode, setStorageMode] = useState(() => {
     const pathParts = window.location.pathname.split('/').filter(Boolean);
     const urlBoardId = pathParts[0] || null;
@@ -71,70 +78,10 @@ const PasteArea = ({ onExport }) => {
   });
 
   const [storage, setStorage] = useState(null);
-  const [items, setItems] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isSelecting, setIsSelecting] = useState(false);
-  const panzoomRef = useRef();
-  const activeItemRef = useRef(null);
-  const [timeSettings, setTimeSettings] = useState(null);
-  const [isExpired, setIsExpired] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(null);
-  const [isInputActive, setIsInputActive] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isInactive, setIsInactive] = useState(false);
-  let inactivityTimer = useRef(null);
-  const [showTimeInput, setShowTimeInput] = useState(false);
-  const [loadingTimeSettings, setLoadingTimeSettings] = useState(true);
-  const [isDragging, setIsDragging] = useState(false);
   const [showCollaborativeDialog, setShowCollaborativeDialog] = useState(false);
-  const wasDraggedRef = useRef(false);
-  const isDraggingRef = useRef(false);
-  const lastClickTimeRef = useRef(0);
-  const lastSelectedIdRef = useRef(null);
-
+  
   // Add a ref to track if we're clearing
   const isClearingRef = useRef(false);
-
-  // Initialize storage and load time settings
-  useEffect(() => {
-    let isMounted = true;
-    
-    const loadInitialTimeSettings = async () => {
-      try {
-        // Get the storage adapter
-        const { adapter } = getStorageAdapter(storageMode, boardId);
-        
-        if (adapter && isMounted) {
-          const settings = await adapter.getTimeSettings();
-          
-          if (settings) {
-            // Check if the settings have expired
-            const now = Date.now();
-            const expiryTime = settings.startTime + (settings.duration * 60 * 1000);
-            
-            if (now < expiryTime) {
-              // Settings haven't expired yet, use them
-              setTimeSettings(settings);
-            } else {
-              // Settings have expired, clear them
-              await adapter.clearBoard();
-              setTimeSettings(null);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error loading time settings:', error);
-      }
-    };
-    
-    loadInitialTimeSettings();
-    
-    // Cleanup function
-    return () => {
-      isMounted = false;
-    };
-  }, [storageMode, boardId]);
 
   // Initialize storage based on mode and boardId
   useEffect(() => {
@@ -203,315 +150,6 @@ const PasteArea = ({ onExport }) => {
     if (mode === 'local') {
       setBoardId(null);
       window.history.replaceState({}, '', '/');
-    }
-  };
-
-  const handleTimeSet = async (settings) => {
-    // console.log('Handling time set:', settings);
-    try {
-      // Ensure we have all the required fields
-      const timeSettings = {
-        description: settings.description,
-        startTime: settings.startTime,
-        duration: settings.duration,
-        halfwayPoint: settings.halfwayPoint
-      };
-      
-      if (storageMode === 'collaborative') {
-        // Handle collaborative mode
-        if (settings.urlBackhalf) {
-          const { adapter } = getStorageAdapter('collaborative');
-          await adapter.generateBoardId(settings.urlBackhalf);
-          
-          setStorage(adapter);
-          setBoardId(settings.urlBackhalf);
-          
-          // Update URL
-          const newPath = `/${settings.urlBackhalf}`;
-          window.history.replaceState({}, '', newPath);
-          
-          // Save time settings
-          await adapter.saveTimeSettings(timeSettings);
-        } else {
-          const { adapter } = getStorageAdapter('collaborative');
-          const newBoardId = await adapter.generateBoardId();
-          
-          setStorage(adapter);
-          setBoardId(newBoardId);
-          
-          // Update URL
-          const newPath = `/${newBoardId}`;
-          window.history.replaceState({}, '', newPath);
-          
-          // Save time settings
-          await adapter.saveTimeSettings(timeSettings);
-        }
-      } else {
-        // Handle local mode
-        const { adapter } = getStorageAdapter('local');
-        setStorage(adapter);
-        setBoardId(null);
-        
-        // Ensure we're at the root URL
-        window.history.replaceState({}, '', '/');
-        
-        // Save time settings to IndexedDB
-        await adapter.saveTimeSettings(timeSettings);
-      }
-      
-      setTimeSettings(timeSettings);
-      resetInactivityTimer();
-    } catch (error) {
-      // console.error('Error saving time settings:', error);
-    }
-  };
-
-  const loadTimeSettings = async () => {
-    if (storage) {
-      try {
-        const settings = await storage.getTimeSettings();
-        if (settings) {
-          setTimeSettings(settings);
-          // Check if expired
-          const now = Date.now();
-          const expiryTime = settings.startTime + (settings.duration * 60 * 1000);
-          setIsExpired(now >= expiryTime);
-          // Reset inactivity timer when time settings are loaded
-          resetInactivityTimer();
-        }
-      } catch (error) {
-        // console.error('Error loading time settings:', error);
-      }
-    }
-  };
-
-  const updateProjectDescription = async (newDescription) => {
-    if (!timeSettings || !storage) return;
-    
-    try {
-      const updatedSettings = {
-        ...timeSettings,
-        description: newDescription
-      };
-      
-      await storage.saveTimeSettings(updatedSettings);
-      setTimeSettings(updatedSettings);
-    } catch (error) {
-      console.error('Error updating project description:', error);
-    }
-  };
-
-  const updateTimeSettings = async (newTimeSettings) => {
-    if (!storage) return;
-    
-    try {
-      await storage.saveTimeSettings(newTimeSettings);
-      setTimeSettings(newTimeSettings);
-    } catch (error) {
-      console.error('Error updating time settings:', error);
-      throw error; // Re-throw to allow component to handle error
-    }
-  };
-
-  // Load time settings when storage changes
-  const loadTimeSettingsRef = useRef(loadTimeSettings);
-  useEffect(() => {
-    loadTimeSettingsRef.current = loadTimeSettings;
-  }, [loadTimeSettings]);
-
-  useEffect(() => {
-    if (!storage) return;
-    loadTimeSettingsRef.current();
-  }, [storage]);
-
-  // Add aging effects
-  useAgingEffect(timeSettings);
-  usePaperAgingEffect(timeSettings);
-
-  // Add effect to handle time settings expiry
-  useEffect(() => {
-    if (!timeSettings) return;
-
-    const checkExpiry = () => {
-      const now = Date.now();
-      const expiryTime = timeSettings.startTime + (timeSettings.duration * 60 * 1000); // Convert minutes to milliseconds
-      if (now >= expiryTime) {
-        setIsExpired(true);
-      } else {
-        const remainingMs = expiryTime - now;
-        setTimeRemaining(Math.floor(remainingMs / 1000)); // Convert to seconds for display
-      }
-    };
-
-    const timer = setInterval(checkExpiry, 1000);
-    checkExpiry(); // Check immediately
-
-    return () => clearInterval(timer);
-  }, [timeSettings]);
-
-  // Define addEmptyCard function
-  const addEmptyCard = async (cardData = { position: { x: 100, y: 100 } }) => {
-    try {
-      const newItem = cardData.type === 'image' 
-        ? createImageCard(cardData.content, cardData.position, cardData.sourceUrl)
-        : createTextCard(cardData.content, cardData.position, cardData.isEmpty);
-      await saveAndUpdateItems(storage, newItem, setItems);
-    } catch (error) {
-      console.error('Error adding empty card:', error);
-    }
-  };
-
-
-  // Define updateCard function
-  const updateCard = async (id, updates) => {
-    // console.log('Updating card:', id, updates);
-    try {
-      await updateAndRefreshItems(storage, id, updates, setItems);
-      // console.log('Card updated successfully');
-    } catch (error) {
-      // console.error('Error updating card:', error);
-    }
-  };
-
-  // Define deleteCard function
-  const deleteCard = async (id) => {
-    await deleteAndRemoveItem(storage, id, setItems);
-  };
-
-  // Load items when storage is ready
-  useEffect(() => {
-    console.log('[Items Load Effect] Starting items fetch, storage:', !!storage, 'mode:', storageMode, 'boardId:', boardId);
-    const fetchItems = async () => {
-      if (!storage) {
-        console.log('[Items Load Effect] No storage available, skipping fetch');
-        return;
-      }
-      // In collaborative mode, we need both storage and boardId
-      if (storageMode === 'collaborative' && !boardId) {
-        console.log('[Items Load Effect] Collaborative mode missing boardId, skipping fetch');
-        return;
-      }
-      
-      try {
-        const savedItems = await storage.loadItems();
-        // console.log('Loaded items:', savedItems);
-        setItems(savedItems || []);
-      } catch (error) {
-        // console.error('Error loading items:', error);
-      }
-    };
-    fetchItems();
-  }, [storage, boardId, storageMode]);
-
-  // Handle paste events
-  const handlePaste = useCallback(async (e) => {
-    if (!storage) return;
-    if (document.activeElement.tagName === 'TEXTAREA' || 
-        document.activeElement.tagName === 'INPUT' ||
-        document.activeElement.classList.contains('content-input')) {
-      return;
-    }
-
-    e.preventDefault();
-    const clipboardData = e.clipboardData;
-    const { x, y } = mousePosition;
-    
-    try {
-      // console.log('Clipboard items:', clipboardData.items);
-      const imageItem = extractImageFromClipboard(clipboardData);
-      // console.log('Extracted image item:', imageItem);
-      
-      if (imageItem) {
-        const file = imageItem.getAsFile();
-        // console.log('Clipboard file:', file);
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          // console.log('Clipboard file data URL:', reader.result);
-          try {
-            const processedDataUrl = await processImage(reader.result);
-            const newItem = createImageCard(processedDataUrl, { x, y }, imageItem.type === 'image' ? imageItem.sourceUrl : null);
-            // console.log('New image card id:', newItem.id);
-            await saveAndUpdateItems(storage, newItem, setItems);
-          } catch (error) {
-            // console.error('Error saving item:', error);
-          }
-        };
-        reader.readAsDataURL(file);
-        return;
-      }
-
-      const text = clipboardData.getData('text');
-      if (text) {
-        const isUrl = /^(https?:\/\/[^\s]+)$/.test(text);
-        const newItem = isUrl 
-          ? createLinkCard(text, { x, y })
-          : createTextCard(text, { x, y }, false);
-        // console.log('New text/link card id:', newItem.id);
-        await saveAndUpdateItems(storage, newItem, setItems);
-      }
-    } catch (error) {
-      // console.error('Error saving item:', error);
-    }
-  }, [mousePosition, storage]);
-
-  // Handle board restart
-  const handleRestart = async () => {
-    // console.log('[PasteArea] Starting board restart...');
-    
-    // Set clearing flag to prevent realtime updates
-    isClearingRef.current = true;
-    
-    try {
-      if (!storage) {
-        // console.error('[PasteArea] No storage adapter available');
-        return;
-      }
-
-      // For local mode, we need to clear the settings from IndexedDB
-      if (storageMode === 'local') {
-        // console.log('[PasteArea] Clearing local storage settings...');
-        const success = await storage.clearBoard();
-        
-        if (!success) {
-          // console.error('[PasteArea] Failed to clear local storage settings');
-          return;
-        }
-        
-        setTimeSettings(null);
-        setIsExpired(false);
-        setShowTimeInput(true);
-      } else {
-        // For collaborative mode, clear the entire board
-        // console.log('[PasteArea] Clearing board in storage...');
-        const success = await storage.clearBoard();
-        
-        if (!success) {
-          // console.error('[PasteArea] Failed to clear board in storage');
-          return;
-        }
-        
-        // console.log('[PasteArea] Board cleared, resetting state...');
-        
-        // Reset URL and storage mode
-        const newPath = '/';
-        window.history.replaceState({}, '', newPath);
-        localStorage.setItem('storageMode', 'local');
-        
-        // Reset storage mode and board ID
-        setStorageMode('local');
-        setBoardId(null);
-        
-        // Update all state
-        setTimeSettings(null);
-        setIsExpired(false);
-        setItems([]);
-        setShowTimeInput(true);
-      }
-    } catch (error) {
-      // console.error('[PasteArea] Error during restart:', error);
-    } finally {
-      // Reset clearing flag
-      isClearingRef.current = false;
     }
   };
 
@@ -587,6 +225,387 @@ const PasteArea = ({ onExport }) => {
     }
   };
 
+  // Handle board restart
+  const handleRestart = async () => {
+    // console.log('[PasteArea] Starting board restart...');
+    
+    // Set clearing flag to prevent realtime updates
+    isClearingRef.current = true;
+    
+    try {
+      if (!storage) {
+        // console.error('[PasteArea] No storage adapter available');
+        return;
+      }
+
+      // For local mode, we need to clear the settings from IndexedDB
+      if (storageMode === 'local') {
+        // console.log('[PasteArea] Clearing local storage settings...');
+        const success = await storage.clearBoard();
+        
+        if (!success) {
+          // console.error('[PasteArea] Failed to clear local storage settings');
+          return;
+        }
+        
+        setTimeSettings(null);
+        setIsExpired(false);
+        setShowTimeInput(true);
+      } else {
+        // For collaborative mode, clear the entire board
+        // console.log('[PasteArea] Clearing board in storage...');
+        const success = await storage.clearBoard();
+        
+        if (!success) {
+          // console.error('[PasteArea] Failed to clear board in storage');
+          return;
+        }
+        
+        // console.log('[PasteArea] Board cleared, resetting state...');
+        
+        // Reset URL and storage mode
+        const newPath = '/';
+        window.history.replaceState({}, '', newPath);
+        localStorage.setItem('storageMode', 'local');
+        
+        // Reset storage mode and board ID
+        setStorageMode('local');
+        setBoardId(null);
+        
+        // Update all state
+        setTimeSettings(null);
+        setIsExpired(false);
+        setItems([]);
+        setShowTimeInput(true);
+      }
+    } catch (error) {
+      // console.error('[PasteArea] Error during restart:', error);
+    } finally {
+      // Reset clearing flag
+      isClearingRef.current = false;
+    }
+  };
+
+  // =====================================================
+  // SECTION 2: TIME SETTINGS MANAGEMENT
+  // =====================================================
+  const [timeSettings, setTimeSettings] = useState(null);
+  const [isExpired, setIsExpired] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(null);
+  const [isInputActive, setIsInputActive] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isInactive, setIsInactive] = useState(false);
+  let inactivityTimer = useRef(null);
+  const [showTimeInput, setShowTimeInput] = useState(false);
+  const [loadingTimeSettings, setLoadingTimeSettings] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
+  const wasDraggedRef = useRef(false);
+  const isDraggingRef = useRef(false);
+  const lastClickTimeRef = useRef(0);
+  const lastSelectedIdRef = useRef(null);
+
+  // Initialize storage and load time settings
+  useEffect(() => {
+    let isMounted = true;
+    
+    const loadInitialTimeSettings = async () => {
+      try {
+        // Get the storage adapter
+        const { adapter } = getStorageAdapter(storageMode, boardId);
+        
+        if (adapter && isMounted) {
+          const settings = await adapter.getTimeSettings();
+          
+          if (settings) {
+            // Check if the settings have expired
+            const now = Date.now();
+            const expiryTime = settings.startTime + (settings.duration * 60 * 1000);
+            
+            if (now < expiryTime) {
+              // Settings haven't expired yet, use them
+              setTimeSettings(settings);
+            } else {
+              // Settings have expired, clear them
+              await adapter.clearBoard();
+              setTimeSettings(null);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading time settings:', error);
+      }
+    };
+    
+    loadInitialTimeSettings();
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
+  }, [storageMode, boardId]);
+
+  // Load time settings when storage changes
+  const loadTimeSettings = async () => {
+    if (storage) {
+      try {
+        const settings = await storage.getTimeSettings();
+        if (settings) {
+          setTimeSettings(settings);
+          // Check if expired
+          const now = Date.now();
+          const expiryTime = settings.startTime + (settings.duration * 60 * 1000);
+          setIsExpired(now >= expiryTime);
+          // Reset inactivity timer when time settings are loaded
+          resetInactivityTimer();
+        }
+      } catch (error) {
+        // console.error('Error loading time settings:', error);
+      }
+    }
+  };
+
+  const loadTimeSettingsRef = useRef(loadTimeSettings);
+  useEffect(() => {
+    loadTimeSettingsRef.current = loadTimeSettings;
+  }, [loadTimeSettings]);
+
+  useEffect(() => {
+    if (!storage) return;
+    loadTimeSettingsRef.current();
+  }, [storage]);
+
+  // Add aging effects
+  useAgingEffect(timeSettings);
+  usePaperAgingEffect(timeSettings);
+
+  // Add effect to handle time settings expiry
+  useEffect(() => {
+    if (!timeSettings) return;
+
+    const checkExpiry = () => {
+      const now = Date.now();
+      const expiryTime = timeSettings.startTime + (timeSettings.duration * 60 * 1000); // Convert minutes to milliseconds
+      if (now >= expiryTime) {
+        setIsExpired(true);
+      } else {
+        const remainingMs = expiryTime - now;
+        setTimeRemaining(Math.floor(remainingMs / 1000)); // Convert to seconds for display
+      }
+    };
+
+    const timer = setInterval(checkExpiry, 1000);
+    checkExpiry(); // Check immediately
+
+    return () => clearInterval(timer);
+  }, [timeSettings]);
+
+  // =====================================================
+  // SECTION 3: ITEM MANAGEMENT
+  // =====================================================
+  const [items, setItems] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [isSelecting, setIsSelecting] = useState(false);
+  const panzoomRef = useRef();
+  const activeItemRef = useRef(null);
+
+  // Define addEmptyCard function
+  const addEmptyCard = async (cardData = { position: { x: 100, y: 100 } }) => {
+    try {
+      const newItem = cardData.type === 'image' 
+        ? createImageCard(cardData.content, cardData.position, cardData.sourceUrl)
+        : createTextCard(cardData.content, cardData.position, cardData.isEmpty);
+      await saveAndUpdateItems(storage, newItem, setItems);
+    } catch (error) {
+      console.error('Error adding empty card:', error);
+    }
+  };
+
+
+  // Define updateCard function
+  const updateCard = async (id, updates) => {
+    // console.log('Updating card:', id, updates);
+    try {
+      await updateAndRefreshItems(storage, id, updates, setItems);
+      // console.log('Card updated successfully');
+    } catch (error) {
+      // console.error('Error updating card:', error);
+    }
+  };
+
+  // Define deleteCard function
+  const deleteCard = async (id) => {
+    await deleteAndRemoveItem(storage, id, setItems);
+  };
+
+  // Load items when storage is ready
+  useEffect(() => {
+    console.log('[Items Load Effect] Starting items fetch, storage:', !!storage, 'mode:', storageMode, 'boardId:', boardId);
+    const fetchItems = async () => {
+      if (!storage) {
+        console.log('[Items Load Effect] No storage available, skipping fetch');
+        return;
+      }
+      // In collaborative mode, we need both storage and boardId
+      if (storageMode === 'collaborative' && !boardId) {
+        console.log('[Items Load Effect] Collaborative mode missing boardId, skipping fetch');
+        return;
+      }
+      
+      try {
+        const savedItems = await storage.loadItems();
+        // console.log('Loaded items:', savedItems);
+        setItems(savedItems || []);
+      } catch (error) {
+        // console.error('Error loading items:', error);
+      }
+    };
+    fetchItems();
+  }, [storage, boardId, storageMode]);
+
+  // =====================================================
+  // SECTION 7: PASTE HANDLING
+  // =====================================================
+  // Handle paste events
+  const handlePaste = useCallback(async (e) => {
+    if (!storage) return;
+    if (document.activeElement.tagName === 'TEXTAREA' || 
+        document.activeElement.tagName === 'INPUT' ||
+        document.activeElement.classList.contains('content-input')) {
+      return;
+    }
+
+    e.preventDefault();
+    const clipboardData = e.clipboardData;
+
+    try {
+      // console.log('Clipboard items:', clipboardData.items);
+      const imageItem = extractImageFromClipboard(clipboardData);
+      // console.log('Extracted image item:', imageItem);
+      
+      if (imageItem) {
+        const file = imageItem.getAsFile();
+        // console.log('Clipboard file:', file);
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          // console.log('Clipboard file data URL:', reader.result);
+          try {
+            const processedDataUrl = await processImage(reader.result);
+            const newItem = createImageCard(processedDataUrl, { x, y }, imageItem.type === 'image' ? imageItem.sourceUrl : null);
+            // console.log('New image card id:', newItem.id);
+            await saveAndUpdateItems(storage, newItem, setItems);
+          } catch (error) {
+            // console.error('Error saving item:', error);
+          }
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      const text = clipboardData.getData('text');
+      if (text) {
+        const isUrl = /^(https?:\/\/[^\s]+)$/.test(text);
+        const newItem = isUrl 
+          ? createLinkCard(text, { x, y })
+          : createTextCard(text, { x, y }, false);
+        // console.log('New text/link card id:', newItem.id);
+        await saveAndUpdateItems(storage, newItem, setItems);
+      }
+    } catch (error) {
+      // console.error('Error saving item:', error);
+    }
+  }, [storage]);
+
+  // =====================================================
+  // SECTION 4: UI & EVENT HANDLERS
+  // =====================================================
+  const handleTimeSet = async (settings) => {
+    // console.log('Handling time set:', settings);
+    try {
+      // Ensure we have all the required fields
+      const timeSettings = {
+        description: settings.description,
+        startTime: settings.startTime,
+        duration: settings.duration,
+        halfwayPoint: settings.halfwayPoint
+      };
+      
+      if (storageMode === 'collaborative') {
+        // Handle collaborative mode
+        if (settings.urlBackhalf) {
+          const { adapter } = getStorageAdapter('collaborative');
+          await adapter.generateBoardId(settings.urlBackhalf);
+          
+          setStorage(adapter);
+          setBoardId(settings.urlBackhalf);
+          
+          // Update URL
+          const newPath = `/${settings.urlBackhalf}`;
+          window.history.replaceState({}, '', newPath);
+          
+          // Save time settings
+          await adapter.saveTimeSettings(timeSettings);
+        } else {
+          const { adapter } = getStorageAdapter('collaborative');
+          const newBoardId = await adapter.generateBoardId();
+          
+          setStorage(adapter);
+          setBoardId(newBoardId);
+          
+          // Update URL
+          const newPath = `/${newBoardId}`;
+          window.history.replaceState({}, '', newPath);
+          
+          // Save time settings
+          await adapter.saveTimeSettings(timeSettings);
+        }
+      } else {
+        // Handle local mode
+        const { adapter } = getStorageAdapter('local');
+        setStorage(adapter);
+        setBoardId(null);
+        
+        // Ensure we're at the root URL
+        window.history.replaceState({}, '', '/');
+        
+        // Save time settings to IndexedDB
+        await adapter.saveTimeSettings(timeSettings);
+      }
+      
+      setTimeSettings(timeSettings);
+      resetInactivityTimer();
+    } catch (error) {
+      // console.error('Error saving time settings:', error);
+    }
+  };
+
+  const updateProjectDescription = async (newDescription) => {
+    if (!timeSettings || !storage) return;
+    
+    try {
+      const updatedSettings = {
+        ...timeSettings,
+        description: newDescription
+      };
+      
+      await storage.saveTimeSettings(updatedSettings);
+      setTimeSettings(updatedSettings);
+    } catch (error) {
+      console.error('Error updating project description:', error);
+    }
+  };
+
+  const updateTimeSettings = async (newTimeSettings) => {
+    if (!storage) return;
+    
+    try {
+      await storage.saveTimeSettings(newTimeSettings);
+      setTimeSettings(newTimeSettings);
+    } catch (error) {
+      console.error('Error updating time settings:', error);
+      throw error; // Re-throw to allow component to handle error
+    }
+  };
+
   // Add mouse up handler to detect drag end
   useEffect(() => {
     const handleMouseUp = () => {
@@ -658,13 +677,9 @@ const PasteArea = ({ onExport }) => {
     };
   }, [storage]);
 
-  // Track mouse position relative to panzoom
-  const handleMouseMove = (e) => {
-    if (panzoomRef.current) {
-      const { x, y } = panzoomRef.current.getPosition(e);
-      setMousePosition({ x, y });
-    }
-  };
+  // =====================================================
+  // SECTION 8: CANVAS INTERACTION STATE
+  // =====================================================
 
   const handleDelete = async (id) => {
     if (!storage) return;
@@ -748,16 +763,24 @@ const PasteArea = ({ onExport }) => {
     }
   };
 
-  const resetInactivityTimer = useCallback(() => {
-    if (inactivityTimer.current) {
-      clearTimeout(inactivityTimer.current);
-    }
-    if (timeSettings) {
-      inactivityTimer.current = setTimeout(() => {
-        setIsInactive(true);
-      }, 180000); // 3 minutes in milliseconds
-    }
-  }, [timeSettings]);
+
+
+  // =====================================================
+  // SECTION 5: INACTIVITY & TIMER MANAGEMENT
+  // =====================================================
+  const resetInactivityTimer = useMemo(() => 
+    debounce(() => {
+      if (inactivityTimer.current) {
+        clearTimeout(inactivityTimer.current);
+      }
+      if (timeSettings) {
+        inactivityTimer.current = setTimeout(() => {
+          setIsInactive(true);
+        }, 180000);
+      }
+    }, 100), // 100ms debounce
+    [timeSettings]
+  );
 
   useEffect(() => {
     // Only set up inactivity tracking if we have timeSettings
@@ -769,8 +792,8 @@ const PasteArea = ({ onExport }) => {
     }
 
     // Set up event listeners for user activity
-    const activityEvents = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
-    
+    const activityEvents = ['click', 'keydown', 'scroll'];
+
     const handleActivity = () => {
       resetInactivityTimer();
     };
@@ -798,7 +821,9 @@ const PasteArea = ({ onExport }) => {
     resetInactivityTimer();
   };
 
-  // Handle first-time users and returning users
+  // =====================================================
+  // SECTION 6: FIRST-TIME USER & DEFAULT ITEMS
+  // =====================================================
   const [showCreateBoardModal, setShowCreateBoardModal] = useState(false);
   const [defaultItemsLoaded, setDefaultItemsLoaded] = useState(false);
   
@@ -944,6 +969,9 @@ const PasteArea = ({ onExport }) => {
   }, [boardId]);
 
 
+  // =====================================================
+  // SECTION 9: CANVAS RENDERING (ISOLATED FOR SWAPPING)
+  // =====================================================
   const visibleItems = useMemo(() => {
     const seen = new Set();
     return items.filter(item => {
@@ -995,6 +1023,245 @@ const PasteArea = ({ onExport }) => {
     }
   }, [activeItemRef, isInputActive, isEditing]);
 
+  const renderCanvas = () => {
+    return (
+      <PanZoom 
+        selecting={isSelecting}
+        zoomInitial={0.73}
+        zoomMin={0.5}
+        zoomMax={2}
+        ref={panzoomRef}
+        className="canvas-area"
+        onContainerClick={() => setSelectedId(null)}
+        disabled={isInputActive || isEditing}
+        draggable={!isInputActive && !isEditing}
+        containerClassNames={{
+          outer: 'canvas-area',
+          inner: 'canvas-area__in'
+        }}
+        onElementsChange={(element) => {
+          // console.log('PasteArea: PanZoom onElementsChange', {
+          //   isInputActive,
+          //   isEditing,
+          //   element
+          // });
+          
+          // Don't handle element changes if input is active
+          if (isInputActive || isEditing) {
+            // console.log('PasteArea: Element change prevented - input is active');
+            return;
+          }
+          
+          if (!activeItemRef.current) return;
+          const elementData = element[activeItemRef.current];
+          if (elementData) {
+            // Validate position values
+            const x = Number(elementData.x);
+            const y = Number(elementData.y);
+            
+            if (isNaN(x) || isNaN(y)) {
+              return;
+            }
+
+            // If this is the first position change, it means we're starting to drag
+            if (!isDraggingRef.current) {
+              setIsDragging(true);
+              isDraggingRef.current = true;
+              wasDraggedRef.current = true;
+              const element = document.getElementById(activeItemRef.current);
+              if (element) {
+                element.classList.add('dragging');
+              }
+            }
+
+            // Update local state immediately for smooth dragging
+            setItems(prevItems => 
+              prevItems.map(item => 
+                item.id === activeItemRef.current 
+                  ? { ...item, position: { x, y } }
+                  : item
+              )
+            );
+          }
+        }}
+        onElementsChangeStart={(elements) => {
+          // console.log('PasteArea: PanZoom onElementsChangeStart', {
+          //   isInputActive,
+          //   isEditing,
+          //   elements
+          // });
+          
+          // Don't start dragging if any item is being edited
+          if (isInputActive || isEditing) {
+            // console.log('PasteArea: Drag start prevented - input is active');
+            return;
+          }
+
+          const element = elements[0];
+          if (element) {
+            setIsDragging(true);
+            setActiveItemRef(element.id);
+            wasDraggedRef.current = true;
+            // console.log('PasteArea: Drag started:', { elementId: element.id });
+          }
+        }}
+        onElementsChangeEnd={(element) => {
+          // console.log('PasteArea: PanZoom onElementsChangeEnd', {
+          //   isInputActive,
+          //   isEditing,
+          //   element
+          // });
+          
+          // Don't handle element changes if input is active
+          if (isInputActive || isEditing) {
+            // console.log('PasteArea: Element change end prevented - input is active');
+            return;
+          }
+          
+          setIsDragging(false);
+          isDraggingRef.current = false;
+          if (activeItemRef.current) {
+            const element = document.getElementById(activeItemRef.current);
+            if (element) {
+              element.classList.remove('dragging');
+            }
+          }
+          // Reset drag flag after a short delay
+          setTimeout(() => {
+            wasDraggedRef.current = false;
+          }, 100);
+          
+          // Save position to storage when drag ends
+          if (!activeItemRef.current) return;
+          
+          const elementData = element[activeItemRef.current];
+          if (elementData) {
+            // Validate and ensure we have valid coordinates
+            const x = Number(elementData.x);
+            const y = Number(elementData.y);
+            
+            if (isNaN(x) || isNaN(y)) return;
+
+            const newPosition = {
+              x: Math.round(x),
+              y: Math.round(y)
+            };
+            
+            // Update both local state and storage
+            setItems(prevItems => 
+              prevItems.map(item => 
+                item.id === activeItemRef.current 
+                  ? { ...item, position: newPosition }
+                  : item
+              )
+            );
+            
+            // Save to storage
+            updateCard(activeItemRef.current, { 
+              position: newPosition
+            });
+          }
+        }}
+      >
+        {!isExpired && (
+          <div style={{ 
+            position: 'fixed', 
+            top: '1rem', 
+            left: '50%', 
+            transform: 'translateX(-50%)',
+            color: 'black',
+            pointerEvents: 'none',
+            fontSize: '1.5rem',
+          }}>
+            Paste an image or link here; Hold down shift to drag and select multiple 
+          </div>
+        )}
+        
+        {visibleItems.map(item => (
+          <Element
+            key={item.id + '-outer'}
+            id={item.id}
+            className={`paste-item ${selectedId === item.id ? 'selected' : ''} ${isDragging && selectedId === item.id ? 'dragging' : ''}`}
+            onClick={(e) => {
+              if (!isExpired) {
+                const now = Date.now();
+                const timeSinceLastClick = now - lastClickTimeRef.current;
+                
+                // console.log('Item clicked:', { 
+                //   itemId: item.id, 
+                //   activeItemRef: activeItemRef.current,
+                //   timeSinceLastClick,
+                //   lastSelectedId: lastSelectedIdRef.current
+                // });
+                
+                // If clicking the same item within 300ms, it's a double click
+                if (lastSelectedIdRef.current === item.id && timeSinceLastClick < 300) {
+                  // Double click - do nothing, let TextCard handle it
+                  // console.log('Double click detected, letting TextCard handle it');
+                  lastClickTimeRef.current = 0;
+                  lastSelectedIdRef.current = null;
+                } else {
+                  // Single click - select the item
+                  // console.log('Single click detected, selecting item');
+                  setSelectedId(item.id);
+                  activeItemRef.current = item.id;
+                  lastClickTimeRef.current = now;
+                  lastSelectedIdRef.current = item.id;
+                }
+              }
+            }}
+            x={item.position?.x || 0}
+            y={item.position?.y || 0}
+          >
+            {item.type === 'image' ? (
+              <ImageCard 
+                src={item.content} 
+                itemId={item.id}
+                sourceUrl={item.sourceUrl}
+                storage={storage}
+              />
+            ) : item.type === 'link' ? (
+              <LinkCard 
+                url={item.content} 
+                itemId={item.id}
+                initialMetadata={item.metadata}
+                storage={storage}
+              />
+            ) : item.type === 'pastedText' ? (
+              <TextCard
+                content={item.content}
+                itemId={item.id}
+                sourceUrl={item.sourceUrl}
+                isEmpty={false}
+                showSourceUrl={true}
+                onInputActiveChange={handleInputActiveChange}
+                type="pastedText"
+                storage={storage}
+                isSelected={selectedId === item.id}
+                wasDragged={wasDraggedRef.current}
+              />
+            ) : item.type === 'newText' ? (
+              <TextCard
+                content={item.content}
+                itemId={item.id}
+                isEmpty={item.isEmpty}
+                showSourceUrl={false}
+                onInputActiveChange={handleInputActiveChange}
+                type="newText"
+                storage={storage}
+                isSelected={selectedId === item.id}
+                wasDragged={wasDraggedRef.current}
+              />
+            ) : null}
+          </Element>
+        ))}
+      </PanZoom>
+    );
+  };
+
+  // =====================================================
+  // SECTION 10: MAIN RENDER
+  // =====================================================
   return (
     <>
       <ConvertToCollaborativeDialog
@@ -1038,7 +1305,6 @@ const PasteArea = ({ onExport }) => {
           <div 
             className="paste-container" 
             onKeyDown={handleKeyDown} 
-            onMouseMove={handleMouseMove}
             tabIndex={0}
           >
             <div 
@@ -1099,237 +1365,7 @@ const PasteArea = ({ onExport }) => {
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 style={{ width: '2160px', height: '1200px' }}
               >
-                <PanZoom 
-                  selecting={isSelecting}
-                  zoomInitial={0.73}
-                  zoomMin={0.5}
-                  zoomMax={2}
-                  ref={panzoomRef}
-                  className="canvas-area"
-                  onContainerClick={() => setSelectedId(null)}
-                  disabled={isInputActive || isEditing}
-                  draggable={!isInputActive && !isEditing}
-                  containerClassNames={{
-                    outer: 'canvas-area',
-                    inner: 'canvas-area__in'
-                  }}
-                  onElementsChange={(element) => {
-                    // console.log('PasteArea: PanZoom onElementsChange', {
-                    //   isInputActive,
-                    //   isEditing,
-                    //   element
-                    // });
-                    
-                    // Don't handle element changes if input is active
-                    if (isInputActive || isEditing) {
-                      // console.log('PasteArea: Element change prevented - input is active');
-                      return;
-                    }
-                    
-                    if (!activeItemRef.current) return;
-                    const elementData = element[activeItemRef.current];
-                    if (elementData) {
-                      // Validate position values
-                      const x = Number(elementData.x);
-                      const y = Number(elementData.y);
-                      
-                      if (isNaN(x) || isNaN(y)) {
-                        return;
-                      }
-
-                      // If this is the first position change, it means we're starting to drag
-                      if (!isDraggingRef.current) {
-                        setIsDragging(true);
-                        isDraggingRef.current = true;
-                        wasDraggedRef.current = true;
-                        const element = document.getElementById(activeItemRef.current);
-                        if (element) {
-                          element.classList.add('dragging');
-                        }
-                      }
-
-                      // Update local state immediately for smooth dragging
-                      setItems(prevItems => 
-                        prevItems.map(item => 
-                          item.id === activeItemRef.current 
-                            ? { ...item, position: { x, y } }
-                            : item
-                        )
-                      );
-                    }
-                  }}
-                  onElementsChangeStart={(elements) => {
-                    // console.log('PasteArea: PanZoom onElementsChangeStart', {
-                    //   isInputActive,
-                    //   isEditing,
-                    //   elements
-                    // });
-                    
-                    // Don't start dragging if any item is being edited
-                    if (isInputActive || isEditing) {
-                      // console.log('PasteArea: Drag start prevented - input is active');
-                      return;
-                    }
-
-                    const element = elements[0];
-                    if (element) {
-                      setIsDragging(true);
-                      setActiveItemRef(element.id);
-                      wasDraggedRef.current = true;
-                      // console.log('PasteArea: Drag started:', { elementId: element.id });
-                    }
-                  }}
-                  onElementsChangeEnd={(element) => {
-                    // console.log('PasteArea: PanZoom onElementsChangeEnd', {
-                    //   isInputActive,
-                    //   isEditing,
-                    //   element
-                    // });
-                    
-                    // Don't handle element changes if input is active
-                    if (isInputActive || isEditing) {
-                      // console.log('PasteArea: Element change end prevented - input is active');
-                      return;
-                    }
-                    
-                    setIsDragging(false);
-                    isDraggingRef.current = false;
-                    if (activeItemRef.current) {
-                      const element = document.getElementById(activeItemRef.current);
-                      if (element) {
-                        element.classList.remove('dragging');
-                      }
-                    }
-                    // Reset drag flag after a short delay
-                    setTimeout(() => {
-                      wasDraggedRef.current = false;
-                    }, 100);
-                    
-                    // Save position to storage when drag ends
-                    if (!activeItemRef.current) return;
-                    
-                    const elementData = element[activeItemRef.current];
-                    if (elementData) {
-                      // Validate and ensure we have valid coordinates
-                      const x = Number(elementData.x);
-                      const y = Number(elementData.y);
-                      
-                      if (isNaN(x) || isNaN(y)) return;
-
-                      const newPosition = {
-                        x: Math.round(x),
-                        y: Math.round(y)
-                      };
-                      
-                      // Update both local state and storage
-                      setItems(prevItems => 
-                        prevItems.map(item => 
-                          item.id === activeItemRef.current 
-                            ? { ...item, position: newPosition }
-                            : item
-                        )
-                      );
-                      
-                      // Save to storage
-                      updateCard(activeItemRef.current, { 
-                        position: newPosition
-                      });
-                    }
-                  }}
-                >
-                  {!isExpired && (
-                    <div style={{ 
-                      position: 'fixed', 
-                      top: '1rem', 
-                      left: '50%', 
-                      transform: 'translateX(-50%)',
-                      color: 'black',
-                      pointerEvents: 'none',
-                      fontSize: '1.5rem',
-                    }}>
-                      Paste an image or link here; Hold down shift to drag and select multiple 
-                    </div>
-                  )}
-                  
-                  {visibleItems.map(item => (
-                    <Element
-                      key={item.id + '-outer'}
-                      id={item.id}
-                      className={`paste-item ${selectedId === item.id ? 'selected' : ''} ${isDragging && selectedId === item.id ? 'dragging' : ''}`}
-                      onClick={(e) => {
-                        if (!isExpired) {
-                          const now = Date.now();
-                          const timeSinceLastClick = now - lastClickTimeRef.current;
-                          
-                          // console.log('Item clicked:', { 
-                          //   itemId: item.id, 
-                          //   activeItemRef: activeItemRef.current,
-                          //   timeSinceLastClick,
-                          //   lastSelectedId: lastSelectedIdRef.current
-                          // });
-                          
-                          // If clicking the same item within 300ms, it's a double click
-                          if (lastSelectedIdRef.current === item.id && timeSinceLastClick < 300) {
-                            // Double click - do nothing, let TextCard handle it
-                            // console.log('Double click detected, letting TextCard handle it');
-                            lastClickTimeRef.current = 0;
-                            lastSelectedIdRef.current = null;
-                          } else {
-                            // Single click - select the item
-                            // console.log('Single click detected, selecting item');
-                            setSelectedId(item.id);
-                            activeItemRef.current = item.id;
-                            lastClickTimeRef.current = now;
-                            lastSelectedIdRef.current = item.id;
-                          }
-                        }
-                      }}
-                      x={item.position?.x || 0}
-                      y={item.position?.y || 0}
-                    >
-                      {item.type === 'image' ? (
-                        <ImageCard 
-                          src={item.content} 
-                          itemId={item.id}
-                          sourceUrl={item.sourceUrl}
-                          storage={storage}
-                        />
-                      ) : item.type === 'link' ? (
-                        <LinkCard 
-                          url={item.content} 
-                          itemId={item.id}
-                          initialMetadata={item.metadata}
-                          storage={storage}
-                        />
-                      ) : item.type === 'pastedText' ? (
-                        <TextCard
-                          content={item.content}
-                          itemId={item.id}
-                          sourceUrl={item.sourceUrl}
-                          isEmpty={false}
-                          showSourceUrl={true}
-                          onInputActiveChange={handleInputActiveChange}
-                          type="pastedText"
-                          storage={storage}
-                          isSelected={selectedId === item.id}
-                          wasDragged={wasDraggedRef.current}
-                        />
-                      ) : item.type === 'newText' ? (
-                        <TextCard
-                          content={item.content}
-                          itemId={item.id}
-                          isEmpty={item.isEmpty}
-                          showSourceUrl={false}
-                          onInputActiveChange={handleInputActiveChange}
-                          type="newText"
-                          storage={storage}
-                          isSelected={selectedId === item.id}
-                          wasDragged={wasDraggedRef.current}
-                        />
-                      ) : null}
-                    </Element>
-                  ))}
-                </PanZoom>
+                {renderCanvas()}
               </motion.div>
             </AnimatePresence>
           </div>
