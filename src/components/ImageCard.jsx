@@ -1,14 +1,47 @@
 // Optional enhancement for ImageCard.jsx
 // This wraps the image in a container to better support the fading border effect
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { throttle } from 'lodash';
+import { useCanvas } from '../context/CanvasContext';
+import { useDrag } from '../hooks/useDrag';
 
 const ImageCard = React.memo(function ImageCard({ src, itemId, sourceUrl: initialSourceUrl, storage }) {
+  const { state, dispatch } = useCanvas();
+  
+  // Local state
   const [compressedSrc, setCompressedSrc] = useState(src);
   const [isEditing, setIsEditing] = useState(false);
   const [sourceUrl, setSourceUrl] = useState(initialSourceUrl || '');
   const [imageError, setImageError] = useState(false);
+  
+  // Get card from context
+  const card = state.cards.find(c => c.id === itemId);
+  if (!card) return null;
+
+  // Use new drag system
+  const { handleMouseDown, elementRef } = useDrag({
+    onDragStart: () => {
+      dispatch({ type: "SELECT_CARD", payload: card.id });
+    },
+    onDragEnd: (newPosition) => {
+      dispatch({
+        type: "UPDATE_CARD",
+        payload: { id: card.id, updates: { position: newPosition } }
+      });
+      // Update storage
+      if (storage) {
+        storage.updateItem(card.id, { position: newPosition });
+      }
+    },
+    disabled: isEditing
+  });
+
+  // Selection handling
+  const handleClick = useCallback((e) => {
+    e.stopPropagation();
+    dispatch({ type: "SELECT_CARD", payload: card.id });
+  }, [card.id, dispatch]);
 
   useEffect(() => {
     const compressImage = () => {
@@ -99,7 +132,19 @@ const ImageCard = React.memo(function ImageCard({ src, itemId, sourceUrl: initia
   }, 16); // ~60fps
 
   return (
-    <div className="image-container">
+    <div
+      ref={elementRef}
+      className={`image-container ${card.selected ? 'selected' : ''}`}
+      style={{
+        position: 'absolute',
+        left: `${card.position.x}px`,
+        top: `${card.position.y}px`,
+        cursor: isEditing ? 'text' : 'move',
+        transform: 'translateZ(0)' // Force GPU acceleration
+      }}
+      onMouseDown={(e) => handleMouseDown(e, card.position)}
+      onClick={handleClick}
+    >
       {imageError ? (
         <div className="image-error">
           Failed to load image

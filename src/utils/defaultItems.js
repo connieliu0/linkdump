@@ -2,7 +2,6 @@
 import { createTextCard, createLinkCard } from './cardManagement';
 
 export const getDefaultHomepageItems = () => {
-  console.log('Loading default items');
   // Board dimensions from PasteArea.jsx
   const BOARD_WIDTH = 2160;
   const BOARD_HEIGHT = 1200;
@@ -25,7 +24,6 @@ export const getDefaultHomepageItems = () => {
       "• Hold Shift to select and move multiple items\n" +
       "• Watch as your content naturally fades over time",
       { x: CENTER_X - SPACING_X, y: CENTER_Y - SPACING_Y },
-      false
     ),
 
     // About link - top right of center group

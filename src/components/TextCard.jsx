@@ -1,4 +1,6 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useCanvas } from '../context/CanvasContext';
+import { useDrag } from '../hooks/useDrag';
 
 const TextCard = React.memo(function TextCard({ 
   content, 
@@ -13,6 +15,9 @@ const TextCard = React.memo(function TextCard({
   wasDragged,
   onDoubleClick 
 }) {
+  const { state, dispatch } = useCanvas();
+  
+  // Local editing state
   const [isEditing, setIsEditing] = useState(false);
   const [isContentEditing, setIsContentEditing] = useState(false);
   const [sourceUrl, setSourceUrl] = useState(initialSourceUrl || '');
@@ -23,6 +28,30 @@ const TextCard = React.memo(function TextCard({
   const isBlurringRef = useRef(false);
   const isMouseDownRef = useRef(false);
   const blurTimeoutRef = useRef(null);
+  const lastClickTimeRef = useRef(0);
+  const lastSelectedIdRef = useRef(null);
+  
+  // Get card from context
+  const card = state.cards.find(c => c.id === itemId);
+  if (!card) return null;
+
+  // Use new drag system
+  const { handleMouseDown, elementRef } = useDrag({
+    onDragStart: () => {
+      dispatch({ type: "SELECT_CARD", payload: card.id });
+    },
+    onDragEnd: (newPosition) => {
+      dispatch({
+        type: "UPDATE_CARD",
+        payload: { id: card.id, updates: { position: newPosition } }
+      });
+      // Update storage
+      if (storage) {
+        storage.updateItem(card.id, { position: newPosition });
+      }
+    },
+    disabled: isContentEditing || isEditing
+  });
 
   // Notify parent when editing state changes
   useEffect(() => {
@@ -64,7 +93,7 @@ const TextCard = React.memo(function TextCard({
     
     if (isContentEditing) return;
     
-    if (!isSelected) {
+    if (!card.selected) {
       if (onDoubleClick) {
         onDoubleClick();
       }
@@ -77,14 +106,14 @@ const TextCard = React.memo(function TextCard({
       setIsContentEditing(true);
       clickCountRef.current = 0;
     }
-  }, [isSelected, wasDragged, onDoubleClick, isContentEditing]);
+  }, [card.selected, wasDragged, onDoubleClick, isContentEditing]);
 
   const handleSourceClick = useCallback((e) => {
     e.stopPropagation();
     
     if (isEditing) return;
     
-    if (!isSelected) {
+    if (!card.selected) {
       if (onDoubleClick) {
         onDoubleClick();
       }
@@ -97,12 +126,12 @@ const TextCard = React.memo(function TextCard({
       setIsEditing(true);
       clickCountRef.current = 0;
     }
-  }, [isSelected, wasDragged, onDoubleClick, isEditing]);
+  }, [card.selected, wasDragged, onDoubleClick, isEditing]);
 
   // Reset click count when selection changes
   useEffect(() => {
     clickCountRef.current = 0;
-  }, [isSelected]);
+  }, [card.selected]);
 
   const handleContentChange = useCallback(async (e) => {
     const newContent = e.target.value;
@@ -191,8 +220,40 @@ const TextCard = React.memo(function TextCard({
     }
   }, [isContentEditing, isEditing]);
 
+  // Selection handling
+  const handleClick = useCallback((e) => {
+    e.stopPropagation();
+    
+    const now = Date.now();
+    const timeSinceLastClick = now - lastClickTimeRef.current;
+    
+    if (lastSelectedIdRef.current === itemId && timeSinceLastClick < 300) {
+      // Double click - start editing
+      setIsContentEditing(true);
+      dispatch({ type: "SET_INPUT_ACTIVE", payload: true });
+    } else {
+      // Single click - select
+      dispatch({ type: "SELECT_CARD", payload: itemId });
+    }
+    
+    lastClickTimeRef.current = now;
+    lastSelectedIdRef.current = itemId;
+  }, [itemId, dispatch]);
+
   return (
-    <div className={`text-container ${isInputActive ? 'input-active' : ''}`}>
+    <div
+      ref={elementRef}
+      className={`text-container ${isInputActive ? 'input-active' : ''} ${card.selected ? 'selected' : ''}`}
+      style={{
+        position: 'absolute',
+        left: `${card.position.x}px`,
+        top: `${card.position.y}px`,
+        cursor: isContentEditing || isEditing ? 'text' : 'move',
+        transform: 'translateZ(0)' // Force GPU acceleration
+      }}
+      onMouseDown={(e) => handleMouseDown(e, card.position)}
+      onClick={handleClick}
+    >
       <div className="text-content">
         {isContentEditing ? (
           <textarea

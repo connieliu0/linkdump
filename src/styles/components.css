@@ -79,21 +79,19 @@ body {
   z-index: 1;
 }
 
-.canvas-area__in {
-  border: var(--tertiary-color) dashed 2px;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  position: relative;
+.paper-workspace {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100vw;
   height: 100vh;
-  transform: translate(-50%, -50%);
   background: rgba(255, 255, 255, 0.5);
   isolation: isolate;
   z-index: 2;
 }
 
-/* Paper texture layer */
-.canvas-area__in::before {
+/* Paper texture overlay that fades in with time */
+.paper-workspace::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -103,6 +101,12 @@ body {
   pointer-events: none;
   z-index: 3;
   transition: opacity 2s ease;
+}
+
+.workspace-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 /* Paper aging overlay */
@@ -169,6 +173,21 @@ body {
   z-index: 10;
   transform: translate3d(0, 0, 0); /* Maintain GPU acceleration */
   pointer-events: none; /* Prevent interference during drag */
+}
+
+/* Draggable card styles */
+.draggable-card {
+  transition: transform 0.1s ease-out;
+  will-change: transform;
+}
+
+.draggable-card:active {
+  cursor: grabbing;
+}
+
+.draggable-card.dragging {
+  transition: none;
+  z-index: 1000;
 }
 
 .pasted-image {

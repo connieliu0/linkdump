@@ -1,6 +1,5 @@
 // src/components/PasteArea.jsx
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import PanZoom, { Element } from '@sasza/react-panzoom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStorageAdapter, createCollaborativeBoard } from '../utils/storage/StorageFactory';
 import LinkCard from './LinkCard';
@@ -22,8 +21,11 @@ import { saveAndUpdateItems, updateAndRefreshItems, deleteAndRemoveItem } from '
 import { layoutArenaItems } from '../utils/layoutUtils';
 import { createDefaultTimeSettings } from '../utils/timeFormatting';
 import { getDefaultHomepageItems } from '../utils/defaultItems';
+import { createCoordinateSystem } from '../utils/coordinates';
+import { useCanvas } from '../context/CanvasContext';
 import MergedDialog from './Dialog/MergedDialog';
 import ConvertToCollaborativeDialog from './Dialog/ConvertToCollaborativeDialog';
+import DraggableCard from './DraggableCard';
 
 // Helper to get/set visited boards
 const getVisitedBoards = () => {
@@ -43,6 +45,8 @@ const addVisitedBoard = (boardId) => {
 };
 
 const PasteArea = ({ onExport }) => {
+  const { state, dispatch } = useCanvas();
+  
   // Get boardId from URL if present and determine storage mode
   const [storageMode, setStorageMode] = useState(() => {
     const pathParts = window.location.pathname.split('/').filter(Boolean);
@@ -71,12 +75,13 @@ const PasteArea = ({ onExport }) => {
   });
 
   const [storage, setStorage] = useState(null);
-  const [items, setItems] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isSelecting, setIsSelecting] = useState(false);
-  const panzoomRef = useRef();
-  const activeItemRef = useRef(null);
+  const [canvasTransform, setCanvasTransform] = useState({ x: 0, y: 0, scale: 0.73 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const canvasRef = useRef(null);
   const [timeSettings, setTimeSettings] = useState(null);
   const [isExpired, setIsExpired] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(null);
@@ -86,12 +91,8 @@ const PasteArea = ({ onExport }) => {
   let inactivityTimer = useRef(null);
   const [showTimeInput, setShowTimeInput] = useState(false);
   const [loadingTimeSettings, setLoadingTimeSettings] = useState(true);
-  const [isDragging, setIsDragging] = useState(false);
   const [showCollaborativeDialog, setShowCollaborativeDialog] = useState(false);
   const wasDraggedRef = useRef(false);
-  const isDraggingRef = useRef(false);
-  const lastClickTimeRef = useRef(0);
-  const lastSelectedIdRef = useRef(null);
 
   // Add a ref to track if we're clearing
   const isClearingRef = useRef(false);
@@ -178,14 +179,17 @@ const PasteArea = ({ onExport }) => {
         // Set up realtime listener for collaborative mode
         const unsubscribe = adapter.setupRealtimeListener((items) => {
           if (isClearingRef.current) return;
-          const validItems = items.filter(item => {
-            if (!item?.id) {
-              console.warn('Found item without ID:', item);
-              return false;
-            }
-            return true;
-          });
-          setItems(validItems);
+          // Sync items with CanvasContext for collaborative mode
+          if (items && items.length > 0) {
+            items.forEach(item => {
+              const cardWithDefaults = {
+                ...item,
+                selected: false,
+                editing: false
+              };
+              dispatch({ type: "ADD_CARD", payload: cardWithDefaults });
+            });
+          }
         });
         return () => unsubscribe();
       }
@@ -355,53 +359,20 @@ const PasteArea = ({ onExport }) => {
       const newItem = cardData.type === 'image' 
         ? createImageCard(cardData.content, cardData.position, cardData.sourceUrl)
         : createTextCard(cardData.content, cardData.position, cardData.isEmpty);
-      await saveAndUpdateItems(storage, newItem, setItems);
+      const cardWithDefaults = {
+        ...newItem,
+        selected: false,
+        editing: false
+      };
+      dispatch({ type: "ADD_CARD", payload: cardWithDefaults });
+      await storage.saveItem(cardWithDefaults);
     } catch (error) {
       console.error('Error adding empty card:', error);
     }
   };
 
 
-  // Define updateCard function
-  const updateCard = async (id, updates) => {
-    // console.log('Updating card:', id, updates);
-    try {
-      await updateAndRefreshItems(storage, id, updates, setItems);
-      // console.log('Card updated successfully');
-    } catch (error) {
-      // console.error('Error updating card:', error);
-    }
-  };
 
-  // Define deleteCard function
-  const deleteCard = async (id) => {
-    await deleteAndRemoveItem(storage, id, setItems);
-  };
-
-  // Load items when storage is ready
-  useEffect(() => {
-    console.log('[Items Load Effect] Starting items fetch, storage:', !!storage, 'mode:', storageMode, 'boardId:', boardId);
-    const fetchItems = async () => {
-      if (!storage) {
-        console.log('[Items Load Effect] No storage available, skipping fetch');
-        return;
-      }
-      // In collaborative mode, we need both storage and boardId
-      if (storageMode === 'collaborative' && !boardId) {
-        console.log('[Items Load Effect] Collaborative mode missing boardId, skipping fetch');
-        return;
-      }
-      
-      try {
-        const savedItems = await storage.loadItems();
-        // console.log('Loaded items:', savedItems);
-        setItems(savedItems || []);
-      } catch (error) {
-        // console.error('Error loading items:', error);
-      }
-    };
-    fetchItems();
-  }, [storage, boardId, storageMode]);
 
   // Handle paste events
   const handlePaste = useCallback(async (e) => {
@@ -428,10 +399,16 @@ const PasteArea = ({ onExport }) => {
         reader.onloadend = async () => {
           // console.log('Clipboard file data URL:', reader.result);
           try {
-            const processedDataUrl = await processImage(reader.result);
-            const newItem = createImageCard(processedDataUrl, { x, y }, imageItem.type === 'image' ? imageItem.sourceUrl : null);
-            // console.log('New image card id:', newItem.id);
-            await saveAndUpdateItems(storage, newItem, setItems);
+                    const processedDataUrl = await processImage(reader.result);
+        const newItem = createImageCard(processedDataUrl, { x, y }, imageItem.type === 'image' ? imageItem.sourceUrl : null);
+        // console.log('New image card id:', newItem.id);
+        const cardWithDefaults = {
+          ...newItem,
+          selected: false,
+          editing: false
+        };
+        dispatch({ type: "ADD_CARD", payload: cardWithDefaults });
+        await storage.saveItem(cardWithDefaults);
           } catch (error) {
             // console.error('Error saving item:', error);
           }
@@ -447,12 +424,50 @@ const PasteArea = ({ onExport }) => {
           ? createLinkCard(text, { x, y })
           : createTextCard(text, { x, y }, false);
         // console.log('New text/link card id:', newItem.id);
-        await saveAndUpdateItems(storage, newItem, setItems);
+        const cardWithDefaults = {
+          ...newItem,
+          selected: false,
+          editing: false
+        };
+        dispatch({ type: "ADD_CARD", payload: cardWithDefaults });
+        await storage.saveItem(cardWithDefaults);
       }
     } catch (error) {
       // console.error('Error saving item:', error);
     }
-  }, [mousePosition, storage]);
+  }, [mousePosition, storage, dispatch]);
+
+  // Load existing cards from storage into CanvasContext
+  useEffect(() => {
+    const loadExistingCards = async () => {
+      if (!storage) return;
+      
+      try {
+        const savedItems = await storage.loadItems();
+        if (savedItems && savedItems.length > 0) {
+          // Clear existing cards first
+          dispatch({ type: "CLEAR_CANVAS" });
+          // Add all saved items to CanvasContext
+          savedItems.forEach(item => {
+            // Ensure the card has the proper structure for CanvasContext
+            const cardWithDefaults = {
+              ...item,
+              selected: false,
+              editing: false,
+              position: item.position || { x: 100, y: 100 }
+            };
+            dispatch({ type: "ADD_CARD", payload: cardWithDefaults });
+          });
+        }
+      } catch (error) {
+        console.error('Error loading existing cards:', error);
+      }
+    };
+
+    loadExistingCards();
+    
+
+  }, [storage, dispatch]);
 
   // Handle board restart
   const handleRestart = async () => {
@@ -504,7 +519,7 @@ const PasteArea = ({ onExport }) => {
         // Update all state
         setTimeSettings(null);
         setIsExpired(false);
-        setItems([]);
+        dispatch({ type: "CLEAR_CANVAS" });
         setShowTimeInput(true);
       }
     } catch (error) {
@@ -578,6 +593,7 @@ const PasteArea = ({ onExport }) => {
       // Clear local board data and flags after successful conversion
       await storage.clearBoard(); // Clear IndexedDB
       localStorage.removeItem('localBoardActive'); // Remove local board flag
+      dispatch({ type: "CLEAR_CANVAS" }); // Clear CanvasContext
 
       // console.log('Successfully converted to collaborative mode');
       return newBoardId;
@@ -587,89 +603,73 @@ const PasteArea = ({ onExport }) => {
     }
   };
 
-  // Add mouse up handler to detect drag end
-  useEffect(() => {
-    const handleMouseUp = () => {
-      // console.log('Mouse up detected', { 
-      //   isDragging: isDraggingRef.current, 
-      //   activeItemRef: activeItemRef.current,
-      //   hasStorage: !!storage
-      // });
-      
-      if (!storage) {
-        // console.error('No storage available for position update');
-        return;
-      }
-      
-      if (isDraggingRef.current && activeItemRef.current && panzoomRef.current) {
-        // console.log('Drag ended via mouse up');
-        // Get the current elements from PanZoom
-        const elements = panzoomRef.current.getElements();
-        if (elements && elements[activeItemRef.current]) {
-          const elementData = elements[activeItemRef.current];
-          // console.log('Current element data:', elementData);
-          
-          // Get position from the position object
-          const position = elementData.position;
-          if (!position) {
-            // console.error('No position data found in element:', elementData);
-            return;
-          }
-          
-          // Validate position values
-          const x = Number(position.x);
-          const y = Number(position.y);
-          
-          if (isNaN(x) || isNaN(y)) {
-            // console.error('Invalid position values:', { x: position.x, y: position.y });
-            return;
-          }
 
-          const newPosition = {
-            x: Math.round(x),
-            y: Math.round(y)
-          };
-          
-          // console.log('Saving position from mouse up:', newPosition);
-          
-          // Update both local state and storage
-          setItems(prevItems => 
-            prevItems.map(item => 
-              item.id === activeItemRef.current 
-                ? { ...item, position: newPosition }
-                : item
-            )
-          );
-          
-          // Save to storage
-          updateCard(activeItemRef.current, { 
-            position: newPosition
-          });
-        }
-        setIsDragging(false);
-        isDraggingRef.current = false;
-        wasDraggedRef.current = false;
-      }
+
+  // V0-style coordinate system
+  const screenToCanvas = useCallback((screenX, screenY) => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return { x: screenX, y: screenY };
+    
+    return {
+      x: (screenX - rect.left - canvasTransform.x) / canvasTransform.scale,
+      y: (screenY - rect.top - canvasTransform.y) / canvasTransform.scale,
     };
+  }, [canvasTransform]);
 
-    document.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [storage]);
-
-  // Track mouse position relative to panzoom
-  const handleMouseMove = (e) => {
-    if (panzoomRef.current) {
-      const { x, y } = panzoomRef.current.getPosition(e);
-      setMousePosition({ x, y });
+  // Pan/zoom handlers
+  const handleCanvasMouseDown = (e) => {
+    // Don't start panning if clicking on a card
+    if (e.target.closest('.text-container, .image-container, .link-card')) {
+      return;
     }
+    
+    // Start panning if clicking on the background (not on a card)
+    setIsPanning(true);
+    setPanStart({ x: e.clientX - canvasTransform.x, y: e.clientY - canvasTransform.y });
+  };
+
+  const handleCanvasMouseMove = (e) => {
+    if (isPanning) {
+      const newX = e.clientX - panStart.x;
+      const newY = e.clientY - panStart.y;
+      setCanvasTransform(prev => ({ ...prev, x: newX, y: newY }));
+    }
+  };
+
+  const handleCanvasMouseUp = () => {
+    setIsPanning(false);
+  };
+
+  // Zoom handlers
+  const handleWheel = (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    const newScale = Math.max(0.1, Math.min(3, canvasTransform.scale * delta));
+    
+    // Zoom towards mouse position
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (rect) {
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      
+      const newX = mouseX - (mouseX - canvasTransform.x) * (newScale / canvasTransform.scale);
+      const newY = mouseY - (mouseY - canvasTransform.y) * (newScale / canvasTransform.scale);
+      
+      setCanvasTransform({ x: newX, y: newY, scale: newScale });
+    }
+  };
+
+  // Track mouse position
+  const handleMouseMove = (e) => {
+    const canvasCoords = screenToCanvas(e.clientX, e.clientY);
+    setMousePosition(canvasCoords);
   };
 
   const handleDelete = async (id) => {
     if (!storage) return;
     try {
-      await deleteCard(id);
+      dispatch({ type: "DELETE_CARD", payload: id });
+      await storage.deleteItem(id);
       setSelectedId(null);
     } catch (error) {
       console.error('Error deleting item:', error);
@@ -700,6 +700,26 @@ const PasteArea = ({ onExport }) => {
       window.removeEventListener('keyup', handleKeyUp);
     };
   }, []);
+
+  // Add delete key handling
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && 
+          !state.isInputActive) {
+        
+        const selectedCards = state.cards.filter(card => card.selected);
+        selectedCards.forEach(card => {
+          dispatch({ type: "DELETE_CARD", payload: card.id });
+          if (storage) {
+            storage.deleteItem(card.id);
+          }
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [state.cards, state.isInputActive, dispatch, storage]);
 
   const handleInputActiveChange = (active) => {
     setIsInputActive(active);
@@ -738,8 +758,8 @@ const PasteArea = ({ onExport }) => {
       }
 
       // console.log('[PasteArea] Updating state after clear...');
-      // Only clear items, keep time settings
-      setItems([]);
+      // Clear CanvasContext
+      dispatch({ type: "CLEAR_CANVAS" });
     } catch (error) {
       // console.error('[PasteArea] Error during clear:', error);
     } finally {
@@ -877,10 +897,14 @@ const PasteArea = ({ onExport }) => {
               console.log('[First-time Init Effect] Default items created:', defaultItems.length);
               
               for (const item of defaultItems) {
-                await saveAndUpdateItems(storage, item, (items) => {
-                  console.log('[First-time Init Effect] Items updated:', items.length);
-                  setItems(items);
-                });
+                // Add to CanvasContext and save to storage
+                const cardWithDefaults = {
+                  ...item,
+                  selected: false,
+                  editing: false
+                };
+                dispatch({ type: "ADD_CARD", payload: cardWithDefaults });
+                await storage.saveItem(cardWithDefaults);
               }
               
               localStorage.setItem('localBoardActive', 'true');
@@ -927,8 +951,14 @@ const PasteArea = ({ onExport }) => {
         };
         
         try {
-          // Use saveAndUpdateItems which will handle both saving and state updates
-          await saveAndUpdateItems(storage, newItem, setItems);
+          // Add to CanvasContext and save to storage
+          const cardWithDefaults = {
+            ...newItem,
+            selected: false,
+            editing: false
+          };
+          dispatch({ type: "ADD_CARD", payload: cardWithDefaults });
+          await storage.saveItem(cardWithDefaults);
         } catch (error) {
           // console.error('Error saving individual item:', error);
           // Continue with other items even if one fails
@@ -944,14 +974,7 @@ const PasteArea = ({ onExport }) => {
   }, [boardId]);
 
 
-  const visibleItems = useMemo(() => {
-    const seen = new Set();
-    return items.filter(item => {
-      if (!item?.id || seen.has(item.id)) return false;
-      seen.add(item.id);
-      return true;
-    });
-  }, [items]);
+
 
   // // Add this log before rendering the items list
   // useEffect(() => {
@@ -960,40 +983,7 @@ const PasteArea = ({ onExport }) => {
   //   }
   // }, [items]);
 
-  const onElementsChangeStart = useCallback((elements) => {
-    if (isInputActive || isEditing) return;
 
-    const element = elements[0];
-    if (element) {
-      setIsDragging(true);
-      setActiveItemRef(element.id);
-      wasDraggedRef.current = true;
-    }
-  }, [isInputActive, isEditing]);
-
-  const onElementsChange = useCallback((elements) => {
-    if (isInputActive || isEditing) return;
-
-    const element = elements[0];
-    if (element && activeItemRef === element.id) {
-      const newPosition = {
-        x: Math.round(element.x),
-        y: Math.round(element.y)
-      };
-      
-      setItems(prevItems => {
-        const updatedItems = [...prevItems];
-        const index = updatedItems.findIndex(item => item.id === element.id);
-        if (index !== -1) {
-          updatedItems[index] = {
-            ...updatedItems[index],
-            position: newPosition
-          };
-        }
-        return updatedItems;
-      });
-    }
-  }, [activeItemRef, isInputActive, isEditing]);
 
   return (
     <>
@@ -1061,7 +1051,6 @@ const PasteArea = ({ onExport }) => {
             ></div>
 
             <TopToolbar 
-              panzoomRef={panzoomRef} 
               onExport={onExport} 
               timeRemaining={timeRemaining}
               timeSettings={timeSettings}
@@ -1076,7 +1065,6 @@ const PasteArea = ({ onExport }) => {
               canEditTime={!timeSettings?.hasEditedTime}
             />
             <BottomToolbar 
-              panzoomRef={panzoomRef} 
               onExport={onExport} 
               timeRemaining={timeRemaining}
               timeSettings={timeSettings}
@@ -1091,247 +1079,81 @@ const PasteArea = ({ onExport }) => {
               storageMode={storageMode}
             />
             
-            <AnimatePresence>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-                style={{ width: '2160px', height: '1200px' }}
+            <div 
+              ref={canvasRef}
+              className="paper-workspace"
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100vw',
+                height: '100vh',
+                background: 'rgba(255, 255, 255, 0.5)',
+                backgroundImage: 'url(/src/assets/crumpled-paper.webp)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                cursor: isPanning ? 'grabbing' : 'grab',
+                userSelect: 'none',
+                willChange: isPanning ? 'transform' : 'auto'
+              }}
+              onMouseDown={handleCanvasMouseDown}
+              onMouseMove={handleCanvasMouseMove}
+              onMouseUp={handleCanvasMouseUp}
+              onWheel={handleWheel}
+              onClick={() => setSelectedId(null)}
+            >
+              <div 
+                className="workspace-content"
+                style={{
+                  transform: `translate(${canvasTransform.x}px, ${canvasTransform.y}px) scale(${canvasTransform.scale})`,
+                  transformOrigin: '0 0',
+                  width: '100%',
+                  height: '100%'
+                }}
               >
-                <PanZoom 
-                  selecting={isSelecting}
-                  zoomInitial={0.73}
-                  zoomMin={0.5}
-                  zoomMax={2}
-                  ref={panzoomRef}
-                  className="canvas-area"
-                  onContainerClick={() => setSelectedId(null)}
-                  disabled={isInputActive || isEditing}
-                  draggable={!isInputActive && !isEditing}
-                  containerClassNames={{
-                    outer: 'canvas-area',
-                    inner: 'canvas-area__in'
-                  }}
-                  onElementsChange={(element) => {
-                    // console.log('PasteArea: PanZoom onElementsChange', {
-                    //   isInputActive,
-                    //   isEditing,
-                    //   element
-                    // });
-                    
-                    // Don't handle element changes if input is active
-                    if (isInputActive || isEditing) {
-                      // console.log('PasteArea: Element change prevented - input is active');
-                      return;
-                    }
-                    
-                    if (!activeItemRef.current) return;
-                    const elementData = element[activeItemRef.current];
-                    if (elementData) {
-                      // Validate position values
-                      const x = Number(elementData.x);
-                      const y = Number(elementData.y);
-                      
-                      if (isNaN(x) || isNaN(y)) {
-                        return;
-                      }
-
-                      // If this is the first position change, it means we're starting to drag
-                      if (!isDraggingRef.current) {
-                        setIsDragging(true);
-                        isDraggingRef.current = true;
-                        wasDraggedRef.current = true;
-                        const element = document.getElementById(activeItemRef.current);
-                        if (element) {
-                          element.classList.add('dragging');
-                        }
-                      }
-
-                      // Update local state immediately for smooth dragging
-                      setItems(prevItems => 
-                        prevItems.map(item => 
-                          item.id === activeItemRef.current 
-                            ? { ...item, position: { x, y } }
-                            : item
-                        )
-                      );
-                    }
-                  }}
-                  onElementsChangeStart={(elements) => {
-                    // console.log('PasteArea: PanZoom onElementsChangeStart', {
-                    //   isInputActive,
-                    //   isEditing,
-                    //   elements
-                    // });
-                    
-                    // Don't start dragging if any item is being edited
-                    if (isInputActive || isEditing) {
-                      // console.log('PasteArea: Drag start prevented - input is active');
-                      return;
-                    }
-
-                    const element = elements[0];
-                    if (element) {
-                      setIsDragging(true);
-                      setActiveItemRef(element.id);
-                      wasDraggedRef.current = true;
-                      // console.log('PasteArea: Drag started:', { elementId: element.id });
-                    }
-                  }}
-                  onElementsChangeEnd={(element) => {
-                    // console.log('PasteArea: PanZoom onElementsChangeEnd', {
-                    //   isInputActive,
-                    //   isEditing,
-                    //   element
-                    // });
-                    
-                    // Don't handle element changes if input is active
-                    if (isInputActive || isEditing) {
-                      // console.log('PasteArea: Element change end prevented - input is active');
-                      return;
-                    }
-                    
-                    setIsDragging(false);
-                    isDraggingRef.current = false;
-                    if (activeItemRef.current) {
-                      const element = document.getElementById(activeItemRef.current);
-                      if (element) {
-                        element.classList.remove('dragging');
-                      }
-                    }
-                    // Reset drag flag after a short delay
-                    setTimeout(() => {
-                      wasDraggedRef.current = false;
-                    }, 100);
-                    
-                    // Save position to storage when drag ends
-                    if (!activeItemRef.current) return;
-                    
-                    const elementData = element[activeItemRef.current];
-                    if (elementData) {
-                      // Validate and ensure we have valid coordinates
-                      const x = Number(elementData.x);
-                      const y = Number(elementData.y);
-                      
-                      if (isNaN(x) || isNaN(y)) return;
-
-                      const newPosition = {
-                        x: Math.round(x),
-                        y: Math.round(y)
-                      };
-                      
-                      // Update both local state and storage
-                      setItems(prevItems => 
-                        prevItems.map(item => 
-                          item.id === activeItemRef.current 
-                            ? { ...item, position: newPosition }
-                            : item
-                        )
-                      );
-                      
-                      // Save to storage
-                      updateCard(activeItemRef.current, { 
-                        position: newPosition
-                      });
-                    }
-                  }}
-                >
-                  {!isExpired && (
-                    <div style={{ 
-                      position: 'fixed', 
-                      top: '1rem', 
-                      left: '50%', 
-                      transform: 'translateX(-50%)',
-                      color: 'black',
-                      pointerEvents: 'none',
-                      fontSize: '1.5rem',
-                    }}>
-                      Paste an image or link here; Hold down shift to drag and select multiple 
-                    </div>
-                  )}
-                  
-                  {visibleItems.map(item => (
-                    <Element
-                      key={item.id + '-outer'}
-                      id={item.id}
-                      className={`paste-item ${selectedId === item.id ? 'selected' : ''} ${isDragging && selectedId === item.id ? 'dragging' : ''}`}
-                      onClick={(e) => {
-                        if (!isExpired) {
-                          const now = Date.now();
-                          const timeSinceLastClick = now - lastClickTimeRef.current;
-                          
-                          // console.log('Item clicked:', { 
-                          //   itemId: item.id, 
-                          //   activeItemRef: activeItemRef.current,
-                          //   timeSinceLastClick,
-                          //   lastSelectedId: lastSelectedIdRef.current
-                          // });
-                          
-                          // If clicking the same item within 300ms, it's a double click
-                          if (lastSelectedIdRef.current === item.id && timeSinceLastClick < 300) {
-                            // Double click - do nothing, let TextCard handle it
-                            // console.log('Double click detected, letting TextCard handle it');
-                            lastClickTimeRef.current = 0;
-                            lastSelectedIdRef.current = null;
-                          } else {
-                            // Single click - select the item
-                            // console.log('Single click detected, selecting item');
-                            setSelectedId(item.id);
-                            activeItemRef.current = item.id;
-                            lastClickTimeRef.current = now;
-                            lastSelectedIdRef.current = item.id;
-                          }
-                        }
-                      }}
-                      x={item.position?.x || 0}
-                      y={item.position?.y || 0}
-                    >
-                      {item.type === 'image' ? (
-                        <ImageCard 
-                          src={item.content} 
-                          itemId={item.id}
-                          sourceUrl={item.sourceUrl}
-                          storage={storage}
-                        />
-                      ) : item.type === 'link' ? (
-                        <LinkCard 
-                          url={item.content} 
-                          itemId={item.id}
-                          initialMetadata={item.metadata}
-                          storage={storage}
-                        />
-                      ) : item.type === 'pastedText' ? (
-                        <TextCard
-                          content={item.content}
-                          itemId={item.id}
-                          sourceUrl={item.sourceUrl}
-                          isEmpty={false}
-                          showSourceUrl={true}
-                          onInputActiveChange={handleInputActiveChange}
-                          type="pastedText"
-                          storage={storage}
-                          isSelected={selectedId === item.id}
-                          wasDragged={wasDraggedRef.current}
-                        />
-                      ) : item.type === 'newText' ? (
-                        <TextCard
-                          content={item.content}
-                          itemId={item.id}
-                          isEmpty={item.isEmpty}
-                          showSourceUrl={false}
-                          onInputActiveChange={handleInputActiveChange}
-                          type="newText"
-                          storage={storage}
-                          isSelected={selectedId === item.id}
-                          wasDragged={wasDraggedRef.current}
-                        />
-                      ) : null}
-                    </Element>
-                  ))}
-                </PanZoom>
-              </motion.div>
-            </AnimatePresence>
+                {!isExpired && (
+                  <div style={{ 
+                    position: 'absolute', 
+                    top: '1rem', 
+                    left: '50%', 
+                    transform: 'translateX(-50%)',
+                    color: 'black',
+                    pointerEvents: 'none',
+                    fontSize: '1.5rem',
+                    zIndex: 1000
+                  }}>
+                    Paste an image or link here; Hold down shift to drag and select multiple 
+                  </div>
+                )}
+              
+              {state.cards.map(card => {
+                const CardComponent = {
+                  'image': ImageCard,
+                  'link': LinkCard,
+                  'pastedText': TextCard,
+                  'newText': TextCard
+                }[card.type] || TextCard;
+                
+                return (
+                  <CardComponent
+                    key={card.id}
+                    itemId={card.id}
+                    content={card.content}
+                    url={card.content} // For LinkCard
+                    src={card.content} // For ImageCard
+                    sourceUrl={card.sourceUrl}
+                    type={card.type}
+                    isEmpty={card.isEmpty}
+                    showSourceUrl={card.type === 'pastedText'}
+                    storage={storage}
+                    onInputActiveChange={handleInputActiveChange}
+                    isSelected={card.selected}
+                    wasDragged={wasDraggedRef.current}
+                  />
+                );
+              })}
+              </div>
+            </div>
           </div>
         </>
       )}

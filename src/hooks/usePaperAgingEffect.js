@@ -50,9 +50,9 @@ export const usePaperAgingEffect = (timeSettings) => {
       const elapsed = now - timeSettings.startTime;
       const progress = Math.min(elapsed / totalDuration, 1);
       
-      // Get the canvas area or create a paper overlay if it doesn't exist
-      const canvasArea = document.querySelector('.canvas-area__in');
-      if (!canvasArea) return;
+      // Get the paper workspace or create a paper overlay if it doesn't exist
+      const paperWorkspace = document.querySelector('.paper-workspace');
+      if (!paperWorkspace) return;
       
       // Create paper overlay if it doesn't exist
       let paperOverlay = document.getElementById('paper-aging-overlay');
@@ -63,8 +63,8 @@ export const usePaperAgingEffect = (timeSettings) => {
         paperOverlay.style.inset = '0';
         paperOverlay.style.pointerEvents = 'none';
         paperOverlay.style.zIndex = '1';
-        canvasArea.style.position = 'relative';
-        canvasArea.appendChild(paperOverlay);
+        paperWorkspace.style.position = 'relative';
+        paperWorkspace.appendChild(paperOverlay);
       }
       
       // Apply yellowing effect that increases with time
@@ -99,8 +99,8 @@ export const usePaperAgingEffect = (timeSettings) => {
       // Set the opacity of the aging effect overlay
       paperOverlay.style.opacity = Math.min(progress * 0.6, 0.6).toFixed(2);
       
-      // Set the texture opacity directly on the canvas area
-      canvasArea.style.setProperty('--texture-opacity', Math.min(progress * 0.8, 0.8).toFixed(2));
+      // Set the texture opacity directly on the paper workspace
+      paperWorkspace.style.setProperty('--texture-opacity', Math.min(progress * 0.8, 0.8).toFixed(2));
       
       // Add stains with fixed positions
       if (progress > 0.3) {
