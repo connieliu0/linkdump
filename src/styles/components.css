@@ -83,11 +83,15 @@ body {
   position: fixed;
   top: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
   width: 100vw;
   height: 100vh;
   background: rgba(255, 255, 255, 0.5);
   isolation: isolate;
   z-index: 2;
+  margin: 0;
+  padding: 0;
 }
 
 /* Paper texture overlay that fades in with time */

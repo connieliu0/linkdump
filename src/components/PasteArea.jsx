@@ -1,4 +1,5 @@
 // src/components/PasteArea.jsx
+import { debounce } from 'lodash';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStorageAdapter, createCollaborativeBoard } from '../utils/storage/StorageFactory';
@@ -659,11 +660,6 @@ const PasteArea = ({ onExport }) => {
     }
   };
 
-  // Track mouse position
-  const handleMouseMove = (e) => {
-    const canvasCoords = screenToCanvas(e.clientX, e.clientY);
-    setMousePosition(canvasCoords);
-  };
 
   const handleDelete = async (id) => {
     if (!storage) return;
@@ -768,16 +764,19 @@ const PasteArea = ({ onExport }) => {
     }
   };
 
-  const resetInactivityTimer = useCallback(() => {
-    if (inactivityTimer.current) {
-      clearTimeout(inactivityTimer.current);
-    }
-    if (timeSettings) {
-      inactivityTimer.current = setTimeout(() => {
-        setIsInactive(true);
-      }, 180000); // 3 minutes in milliseconds
-    }
-  }, [timeSettings]);
+  const resetInactivityTimer = useMemo(() => 
+    debounce(() => {
+      if (inactivityTimer.current) {
+        clearTimeout(inactivityTimer.current);
+      }
+      if (timeSettings) {
+        inactivityTimer.current = setTimeout(() => {
+          setIsInactive(true);
+        }, 180000);
+      }
+    }, 100), // 100ms debounce
+    [timeSettings]
+  );
 
   useEffect(() => {
     // Only set up inactivity tracking if we have timeSettings
@@ -789,8 +788,8 @@ const PasteArea = ({ onExport }) => {
     }
 
     // Set up event listeners for user activity
-    const activityEvents = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
-    
+const activityEvents = ['click', 'keydown', 'scroll'];
+
     const handleActivity = () => {
       resetInactivityTimer();
     };
@@ -1028,7 +1027,6 @@ const PasteArea = ({ onExport }) => {
           <div 
             className="paste-container" 
             onKeyDown={handleKeyDown} 
-            onMouseMove={handleMouseMove}
             tabIndex={0}
           >
             <div 
@@ -1083,18 +1081,18 @@ const PasteArea = ({ onExport }) => {
               ref={canvasRef}
               className="paper-workspace"
               style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                width: '100vw',
-                height: '100vh',
+                position: 'relative',
+                width: '100%',
+                height: '100%',
                 background: 'rgba(255, 255, 255, 0.5)',
                 backgroundImage: 'url(/src/assets/crumpled-paper.webp)',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 cursor: isPanning ? 'grabbing' : 'grab',
                 userSelect: 'none',
-                willChange: isPanning ? 'transform' : 'auto'
+                willChange: isPanning ? 'transform' : 'auto',
+                transform: `translate(${canvasTransform.x}px, ${canvasTransform.y}px) scale(${canvasTransform.scale})`,
+                transformOrigin: '0 0',
               }}
               onMouseDown={handleCanvasMouseDown}
               onMouseMove={handleCanvasMouseMove}
@@ -1102,15 +1100,7 @@ const PasteArea = ({ onExport }) => {
               onWheel={handleWheel}
               onClick={() => setSelectedId(null)}
             >
-              <div 
-                className="workspace-content"
-                style={{
-                  transform: `translate(${canvasTransform.x}px, ${canvasTransform.y}px) scale(${canvasTransform.scale})`,
-                  transformOrigin: '0 0',
-                  width: '100%',
-                  height: '100%'
-                }}
-              >
+              
                 {!isExpired && (
                   <div style={{ 
                     position: 'absolute', 
@@ -1154,7 +1144,6 @@ const PasteArea = ({ onExport }) => {
               })}
               </div>
             </div>
-          </div>
         </>
       )}
     </>
