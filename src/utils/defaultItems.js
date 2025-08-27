@@ -2,6 +2,7 @@
 import { createTextCard, createLinkCard } from './cardManagement';
 
 export const getDefaultHomepageItems = () => {
+  console.log('Loading default items');
   // Board dimensions from PasteArea.jsx
   const BOARD_WIDTH = 2160;
   const BOARD_HEIGHT = 1200;
@@ -16,41 +17,44 @@ export const getDefaultHomepageItems = () => {
 
   return [
     // Welcome card - top left of center group
-    createTextCard(
-      "👋 Welcome to Linkdump!\n\n" +
-      "This is your personal space for collecting thoughts, links, and images. Here's how to get started:\n\n" +
-      "• Paste any URL, image, or text onto the canvas\n" +
-      "• Click 'Add text' or 'Add image' at the bottom\n" +
-      "• Hold Shift to select and move multiple items\n" +
-      "• Watch as your content naturally fades over time",
-      { x: CENTER_X - SPACING_X, y: CENTER_Y - SPACING_Y },
-      false
-    ),
-
-    // About link - top right of center group
-    createLinkCard(
-      "https://decay.connie.surf",
-      { x: CENTER_X + SPACING_X, y: CENTER_Y - SPACING_Y }
-    ),
-
-    // Pro tips - bottom left of center group
-    createTextCard(
-      "💡 Pro Tips:\n\n" +
-      "• Import collections from Are.na\n" +
-      "• Create collaborative boards to share with others\n" +
-      "• Double-click any text to edit\n" +
-      "• Press Delete to remove items",
-      { x: CENTER_X - SPACING_X, y: CENTER_Y + SPACING_Y },
-      false
-    ),
-
-    // Time decay info - bottom right of center group
+    // Main welcome card (no bullets)
     createTextCard(
       "⏳ Time-based decay\n\n" +
       "Your content will gradually fade over the next week, encouraging you to focus on what matters now.\n\n" +
       "Create something new or let your old thoughts fade away...",
-      { x: CENTER_X + SPACING_X, y: CENTER_Y + SPACING_Y },
+      { x: CENTER_X - SPACING_X, y: CENTER_Y - SPACING_Y -20 },
       false
-    )
+    ),
+
+    // Info card above the About link
+    createTextCard(
+      "Learn more about the underpinnings of the project",
+      { x: CENTER_X + SPACING_X - 240, y: CENTER_Y - SPACING_Y },
+      false
+    ),
+    // About link - top right of center group
+    createLinkCard(
+      "https://decay.connie.surf",
+      { x: CENTER_X + SPACING_X -240, y: CENTER_Y - SPACING_Y +100}
+    ),
+
+    // Pro tips - bottom left of center group
+    // Pro Tips cards, broken up and moved to the left of the welcome card
+    createTextCard(
+      "💡 Pro Tips:",
+      { x: CENTER_X - SPACING_X * 2, y: CENTER_Y - SPACING_Y },
+      false
+    ),
+    createTextCard(
+      "• Import collections from Are.na",
+      { x: CENTER_X - SPACING_X * 2 + 20, y: CENTER_Y - SPACING_Y + 60 },
+      false
+    ),
+    createTextCard(
+      "• Create collaborative boards to share with others",
+      { x: CENTER_X - SPACING_X * 2 - 20, y: CENTER_Y - SPACING_Y + 120 },
+      false
+    ),
+
   ];
 };

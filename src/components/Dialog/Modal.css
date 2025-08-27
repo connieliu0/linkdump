@@ -25,7 +25,7 @@
 }
 
 .dialog-content {
-  width: 400px;
+  width: 450px;
   padding: 32px;
   display: flex;
   flex-direction: column;
@@ -202,12 +202,20 @@ label {
   font-family: 'Decompositionphase1';
 }
 
-/* Storage mode selector styles */
-.storage-mode-selector {
+/* Options and Duration Section Styles */
+.duration-section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16px;
   margin-top: 8px;
+  width: 100%;
+}
+
+.options-row {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  width: 100%;
 }
 
 .mode-button {
@@ -236,8 +244,8 @@ label {
 
 .mode-description {
   font-size: 0.8em;
-  color: #666;
-  margin-top: 4px;
+  margin-top: 4px;  
+  color: var(--primary-color);
   font-family: 'Decompositionphase1';
 }
 
@@ -246,39 +254,12 @@ label {
   font-family: 'Decompositionphase1';
 }
 
-/* Collaborative Dialog Styles */
-.url-input-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  margin: 16px 0;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 12px;
-  border: var(--border-style);
-}
-
-.url-prefix {
+/* Input Styles */
+.collaborative-input p {
   color: var(--primary-color);
   font-family: 'Decompositionphase1';
   opacity: 0.7;
   font-size: 1.1em;
-}
-
-.description {
-  margin: 0;
-  color: var(--primary-color);
-  font-family: 'Decompositionphase1';
-  font-size: 1.1em;
-}
-
-.url-hint {
-  margin: 8px 0 0;
-  color: var(--primary-color);
-  font-family: 'Decompositionphase1';
-  font-size: 0.9em;
-  opacity: 0.7;
-  font-style: italic;
 }
 
 input.error {
