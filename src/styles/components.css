@@ -1130,6 +1130,7 @@ You can find the assignment logic in useAgingEffect.js.
   rotate: -3deg;
   position: relative;
   left: 10px;
+  padding-right: 24px; /* Increased right padding for better readability when overlapped */
 }
 .clickable-div.share-board {
   rotate: 1deg;
@@ -1148,6 +1149,9 @@ You can find the assignment logic in useAgingEffect.js.
   position: relative;
   left: -20px;
   filter: sepia(0.1);
+}
+.clickable-div.new-board {
+  padding-right: 30px; /* Increased right padding for better readability when overlapped */
 }
 .clickable-div:hover {
   transform: translateY(-20px);

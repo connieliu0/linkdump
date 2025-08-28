@@ -96,7 +96,10 @@ const BottomToolbar = ({
       />
       <div className={`toolbar bottom-toolbar${isVisible ? ' visible' : ''}`}>
         <div className="action import-section">
-          <div className="clickable-div import-arena" onClick={() => setShowImportArena(true)}>✶✶ Import Are.na</div>
+          <div className="clickable-div import-arena" onClick={() => setShowImportArena(true)}>
+          ✶✶
+          Import Are.na
+          </div>
         </div>
         <div className="action add-section">
           <div className="clickable-div add-text" onClick={() => { setAddContentMode('text'); setShowAddContentModal(true); }}>
@@ -119,7 +122,7 @@ const BottomToolbar = ({
         
         {/* Create new board - shows on every board */}
         <div className="action create-section">
-          <div className="clickable-div" onClick={onCreateBoard}>
+          <div className="clickable-div new-board" onClick={onCreateBoard}>
           ➕ New board
           </div>
         </div>
