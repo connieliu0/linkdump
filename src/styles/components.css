@@ -900,7 +900,7 @@ main {
 .add-section {
   right: calc(50% - 200px); /* Position 6px to the right of project-section */
   text-align: center;
-  min-width: 120px;
+  min-width: 80px;
   transform: translateY(calc(100% - 50px));
   transition: transform 0.3s ease;
 }
@@ -908,7 +908,7 @@ main {
   right: calc(50% - 150px); /* Position 6px to the right of project-section */
   text-align: center;
   min-width: 120px;
-  transform: translateY(calc(100% - 30px));
+  transform: translateY(calc(100% - 50px));
   transition: transform 0.3s ease;
 }
 
@@ -916,7 +916,7 @@ main {
   right: calc(50% - 300px); /* Position to the left of other sections */
   text-align: left;
   min-width: auto; /* Let it hug the content */
-  transform: translateY(calc(100% - 30px));
+  transform: translateY(calc(100% - 50px));
   transition: transform 0.3s ease;
   rotate: -1deg;
 }
@@ -946,6 +946,13 @@ main {
     transform: translateY(calc(100% - 130px)); 
     right:-20px;/* Show more of the buttons */
     z-index: 2;
+  }
+  
+  /* Fix bottom toolbar positioning on mobile */
+  .add-section,
+  .import-section,
+  .create-section {
+    transform: translateY(calc(100% - 40px));
   }
   .time-section {
     z-index: 1;
@@ -1092,7 +1099,7 @@ You can find the assignment logic in useAgingEffect.js.
 }
 
 .clickable-div {
-  padding: 12px 18px 12px 18px;
+  padding: 16px 12px 8px 12px;
   pointer-events: auto;
   background: url('../assets/crumpled-paper.webp');
   background-size: cover;
@@ -1101,8 +1108,8 @@ You can find the assignment logic in useAgingEffect.js.
   cursor: pointer;
   transition: all 0.2s cubic-bezier(.4,2,.6,1);
   box-shadow: 0 4px 16px rgba(0,0,0,0.10), 0 1.5px 0 #fff inset;
-  min-width: 120px;
-  min-height: 48px;
+  min-width: 80px;
+  min-height: 60px;
   flex-direction:column;
   display: flex;
   line-height: 1.2;
@@ -1153,6 +1160,12 @@ You can find the assignment logic in useAgingEffect.js.
   margin: 12px auto 0 auto;
   position: relative;
   bottom: 0;
+}
+
+/* Make lines smaller for add-text button */
+.clickable-div.add-text .lines-svg {
+  max-width: 120px;
+  width: 85%;
 }
 
 /* Add styles for textarea in edit mode */

@@ -109,8 +109,8 @@ const BottomToolbar = ({
             Add image
             <div style={{ 
               width: '100%', 
-              maxWidth: '200px', 
-              height: '200px', 
+              maxWidth: '120px', 
+              height: '120px', 
               backgroundColor: 'rgba(0, 0, 0, 0.3)', 
               margin: '12px auto 0 auto' 
             }} />
