@@ -1151,7 +1151,7 @@ You can find the assignment logic in useAgingEffect.js.
   filter: sepia(0.1);
 }
 .clickable-div.new-board {
-  padding-right: 30px; /* Increased right padding for better readability when overlapped */
+  padding-right: 27px; /* Increased right padding for better readability when overlapped */
 }
 .clickable-div:hover {
   transform: translateY(-20px);
