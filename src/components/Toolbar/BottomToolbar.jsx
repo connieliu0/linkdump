@@ -24,8 +24,8 @@ const BottomToolbar = ({
   const [imageDataUrl, setImageDataUrl] = useState(null);
   const fileInputRef = React.useRef(null);
 
-  // Check if we're on the onboarding local board
-  const isOnboardingLocalBoard = storageMode === 'local' && localStorage.getItem('localBoardActive') === 'true';
+  // Check if we're on a local board (not collaborative)
+  const isLocalBoard = storageMode === 'local';
 
   // Animation variants
   const variants = {
@@ -117,14 +117,15 @@ const BottomToolbar = ({
           </div>
         </div>
         
-        {isOnboardingLocalBoard && (
-          <div className="action create-section">
-            <div className="clickable-div" onClick={onCreateBoard}>
-              Create new board
-            </div>
+        {/* Create new board - shows on every board */}
+        <div className="action create-section">
+          <div className="clickable-div" onClick={onCreateBoard}>
+            + New board
           </div>
-        )}
-        {storageMode === 'local' && !isOnboardingLocalBoard && (
+        </div>
+        
+        {/* Make Collaborative - only shows on local boards */}
+        {isLocalBoard && (
           <div className="action share-section">
             <div className="clickable-div share-board" onClick={onConvertToCollaborative}>
               <AnimatePresence mode="wait" initial={false}>
@@ -141,6 +142,8 @@ const BottomToolbar = ({
             </div>
           </div>
         )}
+        
+        {/* Share board - only shows on collaborative boards */}
         {isCollaborative && (
           <div className="action share-section">
             <div className="clickable-div share-board" onClick={handleShare}>

@@ -913,7 +913,7 @@ main {
 }
 
 .create-section {
-  left: 20px; /* Position on the left side */
+  right: calc(50% - 300px); /* Position to the left of other sections */
   text-align: left;
   min-width: auto; /* Let it hug the content */
   transform: translateY(calc(100% - 30px));
