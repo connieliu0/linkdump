@@ -12,7 +12,7 @@ const STEPS = {
   TIME_INPUT: 1,
 };
 
-const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect, forceTimeInputStep = false }) => {
+const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect, forceTimeInputStep = false, allowBackdropClick = false }) => {
   // Onboarding logic
   const [currentStep, setCurrentStep] = useState(forceTimeInputStep ? STEPS.TIME_INPUT : STEPS.ONBOARD);
   const [ref, bounds] = useMeasure();
@@ -416,7 +416,7 @@ const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect, forceTi
   }, [currentStep, onboardingContent, timeInputContent]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={stepMeta.title} primaryButton={stepMeta.primaryButton} preventBackdropClick={true}>
+    <Modal isOpen={isOpen} onClose={onClose} title={stepMeta.title} primaryButton={stepMeta.primaryButton} preventBackdropClick={!allowBackdropClick}>
       <MotionConfig transition={{ duration: 0.5, type: "spring", bounce: 0 }}>
         <motion.div
           animate={{ height: bounds.height > 0 ? bounds.height : 'auto' }}

@@ -13,7 +13,8 @@ const BottomToolbar = ({
   onImportArenaItems,
   isCollaborative,
   onConvertToCollaborative,
-  storageMode
+  storageMode,
+  onCreateBoard
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [showAddContentModal, setShowAddContentModal] = useState(false);
@@ -22,6 +23,9 @@ const BottomToolbar = ({
   const [copied, setCopied] = useState(false);
   const [imageDataUrl, setImageDataUrl] = useState(null);
   const fileInputRef = React.useRef(null);
+
+  // Check if we're on the onboarding local board
+  const isOnboardingLocalBoard = storageMode === 'local' && localStorage.getItem('localBoardActive') === 'true';
 
   // Animation variants
   const variants = {
@@ -112,7 +116,15 @@ const BottomToolbar = ({
             }} />
           </div>
         </div>
-        {storageMode === 'local' && (
+        
+        {isOnboardingLocalBoard && (
+          <div className="action create-section">
+            <div className="clickable-div" onClick={onCreateBoard}>
+              Create new board
+            </div>
+          </div>
+        )}
+        {storageMode === 'local' && !isOnboardingLocalBoard && (
           <div className="action share-section">
             <div className="clickable-div share-board" onClick={onConvertToCollaborative}>
               <AnimatePresence mode="wait" initial={false}>

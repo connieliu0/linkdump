@@ -776,6 +776,7 @@ const PasteArea = ({ onExport }) => {
 
   // Handle first-time users and returning users
   const [showCreateBoardModal, setShowCreateBoardModal] = useState(false);
+  const [createBoardFromToolbar, setCreateBoardFromToolbar] = useState(false);
   useEffect(() => {
     let isMounted = true;
     const checkTimeSettings = async () => {
@@ -967,10 +968,14 @@ const PasteArea = ({ onExport }) => {
       {showCreateBoardModal && (
         <MergedDialog
           isOpen={showCreateBoardModal}
-          onClose={() => setShowCreateBoardModal(false)}
+          onClose={() => {
+            setShowCreateBoardModal(false);
+            setCreateBoardFromToolbar(false);
+          }}
           onTimeSet={handleTimeSet}
           onStorageModeSelect={handleStorageModeChange}
           forceTimeInputStep={true}
+          allowBackdropClick={createBoardFromToolbar}
         />
       )}
       {timeSettings && (
@@ -1034,6 +1039,10 @@ const PasteArea = ({ onExport }) => {
               isCollaborative={storageMode === 'collaborative'}
               onConvertToCollaborative={() => setShowCollaborativeDialog(true)}
               storageMode={storageMode}
+              onCreateBoard={() => {
+                setCreateBoardFromToolbar(true);
+                setShowCreateBoardModal(true);
+              }}
             />
             
             <AnimatePresence>
