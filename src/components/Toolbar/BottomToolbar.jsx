@@ -25,7 +25,7 @@ const BottomToolbar = ({
   const fileInputRef = React.useRef(null);
 
   // Check if we're on a local board (not collaborative)
-  const isLocalBoard = storageMode === 'local';
+  const isLocalBoard = storageMode === 'local' || !boardId;
 
   // Animation variants
   const variants = {
@@ -96,7 +96,7 @@ const BottomToolbar = ({
       />
       <div className={`toolbar bottom-toolbar${isVisible ? ' visible' : ''}`}>
         <div className="action import-section">
-          <div className="clickable-div import-arena" onClick={() => setShowImportArena(true)}>Import Are.na</div>
+          <div className="clickable-div import-arena" onClick={() => setShowImportArena(true)}>✶✶ Import Are.na</div>
         </div>
         <div className="action add-section">
           <div className="clickable-div add-text" onClick={() => { setAddContentMode('text'); setShowAddContentModal(true); }}>
@@ -120,11 +120,11 @@ const BottomToolbar = ({
         {/* Create new board - shows on every board */}
         <div className="action create-section">
           <div className="clickable-div" onClick={onCreateBoard}>
-            + New board
+          ➕ New board
           </div>
         </div>
         
-        {/* Make Collaborative - only shows on local boards */}
+        {/* Make Collaborative - always shows on local boards */}
         {isLocalBoard && (
           <div className="action share-section">
             <div className="clickable-div share-board" onClick={onConvertToCollaborative}>
@@ -136,39 +136,8 @@ const BottomToolbar = ({
                   animate="visible"
                   exit="hidden"
                 >
-                  Make Collaborative
+                  🔗 Make Collaborative
                 </motion.span>
-              </AnimatePresence>
-            </div>
-          </div>
-        )}
-        
-        {/* Share board - only shows on collaborative boards */}
-        {isCollaborative && (
-          <div className="action share-section">
-            <div className="clickable-div share-board" onClick={handleShare}>
-              <AnimatePresence mode="wait" initial={false}>
-                {copied ? (
-                  <motion.span
-                    key="copied"
-                    variants={variants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="hidden"
-                  >
-                    ✓ Copied!
-                  </motion.span>
-                ) : (
-                  <motion.span
-                    key="share"
-                    variants={variants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="hidden"
-                  >
-                    Share board
-                  </motion.span>
-                )}
               </AnimatePresence>
             </div>
           </div>

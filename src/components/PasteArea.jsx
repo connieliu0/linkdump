@@ -192,6 +192,40 @@ const PasteArea = ({ onExport }) => {
     initializeStorage();
   }, [storageMode]);
 
+  // Listen for URL changes and update storage mode accordingly
+  useEffect(() => {
+    const handleUrlChange = () => {
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      const urlBoardId = pathParts[0] || null;
+      
+      // If there's a board ID in the URL, switch to collaborative mode
+      if (urlBoardId) {
+        if (storageMode !== 'collaborative') {
+          setStorageMode('collaborative');
+          localStorage.setItem('storageMode', 'collaborative');
+          setBoardId(urlBoardId);
+        }
+      } else {
+        // If we're at the root URL, switch to local mode
+        if (storageMode !== 'local') {
+          setStorageMode('local');
+          localStorage.setItem('storageMode', 'local');
+          setBoardId(null);
+        }
+      }
+    };
+
+    // Listen for popstate events (back/forward navigation)
+    window.addEventListener('popstate', handleUrlChange);
+    
+    // Also check on mount
+    handleUrlChange();
+    
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+    };
+  }, [storageMode]);
+
   const handleStorageModeChange = (mode) => {
     // console.log('Handling storage mode change:', mode);
     setStorageMode(mode);
