@@ -88,30 +88,71 @@ const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect, forceTi
           return;
       }
     }
-    let boardId;
-    if (customUrl.trim()) {
-      const sanitizedUrl = customUrl.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
-      try {
-        const { adapter } = getStorageAdapter('collaborative');
-        const isAvailable = await adapter.checkUrlAvailability(sanitizedUrl);
-        if (!isAvailable) {
-          setError('This URL is already taken. Please choose another.');
+    
+    // If creating a collaborative board, handle it differently
+    if (storageMode === 'collaborative') {
+      let boardId;
+      if (customUrl.trim()) {
+        const sanitizedUrl = customUrl.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+        try {
+          const { adapter } = getStorageAdapter('collaborative');
+          const isAvailable = await adapter.checkUrlAvailability(sanitizedUrl);
+          if (!isAvailable) {
+            setError('This URL is already taken. Please choose another.');
+            return;
+          }
+          boardId = await adapter.generateBoardId(sanitizedUrl);
+        } catch (error) {
+          setError('Error creating board with custom URL. Please try again.');
           return;
         }
-        boardId = await adapter.generateBoardId(sanitizedUrl);
-      } catch (error) {
-        setError('Error creating board with custom URL. Please try again.');
-        return;
+      } else {
+        try {
+          const { adapter } = getStorageAdapter('collaborative');
+          boardId = await adapter.generateBoardId();
+        } catch (error) {
+          setError('Error creating board. Please try again.');
+          return;
+        }
       }
-    } else {
-      try {
-        const { adapter } = getStorageAdapter('collaborative');
-        boardId = await adapter.generateBoardId();
-      } catch (error) {
-        setError('Error creating board. Please try again.');
-        return;
+      
+      const startTime = Date.now();
+      const timeSettings = {
+        description: description.trim(),
+        startTime,
+        endTime: startTime + (totalSeconds * 1000),
+        halfwayPoint: startTime + (totalSeconds * 500),
+        duration: totalSeconds / 60
+      };
+      
+      // Save time settings to the new board
+      const { adapter } = getStorageAdapter('collaborative', boardId);
+      await adapter.saveTimeSettings(timeSettings);
+      
+      logEvent(analytics, 'project_started', {
+        mode: storageMode,
+        has_custom_url: !!customUrl.trim(),
+        duration_minutes: totalSeconds / 60
+      });
+      
+      // Show confirmation with new board URL
+      const newBoardUrl = `${window.location.origin}/${boardId}`;
+      const confirmed = window.confirm(
+        `Your new collaborative board has been created!\n\n` +
+        `Board URL: ${newBoardUrl}\n\n` +
+        `Would you like to open it in a new tab?`
+      );
+      
+      if (confirmed) {
+        window.open(newBoardUrl, '_blank');
       }
+      
+      localStorage.setItem('hasVisitedBefore', 'true');
+      onClose();
+      return;
     }
+    
+    // For local boards, use the existing flow
     const startTime = Date.now();
     logEvent(analytics, 'project_started', {
       mode: storageMode,
@@ -124,7 +165,7 @@ const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect, forceTi
       endTime: startTime + (totalSeconds * 1000),
       halfwayPoint: startTime + (totalSeconds * 500),
       duration: totalSeconds / 60,
-      urlBackhalf: boardId
+      urlBackhalf: null
     });
     localStorage.setItem('hasVisitedBefore', 'true');
     onClose();
