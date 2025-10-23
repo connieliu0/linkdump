@@ -5,6 +5,8 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist',
-    sourcemap: false
-  }
+    sourcemap: false,
+    assetsInclude: ['**/*.mp4', '**/*.webm', '**/*.jpg', '**/*.jpeg', '**/*.png', '**/*.gif']
+  },
+  publicDir: 'public'
 })
