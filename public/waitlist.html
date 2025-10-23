@@ -27,7 +27,7 @@
       position: relative;
       height: 100vh; /* full screen section */
       overflow: hidden;
-      background: #111 url('converted/amb1.jpg') center/cover no-repeat; /* instant fallback */
+      background: #111 url('/output.jpg') center/cover no-repeat; /* instant fallback */
     }
 
     .video-container {
@@ -187,6 +187,12 @@
       opacity: 1;
       transform: translateY(0) rotate(var(--random-rotation, 0deg));
     }
+    
+    /* Signup drop animation */
+    .signup.drop-animation {
+      opacity: 1;
+      transform: translateY(0) rotate(0deg);
+    }
 
     /* Remove CSS-based delays - we'll handle timing in JavaScript */
     .card h2 {
@@ -251,6 +257,9 @@
       z-index: 100;
       position: relative;
       background-color: rgba(255, 255, 255, 0.5);
+      opacity: 0;
+      transform: translateY(-20px) rotate(0deg);
+      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
     }
 
     /* Hide mobile elements on desktop */
@@ -483,8 +492,9 @@
         const topRightCard = document.querySelector('.top-right .card');
         const bottomLeftCard = document.querySelector('.bottom-left .card');
         const bottomRightCard = document.querySelector('.bottom-right .card');
+        const signupCard = document.querySelector('.signup');
         
-        // Flatten all cards into a single array for individual timing
+        // Flatten all cards into a single array for individual timing (excluding signup)
         const allCards = [
           ...topLeftCards,  // Both link dump cards
           topRightCard,
@@ -492,6 +502,7 @@
           bottomRightCard
         ].filter(card => card); // Remove any null values
         
+        // Animate the main cards first
         allCards.forEach((card, index) => {
           // Generate random rotation between -15 and 15 degrees
           const randomRotation = (Math.random() - 0.5) * 30;
@@ -502,6 +513,14 @@
             card.classList.add('drop-animation');
           }, index * 200 + 200); // Start after 200ms, then stagger by 200ms each
         });
+        
+        // Animate the signup card last (after all other cards)
+        if (signupCard) {
+          const signupDelay = allCards.length * 200 + 200 + 1000; // Wait for all cards + 1 second
+          setTimeout(() => {
+            signupCard.classList.add('drop-animation');
+          }, signupDelay);
+        }
       }
       
       // Trigger card animation when page loads
@@ -511,15 +530,7 @@
       
       // Array of video files from the converted folder
       const videos = [
-        'assets/converted/amb1',
-        'assets/converted/amb2', 
-        'assets/converted/amb3',
-        'assets/converted/amb4',
-        'assets/converted/amb5',
-        'assets/converted/amb6',
-        'assets/converted/amb8',
-        'assets/converted/amb9',
-        'assets/converted/amb10'
+        'assets/output'
       ];
       
       let currentVideoIndex = 0;

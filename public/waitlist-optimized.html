@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Link Dump Waitlist</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Schoolbell&display=swap');
+    
+    @font-face {
+      font-family: 'Decompositionphase1';
+      src: url('./assets/fonts/Decompositionphase1.woff2') format('woff2'),
+           url('./assets/fonts/Decompositionphase1.woff') format('woff');
+      font-display: swap;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { font-family: system-ui, -apple-system, sans-serif; }
+
+    .hero {
+      position: relative;
+      height: 100vh;
+      overflow: hidden;
+      background: #111 url('assets/converted/output.jpg') center/cover;
+    }
+
+    .video-container {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+
+    .video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity .8s ease;
+      pointer-events: none;
+    }
+
+    .video-clear {
+      mask: radial-gradient(ellipse at center, black 0%, black 30%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0.3) 70%, transparent 100%);
+    }
+
+    .video-blur {
+      filter: blur(20px);
+      mask: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.3) 30%, rgba(0,0,0,0.7) 50%, black 70%, black 100%);
+    }
+
+    .video-container::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 0%, transparent 40%, rgba(0,0,0,0.2) 70%, rgba(0,0,0,0.6) 100%);
+      z-index: 2;
+    }
+
+    .video-container::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 50%;
+      background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+    }
+
+    .hero.ready .video { opacity: 1; }
+
+    .content {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      grid-template: 1fr 1fr / 1fr 1fr 1fr;
+      gap: 2rem;
+      padding: 1rem;
+      pointer-events: none;
+    }
+
+    .card {
+      backdrop-filter: blur(10px);
+      padding: 1.5rem;
+      margin: 0.5rem;
+      pointer-events: auto;
+      height: 100px;
+      width: 100px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: left;
+      border: 1px solid white;
+      mix-blend-mode: multiply;
+      opacity: 0;
+      transform: translateY(-20px) rotate(0deg);
+      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+    }
+
+    .card.drop-animation {
+      opacity: 1;
+      transform: translateY(0) rotate(var(--rotation, 0deg));
+    }
+
+    .card h2 {
+      font: 2.5rem 'Decompositionphase1';
+      color: white;
+      margin-bottom: 0.5rem;
+    }
+
+    .card p {
+      font: clamp(1rem, 2.5vw, 1.25rem) 'Schoolbell', cursive;
+      color: white;
+      opacity: 0.9;
+      mix-blend-mode: exclusion;
+    }
+
+    .top-left { grid-area: 1 / 1; justify-self: start; align-self: start; }
+    .top-right { grid-area: 1 / 3; justify-self: end; align-self: start; text-align: right; }
+    .bottom-left { grid-area: 2 / 1; justify-self: start; align-self: end; }
+    .bottom-right { grid-area: 2 / 3; justify-self: end; align-self: end; text-align: right; }
+
+    .signup {
+      grid-column: 2;
+      grid-row: 1 / 3;
+      justify-self: center;
+      align-self: center;
+      z-index: 100;
+      position: relative;
+      background-color: rgba(255, 255, 255, 0.5);
+      opacity: 0;
+      transform: translateY(-20px) rotate(0deg);
+      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+      pointer-events: auto;
+    }
+
+    .signup.drop-animation {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .signup p {
+      color: #645a5a;
+      font-family: "Schoolbell", cursive;
+    }
+
+    .signup-form {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-end;
+      z-index: 101;
+      position: relative;
+      margin-bottom: 0;
+    }
+
+    .signup-form input {
+      padding: 0.75rem;
+      border: white;
+      background: rgba(242, 242, 242, 0.5);
+      color: white;
+      backdrop-filter: blur(10px);
+      font-size: 1rem;
+      outline: none;
+      pointer-events: auto;
+      z-index: 10;
+      border: solid 1px white;
+    }
+
+    .signup-form input::placeholder {
+      color: #645a5a94;
+      font-family: "Schoolbell", cursive;
+      font-size: 1rem;
+    }
+
+    .signup-form input:focus {
+      border-color: white;
+      background: rgba(73, 73, 73, 0.6);
+      color: white;
+    }
+
+    .signup-form button {
+      padding: 0.75rem;
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0);
+      color: #645a5a;
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+      font-family: "Schoolbell", cursive;
+      z-index: 102;
+      position: relative;
+      pointer-events: auto;
+    }
+
+    .signup-form button:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .confirmation-message {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #645a5a;
+      text-align: center;
+      font-family: "Schoolbell", cursive;
+      font-size: 1rem;
+      backdrop-filter: blur(10px);
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .mobile-descriptions { display: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .video { display: none; }
+    }
+
+    @media (max-width: 768px) {
+      .content {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        text-align: center;
+      }
+      
+      .top-left {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        grid: none;
+      }
+      
+      .signup {
+        position: static;
+        margin: 0;
+        grid: none;
+      }
+      
+      .mobile-descriptions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+      }
+      
+      .mobile-descriptions p {
+        font: 1rem 'Schoolbell', cursive;
+        color: white;
+        opacity: 0.9;
+      }
+      
+      .top-right, .bottom-left, .bottom-right {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="hero" id="hero">
+    <div class="video-container">
+      <video id="bgvideo" class="video video-clear" autoplay muted playsinline preload="metadata"></video>
+      <video id="bgvideo-blur" class="video video-blur" autoplay muted playsinline preload="metadata"></video>
+    </div>
+
+    <div class="content">
+      <div class="top-left">
+        <div style="display: flex; gap: -40px;">
+          <div class="card"><h2>link</h2></div>
+          <div class="card" style="margin-left: -20px;"><h2>dump</h2></div>
+        </div>
+      </div>
+      
+      <div class="top-right">
+        <div class="card"><p>paste links or import from are.na</p></div>
+      </div>
+      
+      <div class="bottom-left">
+        <div class="card"><p>organize on an ephemeral canvas</p></div>
+      </div>
+      
+      <div class="bottom-right">
+        <div class="card"><p>until it disappears</p></div>
+      </div>
+      
+      <div class="signup">
+        <p>get an email when it's launched</p>
+        <form id="submitForm" class="signup-form">
+          <input type="email" id="emailInput" placeholder="Enter your email" required />
+          <button type="submit">Submit</button>
+        </form>
+        <div id="confirmationMessage" class="confirmation-message" style="display: none;">
+          Submission confirmed!
+        </div>
+      </div>
+      
+      <div class="mobile-descriptions">
+        <p>import links from are.na</p>
+        <p>organize on an ephemeral canvas</p>
+        <p>until it disappears</p>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    (() => {
+      const hero = document.getElementById('hero');
+      const vid = document.getElementById('bgvideo');
+      const vidBlur = document.getElementById('bgvideo-blur');
+      
+      // Simplified animation
+      function animateCards() {
+        const cards = document.querySelectorAll('.card');
+        const signup = document.querySelector('.signup');
+        
+        cards.forEach((card, i) => {
+          card.style.setProperty('--rotation', `${(Math.random() - 0.5) * 30}deg`);
+          setTimeout(() => card.classList.add('drop-animation'), i * 200 + 200);
+        });
+        
+        setTimeout(() => signup?.classList.add('drop-animation'), cards.length * 200 + 1200);
+      }
+      
+      // Simplified video setup
+      function setupVideo() {
+        const videoBase = 'assets/converted/output';
+        
+        [vid, vidBlur].forEach(video => {
+          video.innerHTML = '';
+          const webm = document.createElement('source');
+          webm.src = `${videoBase}.webm`;
+          webm.type = 'video/webm';
+          video.appendChild(webm);
+          
+          const mp4 = document.createElement('source');
+          mp4.src = `${videoBase}.mp4`;
+          mp4.type = 'video/mp4';
+          video.appendChild(mp4);
+          
+          video.poster = `${videoBase}.jpg`;
+          video.loop = true;
+        });
+        
+        hero.style.backgroundImage = `url('${videoBase}.jpg')`;
+        
+        let readyCount = 0;
+        const handleReady = () => {
+          if (++readyCount === 2) {
+            hero.classList.add('ready');
+            vid.play().catch(() => {});
+            vidBlur.play().catch(() => {});
+          }
+        };
+        
+        vid.addEventListener('canplay', handleReady, { once: true });
+        vidBlur.addEventListener('canplay', handleReady, { once: true });
+      }
+      
+      // Intersection observer for performance
+      new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting) {
+          vid.play().catch(() => {});
+          vidBlur.play().catch(() => {});
+        } else {
+          vid.pause();
+          vidBlur.pause();
+        }
+      }, { threshold: 0.01 }).observe(hero);
+      
+      // Form handling
+      document.getElementById('submitForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('emailInput').value;
+        const button = document.querySelector('button');
+        const message = document.getElementById('confirmationMessage');
+        
+        button.textContent = 'Submitting...';
+        button.disabled = true;
+        
+        try {
+          await fetch('https://script.google.com/macros/s/AKfycby4RsYH7iCE-3OgohinJzwqTWrC3CK4S8OZePzd8VfxjC8Eu0m0sdXAFCyr3p6pLbjZ0w/exec', {
+            method: 'POST',
+            body: new FormData(e.target)
+          });
+        } catch (error) {
+          console.error('Error:', error);
+        }
+        
+        message.style.display = 'block';
+        e.target.reset();
+        button.textContent = 'Submit';
+        button.disabled = false;
+        
+        setTimeout(() => message.style.display = 'none', 5000);
+      });
+      
+      // Initialize
+      window.addEventListener('load', () => {
+        setTimeout(animateCards, 300);
+        setupVideo();
+      });
+    })();
+  </script>
+</body>
+</html>
