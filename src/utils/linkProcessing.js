@@ -37,4 +37,31 @@ export const detectImageSource = async (clipboardData) => {
   }
   
   return source;
+};
+
+/**
+ * Normalizes a URL to ensure it has https:// prefix
+ * @param {string} url - The URL to normalize
+ * @returns {string} - The normalized URL with https:// prefix
+ */
+export const normalizeUrl = (url) => {
+  if (!url) return url;
+  
+  // Remove any existing protocol
+  let cleanUrl = url.replace(/^https?:\/\//, '');
+  
+  // Add https:// prefix
+  return `https://${cleanUrl}`;
+};
+
+/**
+ * Creates a clean display URL by removing https:// prefix
+ * @param {string} url - The URL to clean for display
+ * @returns {string} - The clean display URL
+ */
+export const getDisplayUrl = (url) => {
+  if (!url) return url;
+  
+  // Remove https:// prefix for display
+  return url.replace(/^https:\/\//, '');
 }; 

@@ -1,22 +1,21 @@
 <!doctype html>
-
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Link Dump Waitlist</title>
   <style>
-      @import url('https://fonts.googleapis.com/css2?family=Mansalva&family=Schoolbell&display=swap');
-    /* Font import */
+    @import url('https://fonts.googleapis.com/css2?family=Mansalva&family=Schoolbell&display=swap');
+    
     @font-face {
-    font-family: 'Decompositionphase1';
-    src: url('./assets/fonts/Decompositionphase1.woff2') format('woff2'),
-        url('./assets/fonts/Decompositionphase1.woff') format('woff'),
-        url('./assets/fonts/Decompositionphase1.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
+      font-family: 'Decompositionphase1';
+      src: url('./assets/fonts/Decompositionphase1.woff2') format('woff2'),
+           url('./assets/fonts/Decompositionphase1.woff') format('woff'),
+           url('./assets/fonts/Decompositionphase1.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
 
     /* Page reset */
     html, body { height: 100%; margin: 0; }
@@ -25,9 +24,9 @@
     /* Container to hold video and content */
     .hero {
       position: relative;
-      height: 100vh; /* full screen section */
+      height: 100vh;
       overflow: hidden;
-      background: #111 url('/output.jpg') center/cover no-repeat; /* instant fallback */
+      background: #111 url('/output.jpg') center/cover no-repeat;
     }
 
     .video-container {
@@ -101,10 +100,12 @@
         black 100%
       );
     }
+
     .group{
       flex-direction: row;
       display: flex;
     }
+
     /* Shadow overlay */
     .video-container::after {
       content: '';
@@ -115,7 +116,6 @@
       height: 50%;
       background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
       pointer-events: none;
-      /* z-index: 5; */
     }
 
     /* Vignette overlay for darker edges, brighter center */
@@ -162,8 +162,8 @@
       height: 100vh;
       align-items: center;
       justify-items: center;
-    
     }
+
     .card {
       backdrop-filter: blur(10px);
       padding: 1.5rem;
@@ -187,14 +187,7 @@
       opacity: 1;
       transform: translateY(0) rotate(var(--random-rotation, 0deg));
     }
-    
-    /* Signup drop animation */
-    .signup.drop-animation {
-      opacity: 1;
-      transform: translateY(0) rotate(0deg);
-    }
 
-    /* Remove CSS-based delays - we'll handle timing in JavaScript */
     .card h2 {
       font-size: 2.5rem;
       margin: 0 0 .5rem;
@@ -202,6 +195,7 @@
       color: white;
       font-weight: 400;
     }
+
     .card p {
       font-size: clamp(1rem, 2.5vw, 1.25rem);
       opacity: .9;
@@ -218,8 +212,8 @@
       align-self: start;
       margin-left: 1rem;
       margin-top: 1rem;
-
     }
+
     .top-right {
       grid-column: 3;
       grid-row: 1;
@@ -228,8 +222,8 @@
       margin-right: 1rem;
       margin-top: 1rem;
       text-align: right;
-
     }
+
     .bottom-left {
       grid-column: 1;
       grid-row: 2;
@@ -239,6 +233,7 @@
       margin-bottom: 1rem;
       text-align: left;
     }
+
     .bottom-right {
       grid-column: 3;
       grid-row: 2;
@@ -247,8 +242,8 @@
       margin-right: 1rem;
       margin-bottom: 1rem;
       text-align: right;
-
     }
+
     .signup {
       grid-column: 2;
       grid-row: 1 / 3;
@@ -257,9 +252,6 @@
       z-index: 100;
       position: relative;
       background-color: rgba(255, 255, 255, 0.5);
-      opacity: 0;
-      transform: translateY(-20px) rotate(0deg);
-      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
     }
 
     /* Hide mobile elements on desktop */
@@ -273,14 +265,13 @@
       align-items: flex-end;
       z-index: 101;
       position: relative;
-      margin-bottom: 0;
-
     }
+
     .signup p{
       color: #645a5a;
       font-family: "Schoolbell", cursive;
-
     }
+
     .signup-form input {
       padding: 0.75rem;
       border: white;
@@ -293,16 +284,19 @@
       z-index: 10;
       border: solid 1px white;
     }
+
     .signup-form input::placeholder {
       color: #645a5a94;
       font-family: "Schoolbell", cursive;
       font-size: 1rem;
     }
+
     .signup-form input:focus {
       border-color: white;
       background: rgba(73, 73, 73, 0.6);
       color: white;
     }
+
     .signup-form button {
       padding: 0.75rem;
       background: rgba(255, 255, 255, 0.5);
@@ -315,24 +309,43 @@
       position: relative;
       pointer-events: auto;
     }
+
     .signup-form button:hover {
       background: rgba(255, 255, 255, 0.3);
     }
-    
-    /* Link form styling */
+
+    .confirmation-message {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      text-align: center;
+      font-family: "Schoolbell", cursive;
+      font-size: 1rem;
+      backdrop-filter: blur(10px);
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Link form styles */
     .link-form {
       display: flex;
       flex-direction: row;
       align-items: flex-end;
       z-index: 101;
       position: relative;
-      border-top: 1px solid #645a5a94;
+      margin-top: 1rem;
     }
-    
+
     .link-form input {
       padding: 0.75rem;
       border: white;
-      background: rgba(242, 242, 242, 0.25);
+      background: rgba(242, 242, 242, 0.5);
       color: white;
       backdrop-filter: blur(10px);
       font-size: 1rem;
@@ -341,19 +354,19 @@
       z-index: 10;
       border: solid 1px white;
     }
-    
+
     .link-form input::placeholder {
       color: #645a5a94;
       font-family: "Schoolbell", cursive;
       font-size: 1rem;
     }
-    
+
     .link-form input:focus {
       border-color: white;
       background: rgba(73, 73, 73, 0.6);
       color: white;
     }
-    
+
     .link-form button {
       padding: 0.75rem;
       background: rgba(255, 255, 255, 0.5);
@@ -366,116 +379,65 @@
       position: relative;
       pointer-events: auto;
     }
-    
+
     .link-form button:hover {
       background: rgba(255, 255, 255, 0.3);
     }
-    
-    /* Link board styling */
+
+    /* Link board styles */
     .link-board {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      z-index: 10;
       pointer-events: none;
+      z-index: 10;
     }
-    
-    /* Position link cards in safe areas only */
+
     .link-card {
-      position: absolute;
-      backdrop-filter: blur(10px);
-      padding: 1rem;
-      pointer-events: auto;
-      border: 1px solid white;
-      mix-blend-mode: multiply;
-      opacity: 0;
-      transform: translateY(-20px) rotate(var(--random-rotation, 0deg));
-      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
-      max-width: 200px;
-      background: rgba(255, 255, 255, 0.1);
-      height: auto;
-      min-height: auto;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      align-items: flex-start;
+        position: absolute;
+    backdrop-filter: blur(10px);
+    padding: 1rem;
+    pointer-events: auto;
+    border: 1px solid white;
+    mix-blend-mode: multiply;
+    opacity: 0;
+    transform: translateY(-20px) rotate(var(--random-rotation, 0deg));
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+    max-width: 200px;
+    background: rgba(255, 255, 255, 0.1);
+    height: auto;
+    min-height: auto;
+    display: flex
+;   color:white;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    z-index: 1;
     }
     
-    /* Safe positioning - avoid ALL existing content areas */
-    .link-card:nth-child(1) {
-      top: 20px;
-      left: 25%;
-      transform: translateX(-50%) translateY(-20px) rotate(var(--random-rotation, 0deg));
+    /* Hover effect to separate overlapping cards */
+    .link-card:hover {
+        z-index: 10;
+        transform: translateY(-10px) rotate(0deg) scale(1.05);
+        transition: transform 0.3s ease-out, z-index 0s;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
     }
     
-    .link-card:nth-child(2) {
-      top: 20px;
-      left: 75%;
-      transform: translateX(-50%) translateY(-20px) rotate(var(--random-rotation, 0deg));
+    /* Hover effect for nearby cards when one is hovered */
+    .link-card:hover ~ .link-card,
+    .link-card:hover + .link-card {
+        transform: translateY(5px) rotate(var(--random-rotation, 0deg)) scale(0.95);
+        transition: transform 0.3s ease-out;
     }
     
-    .link-card:nth-child(3) {
-      bottom: 20px;
-      left: 25%;
-      transform: translateX(-50%) translateY(-20px) rotate(var(--random-rotation, 0deg));
+    /* Reset animation for cards returning to original position */
+    .link-card.resetting {
+        transition: transform 0.5s ease-in-out;
     }
-    
-    .link-card:nth-child(4) {
-      bottom: 20px;
-      left: 75%;
-      transform: translateX(-50%) translateY(-20px) rotate(var(--random-rotation, 0deg));
-    }
-    
-    .link-card:nth-child(5) {
-      top: 25%;
-      left: 20px;
-      transform: translateY(-50%) translateY(-20px) rotate(var(--random-rotation, 0deg));
-    }
-    
-    .link-card:nth-child(6) {
-      top: 25%;
-      right: 20px;
-      transform: translateY(-50%) translateY(-20px) rotate(var(--random-rotation, 0deg));
-    }
-    
-    .link-card:nth-child(7) {
-      top: 75%;
-      left: 20px;
-      transform: translateY(-50%) translateY(-20px) rotate(var(--random-rotation, 0deg));
-    }
-    
-    .link-card:nth-child(8) {
-      top: 75%;
-      right: 20px;
-      transform: translateY(-50%) translateY(-20px) rotate(var(--random-rotation, 0deg));
-    }
-    
-    /* Additional cards - spread them out more */
-    .link-card:nth-child(n+9) {
-      top: 15%;
-      left: 15%;
-      transform: translateY(-20px) rotate(var(--random-rotation, 0deg));
-    }
-    
-    .link-card:nth-child(n+10) {
-      top: 15%;
-      left: 85%;
-      transform: translateY(-20px) rotate(var(--random-rotation, 0deg));
-    }
-    
-    .link-card:nth-child(n+11) {
-      top: 85%;
-      left: 15%;
-      transform: translateY(-20px) rotate(var(--random-rotation, 0deg));
-    }
-    
-    .link-card:nth-child(n+12) {
-      top: 85%;
-      left: 85%;
-      transform: translateY(-20px) rotate(var(--random-rotation, 0deg));
-    }
+  
+    /* Dynamic positioning handled by JavaScript collision detection */
     
     /* Hide link board on mobile */
     @media (max-width: 768px) {
@@ -498,33 +460,15 @@
     }
     
     .link-card small {
-      color: rgba(255, 255, 255, 0.7);
-      font-family: "Schoolbell", cursive;
-      font-size: 0.8rem;
-      display: block;
-      margin-top: 0.5rem;
+      color: white;
+      font-size: 0.7rem;
+      margin-top: 4px;
     }
-    .confirmation-message {
-      margin-top: 1rem;
-      padding: 0.75rem;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      color: #645a5a;
-      text-align: center;
-      font-family: "Schoolbell", cursive;
-      font-size: 1rem;
-      backdrop-filter: blur(10px);
-      animation: fadeIn 0.5s ease-in;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+
     /* Respect user's reduced motion preference: hide video and just use the poster/fallback */
     @media (prefers-reduced-motion: reduce) {
       #bgvideo { display: none; }
     }
-
 
     /* Mobile responsive design */
     @media (max-width: 768px) {
@@ -678,398 +622,516 @@
   </section>
 
   <script>
-    (function () {
+    // URL processing functions
+    function normalizeUrl(url) {
+      if (!url) return url;
+      
+      // Remove any existing protocol
+      let cleanUrl = url.replace(/^https?:\/\//, '');
+      
+      // Add https:// prefix
+      return `https://${cleanUrl}`;
+    }
+
+    function getDisplayUrl(url) {
+      if (!url) return url;
+      
+      // Remove https:// prefix for display
+      return url.replace(/^https:\/\//, '');
+    }
+
+    (() => {
       const hero = document.getElementById('hero');
-      const vid  = document.getElementById('bgvideo');
+      const vid = document.getElementById('bgvideo');
       const vidBlur = document.getElementById('bgvideo-blur');
       
-      // Card drop animation function
+      // Optimized card animation
       function animateCards() {
-        // Get all cards in the order they should appear
-        const topLeftCards = document.querySelectorAll('.top-left .card');
-        const topRightCard = document.querySelector('.top-right .card');
-        const bottomLeftCard = document.querySelector('.bottom-left .card');
-        const bottomRightCard = document.querySelector('.bottom-right .card');
-        const signupCard = document.querySelector('.signup');
+        const cards = document.querySelectorAll('.card');
+        const signup = document.querySelector('.signup');
         
-        // Flatten all cards into a single array for individual timing (excluding signup)
-        const allCards = [
-          ...topLeftCards,  // Both link dump cards
-          topRightCard,
-          bottomLeftCard,
-          bottomRightCard
-        ].filter(card => card); // Remove any null values
-        
-        // Animate the main cards first
-        allCards.forEach((card, index) => {
-          // Generate random rotation between -15 and 15 degrees
-          const randomRotation = (Math.random() - 0.5) * 30;
-          card.style.setProperty('--random-rotation', `${randomRotation}deg`);
-          
-          // Each card falls individually with 200ms between each
-          setTimeout(() => {
-            card.classList.add('drop-animation');
-          }, index * 200 + 200); // Start after 200ms, then stagger by 200ms each
+        cards.forEach((card, i) => {
+          card.style.setProperty('--random-rotation', `${(Math.random() - 0.5) * 30}deg`);
+          setTimeout(() => card.classList.add('drop-animation'), i * 200 + 200);
         });
         
-        // Animate the signup card last (after all other cards)
-        if (signupCard) {
-          const signupDelay = allCards.length * 200 + 200 + 250; // Wait for all cards + 0.25 seconds
-          setTimeout(() => {
-            signupCard.classList.add('drop-animation');
-          }, signupDelay);
-        }
+        setTimeout(() => signup?.classList.add('drop-animation'), cards.length * 200 + 1200);
       }
       
-      // Trigger card animation when page loads
-      window.addEventListener('load', () => {
-        setTimeout(animateCards, 300); // Wait 300ms after page load
-      });
-      
-      // Array of video files from the converted folder
-      const videos = [
-        'assets/output'
-      ];
-      
-      let currentVideoIndex = 0;
-
-      // Function to set video source and update poster
-      function setVideoSource(videoBase) {
-        // Clear both videos
-        vid.innerHTML = '';
-        vidBlur.innerHTML = '';
+      // Optimized video setup
+      function setupVideo() {
+        const videoBase = 'assets/output';
         
-        // Add WebM source (preferred for better compression)
-        const webmSource = document.createElement('source');
-        webmSource.src = `${videoBase}.webm`;
-        webmSource.type = 'video/webm';
-        vid.appendChild(webmSource.cloneNode(true));
-        vidBlur.appendChild(webmSource.cloneNode(true));
+        [vid, vidBlur].forEach(video => {
+          video.innerHTML = '';
+          const webm = document.createElement('source');
+          webm.src = `${videoBase}.webm`;
+          webm.type = 'video/webm';
+          video.appendChild(webm);
+          
+          const mp4 = document.createElement('source');
+          mp4.src = `${videoBase}.mp4`;
+          mp4.type = 'video/mp4';
+          video.appendChild(mp4);
+          
+          video.poster = `${videoBase}.jpg`;
+          video.loop = true;
+        });
         
-        // Add MP4 source (fallback)
-        const mp4Source = document.createElement('source');
-        mp4Source.src = `${videoBase}.mp4`;
-        mp4Source.type = 'video/mp4';
-        vid.appendChild(mp4Source.cloneNode(true));
-        vidBlur.appendChild(mp4Source.cloneNode(true));
-        
-        // Update poster to match current video
-        vid.poster = `${videoBase}.jpg`;
-        vidBlur.poster = `${videoBase}.jpg`;
         hero.style.backgroundImage = `url('${videoBase}.jpg')`;
         
-        // Ensure no looping
-        vid.loop = false;
-        vidBlur.loop = false;
-        
-        // Preload the video for smoother transitions
-        vid.preload = 'auto';
-        vidBlur.preload = 'auto';
-        
-        // Load the new videos
-        vid.load();
-        vidBlur.load();
-      }
-
-      // Simple function to play next video
-      function playNextVideo() {
-        console.log('Playing next video, current index:', currentVideoIndex);
-        
-        currentVideoIndex = (currentVideoIndex + 1) % videos.length;
-        console.log('Next video index:', currentVideoIndex);
-        
-        setVideoSource(videos[currentVideoIndex]);
-        
-        // Wait for both videos to be ready before playing
         let readyCount = 0;
-        const handleCanPlay = () => {
-          readyCount++;
-          if (readyCount === 2) {
-            vid.play().catch(() => {
-              console.log('Autoplay blocked for clear video:', videos[currentVideoIndex]);
-            });
-            vidBlur.play().catch(() => {
-              console.log('Autoplay blocked for blur video:', videos[currentVideoIndex]);
-            });
+        const handleReady = () => {
+          if (++readyCount === 2) {
+            hero.classList.add('ready');
+            vid.play().catch(() => {});
+            vidBlur.play().catch(() => {});
           }
         };
         
-        vid.addEventListener('canplay', handleCanPlay, { once: true });
-        vidBlur.addEventListener('canplay', handleCanPlay, { once: true });
+        vid.addEventListener('canplay', handleReady, { once: true });
+        vidBlur.addEventListener('canplay', handleReady, { once: true });
       }
-
-      // Initialize with first video
-      setVideoSource(videos[0]);
       
-      // Fade in once both videos can play (avoids a flash of black frame)
-      let initReadyCount = 0;
-      const handleInitCanPlay = () => {
-        initReadyCount++;
-        if (initReadyCount === 2) {
-          hero.classList.add('ready');
-          
-          // Start both videos
-          vid.play().catch(() => {
-            console.log('Initial autoplay blocked for clear video');
-          });
-          vidBlur.play().catch(() => {
-            console.log('Initial autoplay blocked for blur video');
-          });
+      // Intersection observer for performance
+      new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting) {
+          vid.play().catch(() => {});
+          vidBlur.play().catch(() => {});
+        } else {
+          vid.pause();
+          vidBlur.pause();
         }
-      };
+      }, { threshold: 0.01 }).observe(hero);
       
-      vid.addEventListener('canplay', handleInitCanPlay, { once: true });
-      vidBlur.addEventListener('canplay', handleInitCanPlay, { once: true });
-      
-      // Listen for when ANY video ends to play the next one
-      vid.addEventListener('ended', () => {
-        console.log('Video ended, moving to next');
-        playNextVideo();
-      });
-
-      // Pause the background videos when offscreen (battery-friendly)
-      const io = new IntersectionObserver((entries) => {
-        entries.forEach(e => {
-          if (e.isIntersecting) { 
-            vid.play().catch(()=>{}); 
-            vidBlur.play().catch(()=>{}); 
-          } else { 
-            vid.pause(); 
-            vidBlur.pause(); 
-            if (videoTimer) {
-              clearTimeout(videoTimer);
-            }
-          }
-        });
-      }, { threshold: 0.01 });
-      io.observe(hero);
-    })();
-
-    // Email signup form submission
-    document.getElementById('submitForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      var email = document.getElementById('emailInput').value;
-      var button = document.querySelector('#submitForm button');
-      var confirmationMessage = document.getElementById('confirmationMessage');
-      
-      // Show loading state
-      button.textContent = 'Submitting...';
-      button.disabled = true;
-      
-      // Try different approaches for Google Apps Script
-      const formData = new FormData();
-      formData.append('email', email);
-      
-      fetch('https://script.google.com/macros/s/AKfycby4RsYH7iCE-3OgohinJzwqTWrC3CK4S8OZePzd8VfxjC8Eu0m0sdXAFCyr3p6pLbjZ0w/exec', {
-        method: 'POST',
-        body: formData
-      }).then(() => {
-        // Show success message (with no-cors mode, we assume success)
-        confirmationMessage.style.display = 'block';
-        document.getElementById('emailInput').value = '';
+      // Optimized form handling
+      document.getElementById('submitForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('emailInput').value;
+        const button = document.querySelector('#submitForm button');
+        const message = document.getElementById('confirmationMessage');
         
-        // Reset button
+        button.textContent = 'Submitting...';
+        button.disabled = true;
+        
+        try {
+          await fetch('https://script.google.com/macros/s/AKfycby4RsYH7iCE-3OgohinJzwqTWrC3CK4S8OZePzd8VfxjC8Eu0m0sdXAFCyr3p6pLbjZ0w/exec', {
+            method: 'POST',
+            body: new FormData(e.target)
+          });
+        } catch (error) {
+          console.error('Error:', error);
+        }
+        
+        message.style.display = 'block';
+        e.target.reset();
         button.textContent = 'Submit';
         button.disabled = false;
         
-        // Hide confirmation message after 5 seconds
-        setTimeout(() => {
-          confirmationMessage.style.display = 'none';
-        }, 5000);
-        
-      }).catch(error => {
-        console.error('Error:', error);
-        
-        // Even if there's an error, show success since the request was sent
-        confirmationMessage.style.display = 'block';
-        document.getElementById('emailInput').value = '';
-        
-        // Reset button
-        button.textContent = 'Submit';
-        button.disabled = false;
-        
-        // Hide confirmation message after 5 seconds
-        setTimeout(() => {
-          confirmationMessage.style.display = 'none';
-        }, 5000);
+        setTimeout(() => message.style.display = 'none', 5000);
       });
-    });
 
-    // Link form submission
-    document.getElementById('linkForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      var link = document.getElementById('linkInput').value;
-      var button = document.querySelector('#linkForm button');
-      var confirmationMessage = document.getElementById('linkConfirmationMessage');
-      
-      if (!link) return; // Don't submit empty links
-      
-      // Show loading state
-      button.textContent = 'Submitting...';
-      button.disabled = true;
-      
-      console.log('Submitting link:', link);
-      
-      // Try FormData approach first (more compatible with Google Apps Script)
-      const formData = new FormData();
-      formData.append('link', link);
-      
-      fetch('https://script.google.com/macros/s/AKfycbyTX9-mYAnLX_UaGAmtuoCAC23dTgHAiaQNYtnQwm2qIp75A45OMqGw9KeudyZfe0_L/exec', {
-        method: 'POST',
-        body: formData
-      }).then(response => {
-        console.log('Link submission response:', response.status, response.ok);
-        return response.text();
-      }).then(text => {
-        console.log('Link submission response text:', text);
-      }).then(() => {
-        // Show success message
-        confirmationMessage.style.display = 'block';
-        document.getElementById('linkInput').value = '';
+      // Link form submission
+      document.getElementById('linkForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const link = document.getElementById('linkInput').value;
+        const button = document.querySelector('#linkForm button');
+        const message = document.getElementById('linkConfirmationMessage');
         
-        // Reset button
+        if (!link) return;
+        
+        button.textContent = 'Submitting...';
+        button.disabled = true;
+        
+        try {
+          const formData = new FormData();
+          formData.append('link', link);
+          
+          await fetch('https://script.google.com/macros/s/AKfycbyTX9-mYAnLX_UaGAmtuoCAC23dTgHAiaQNYtnQwm2qIp75A45OMqGw9KeudyZfe0_L/exec', {
+            method: 'POST',
+            body: formData
+          });
+        } catch (error) {
+          console.error('Error:', error);
+        }
+        
+        message.style.display = 'block';
+        e.target.reset();
         button.textContent = 'Submit Link';
         button.disabled = false;
-        
-        // Hide confirmation message after 5 seconds
-        setTimeout(() => {
-          confirmationMessage.style.display = 'none';
-        }, 5000);
         
         // Clear cache and refresh links after submission
         localStorage.removeItem('linkDumpLinks');
         localStorage.removeItem('linkDumpCacheTime');
-        fetchLinks();
         
-      }).catch(error => {
-        console.error('Error:', error);
+        // Mark user as active and trigger immediate check
+        trackUserActivity();
+        fetchLinks(true, false); // Force refresh to get the new card immediately, not initial load
         
-        // Even if there's an error, show success since the request was sent
-        confirmationMessage.style.display = 'block';
-        document.getElementById('linkInput').value = '';
-        
-        // Reset button
-        button.textContent = 'Submit Link';
-        button.disabled = false;
-        
-        // Hide confirmation message after 5 seconds
-        setTimeout(() => {
-          confirmationMessage.style.display = 'none';
-        }, 5000);
+        setTimeout(() => message.style.display = 'none', 5000);
       });
-    });
 
-    // Function to fetch links from Google Apps Script
-    function fetchLinks() {
-      console.log('fetchLinks called');
-      // Check local cache first
-      const cachedLinks = localStorage.getItem('linkDumpLinks');
-      const cacheTime = localStorage.getItem('linkDumpCacheTime');
-      const now = Date.now();
+      // Global tracking of processed links
+      let processedLinks = new Set();
+      let lastFetchTime = 0;
+      let isUserActive = false;
+      let userActivityTimer = null;
       
-      console.log('Cache check - cachedLinks:', cachedLinks, 'cacheTime:', cacheTime);
+      // Card hover and reset functionality
+      let cardOriginalPositions = new Map();
+      let resetTimer = null;
+
+      // Load processed links from localStorage on page load
+      function loadProcessedLinks() {
+        const saved = localStorage.getItem('processedLinks');
+        if (saved) {
+          const linksArray = JSON.parse(saved);
+          processedLinks = new Set(linksArray);
+          console.log('Loaded', processedLinks.size, 'previously processed links');
+        }
+      }
+
+      // Save processed links to localStorage
+      function saveProcessedLinks() {
+        const linksArray = Array.from(processedLinks);
+        localStorage.setItem('processedLinks', JSON.stringify(linksArray));
+      }
+
+      // Track user activity
+      function trackUserActivity() {
+        isUserActive = true;
+        clearTimeout(userActivityTimer);
+        userActivityTimer = setTimeout(() => {
+          isUserActive = false;
+        }, 10000); // Consider user inactive after 10 seconds
+      }
+
+      // Add event listeners for user activity
+      document.addEventListener('click', trackUserActivity);
+      document.addEventListener('keydown', trackUserActivity);
+      document.addEventListener('scroll', trackUserActivity);
       
-      // Use cache if it's less than 1 minute old
-      if (cachedLinks && cacheTime && (now - parseInt(cacheTime)) < 60000) {
-        console.log('Using cached data');
-        displayLinks(JSON.parse(cachedLinks));
-        return;
+      // Store original position of a card
+      function storeOriginalPosition(card) {
+        const rect = card.getBoundingClientRect();
+        const linkBoard = document.getElementById('linkBoard');
+        const boardRect = linkBoard.getBoundingClientRect();
+        
+        cardOriginalPositions.set(card, {
+          left: card.style.left,
+          top: card.style.top,
+          transform: card.style.transform,
+          rotation: card.style.getProperty('--random-rotation')
+        });
       }
       
-      console.log('Fetching fresh data from API');
-      fetch('https://script.google.com/macros/s/AKfycbyTX9-mYAnLX_UaGAmtuoCAC23dTgHAiaQNYtnQwm2qIp75A45OMqGw9KeudyZfe0_L/exec')
-        .then(response => {
-          console.log('API response status:', response.status);
-          console.log('API response ok:', response.ok);
-          return response.json();
-        })
-        .then(data => {
-          console.log('API data received:', data);
-          console.log('Data length:', data.length);
-          console.log('First row:', data[0]);
-          if (data.length > 1) {
-            console.log('Second row (first data):', data[1]);
-          }
-          // Cache the data
-          localStorage.setItem('linkDumpLinks', JSON.stringify(data));
-          localStorage.setItem('linkDumpCacheTime', now.toString());
-          
-          displayLinks(data);
-        })
-        .catch(error => {
-          console.error('Error fetching links:', error);
-          // Try to use cached data even if it's old
-          if (cachedLinks) {
-            console.log('Using old cached data due to error');
-            displayLinks(JSON.parse(cachedLinks));
+      // Reset all cards to their original positions
+      function resetCardsToOriginalPositions() {
+        const cards = document.querySelectorAll('.link-card');
+        cards.forEach(card => {
+          const originalPos = cardOriginalPositions.get(card);
+          if (originalPos) {
+            card.classList.add('resetting');
+            card.style.left = originalPos.left;
+            card.style.top = originalPos.top;
+            card.style.transform = originalPos.transform;
+            card.style.setProperty('--random-rotation', originalPos.rotation);
+            
+            // Remove resetting class after animation
+            setTimeout(() => {
+              card.classList.remove('resetting');
+            }, 500);
           }
         });
-    }
-
-    // Function to display links as cards
-    function displayLinks(data) {
-      console.log('displayLinks called with data:', data);
-      const linkBoard = document.getElementById('linkBoard');
-      
-      // Skip header row and reverse to show newest first
-      const links = data.slice(1).reverse();
-      console.log('Processed links:', links);
-      console.log('Number of links to display:', links.length);
-      
-      if (links.length === 0) {
-        console.log('No links to display - sheet only has headers');
-        return;
       }
       
-      // Get existing cards to avoid re-animating
-      const existingCards = linkBoard.querySelectorAll('.link-card');
-      const existingLinks = Array.from(existingCards).map(card => {
-        const linkElement = card.querySelector('a');
-        return linkElement ? linkElement.href : null;
-      });
-      
-      links.forEach((row, index) => {
-        console.log('Processing row:', row, 'index:', index);
-        if (row.length >= 2 && row[1]) { // Make sure we have a link
-          const linkUrl = row[1];
+      // Handle card hover with separation effect
+      function setupCardHoverEffects() {
+        const cards = document.querySelectorAll('.link-card');
+        
+        cards.forEach(card => {
+          // Store original position when card is created
+          storeOriginalPosition(card);
           
-          // Check if this link already exists
-          if (existingLinks.includes(linkUrl)) {
-            console.log('Link already exists, skipping:', linkUrl);
-            return;
-          }
+          card.addEventListener('mouseenter', () => {
+            // Clear any existing reset timer
+            if (resetTimer) {
+              clearTimeout(resetTimer);
+              resetTimer = null;
+            }
+            
+            // Separate overlapping cards
+            const allCards = document.querySelectorAll('.link-card');
+            const cardRect = card.getBoundingClientRect();
+            
+            allCards.forEach(otherCard => {
+              if (otherCard === card) return;
+              
+              const otherRect = otherCard.getBoundingClientRect();
+              
+              // Check if cards are overlapping
+              const isOverlapping = !(cardRect.right < otherRect.left || 
+                                    cardRect.left > otherRect.right || 
+                                    cardRect.bottom < otherRect.top || 
+                                    cardRect.top > otherRect.bottom);
+              
+              if (isOverlapping) {
+                // Move the other card away
+                const dx = otherRect.left - cardRect.left;
+                const dy = otherRect.top - cardRect.top;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < 150) { // Only move if close enough
+                  const angle = Math.atan2(dy, dx);
+                  const newX = otherRect.left + Math.cos(angle) * 100;
+                  const newY = otherRect.top + Math.sin(angle) * 100;
+                  
+                  otherCard.style.transform = `translate(${newX - otherRect.left}px, ${newY - otherRect.top}px) rotate(var(--random-rotation, 0deg))`;
+                  otherCard.style.transition = 'transform 0.3s ease-out';
+                }
+              }
+            });
+          });
           
-          console.log('Creating new card for:', linkUrl);
-          const linkCard = document.createElement('div');
-          linkCard.className = 'link-card';
-          
-          // Generate random rotation
-          const randomRotation = (Math.random() - 0.5) * 30;
-          linkCard.style.setProperty('--random-rotation', `${randomRotation}deg`);
-          
-          // Create link content
-          const timestamp = row[0] ? new Date(row[0]).toLocaleString() : 'Unknown time';
-          
-          linkCard.innerHTML = `
-            <a href="${linkUrl}" target="_blank">${linkUrl}</a>
-            <small>${timestamp}</small>
-          `;
-          
-          linkBoard.appendChild(linkCard);
-          
-          // Animate the card drop (only for new cards)
-          setTimeout(() => {
-            linkCard.classList.add('drop-animation');
-          }, index * 100 + 200); // Stagger the animations
-        } else {
-          console.log('Skipping row - invalid data:', row);
-        }
-      });
-    }
+          card.addEventListener('mouseleave', () => {
+            // Start 5-second timer to reset cards
+            resetTimer = setTimeout(() => {
+              resetCardsToOriginalPositions();
+            }, 5000);
+          });
+        });
+      }
 
-    // Fetch links immediately and then every 30 seconds
-    fetchLinks();
-    setInterval(fetchLinks, 30000);
+      // Function to fetch links from Google Apps Script
+      function fetchLinks(forceRefresh = false, isInitialLoad = false) {
+        const cachedLinks = localStorage.getItem('linkDumpLinks');
+        const cacheTime = localStorage.getItem('linkDumpCacheTime');
+        const now = Date.now();
+        
+        // Use cache if it's less than 30 seconds old and not forcing refresh
+        // This ensures we get fresh data more frequently while still using cache for performance
+        if (!forceRefresh && cachedLinks && cacheTime && (now - parseInt(cacheTime)) < 30000) {
+          displayLinks(JSON.parse(cachedLinks), isInitialLoad);
+          return;
+        }
+        
+        fetch('https://script.google.com/macros/s/AKfycbyTX9-mYAnLX_UaGAmtuoCAC23dTgHAiaQNYtnQwm2qIp75A45OMqGw9KeudyZfe0_L/exec')
+          .then(response => response.json())
+          .then(data => {
+            // Cache the data
+            localStorage.setItem('linkDumpLinks', JSON.stringify(data));
+            localStorage.setItem('linkDumpCacheTime', now.toString());
+            displayLinks(data, isInitialLoad);
+          })
+          .catch(error => {
+            console.error('Error fetching links:', error);
+            // Try to use cached data even if it's old
+            if (cachedLinks) {
+              displayLinks(JSON.parse(cachedLinks), isInitialLoad);
+            }
+          });
+      }
+
+      // Function to calculate safe positions that avoid existing UI elements
+      function calculateSafePositions(linkBoard, forbiddenZones) {
+        const boardRect = linkBoard.getBoundingClientRect();
+        const safePositions = [];
+        const cardWidth = 200; // Approximate card width
+        const cardHeight = 100; // Approximate card height
+        const margin = 50; // Minimum distance from edges and other elements
+
+        // Generate more potential positions for better distribution
+        for (let i = 0; i < 50; i++) {
+          const x = Math.random() * (boardRect.width - cardWidth - margin * 2) + margin;
+          const y = Math.random() * (boardRect.height - cardHeight - margin * 2) + margin;
+          
+          // Check if position conflicts with forbidden zones
+          const isSafe = forbiddenZones.every(zone => {
+            if (!zone) return true; // Skip if zone doesn't exist
+            
+            const zoneRect = zone.getBoundingClientRect();
+            const zoneLeft = zoneRect.left - boardRect.left;
+            const zoneTop = zoneRect.top - boardRect.top;
+            const zoneRight = zoneLeft + zoneRect.width;
+            const zoneBottom = zoneTop + zoneRect.height;
+            
+            // Add buffer around the zone
+            const buffer = 80;
+            const expandedLeft = zoneLeft - buffer;
+            const expandedTop = zoneTop - buffer;
+            const expandedRight = zoneRight + buffer;
+            const expandedBottom = zoneBottom + buffer;
+            
+            // Check if card would overlap with expanded zone
+            const cardRight = x + cardWidth;
+            const cardBottom = y + cardHeight;
+            
+            return !(x < expandedRight && cardRight > expandedLeft && 
+                    y < expandedBottom && cardBottom > expandedTop);
+          });
+
+          if (isSafe) {
+            safePositions.push({ x, y });
+          }
+        }
+
+        // If we don't have enough safe positions, add some fallback positions
+        if (safePositions.length < 10) {
+          const fallbackPositions = [
+            { x: boardRect.width * 0.1, y: boardRect.height * 0.1 },
+            { x: boardRect.width * 0.9, y: boardRect.height * 0.1 },
+            { x: boardRect.width * 0.1, y: boardRect.height * 0.9 },
+            { x: boardRect.width * 0.9, y: boardRect.height * 0.9 },
+            { x: boardRect.width * 0.3, y: boardRect.height * 0.3 },
+            { x: boardRect.width * 0.7, y: boardRect.height * 0.3 },
+            { x: boardRect.width * 0.3, y: boardRect.height * 0.7 },
+            { x: boardRect.width * 0.7, y: boardRect.height * 0.7 }
+          ];
+          
+          safePositions.push(...fallbackPositions);
+        }
+
+        return safePositions;
+      }
+
+      // Function to display links as cards
+      function displayLinks(data, isInitialLoad = false) {
+        const linkBoard = document.getElementById('linkBoard');
+        const forbiddenZones = [
+          document.querySelector('.top-left'),
+          document.querySelector('.top-right'),
+          document.querySelector('.bottom-left'),
+          document.querySelector('.bottom-right'),
+          document.querySelector('.signup')
+        ];
+
+        const safePositions = calculateSafePositions(linkBoard, forbiddenZones);
+        
+        // Skip header row and reverse to show newest first
+        const links = data.slice(1).reverse();
+        
+        if (links.length === 0) return;
+        
+        // Track new cards added in this session
+        let newCardsAdded = 0;
+        
+        console.log('Total links from sheet:', links.length);
+        console.log('Already processed links:', processedLinks.size);
+        
+        links.forEach((row, index) => {
+          if (row.length >= 2 && row[1]) {
+            const originalUrl = row[1];
+            
+            // Normalize URL to ensure it has https://www. prefix
+            const normalizedUrl = normalizeUrl(originalUrl);
+            
+            // On initial load, show all cards regardless of processed status
+            // For subsequent loads, only show new cards
+            if (!isInitialLoad && processedLinks.has(normalizedUrl)) {
+              console.log('Skipping already processed link:', normalizedUrl);
+              return;
+            }
+            
+            // Only add to processed links set if this is NOT an initial load
+            // This prevents the processed links from interfering with page reloads
+            if (!isInitialLoad) {
+              processedLinks.add(normalizedUrl);
+              newCardsAdded++;
+              // Save processed links to localStorage
+              saveProcessedLinks();
+            } else {
+              // On initial load, just count all cards as "new" for display purposes
+              newCardsAdded++;
+            }
+            
+            const linkCard = document.createElement('div');
+            linkCard.className = 'link-card';
+            
+            // Use safe positions if available, with some randomization
+            if (safePositions.length > 0) {
+              // Use the current card index for positioning, not processedLinks.size
+              const positionIndex = index % safePositions.length;
+              const { x, y } = safePositions[positionIndex];
+              
+              // Add small random offset to prevent perfect alignment
+              const randomOffsetX = (Math.random() - 0.5) * 40;
+              const randomOffsetY = (Math.random() - 0.5) * 40;
+              
+              linkCard.style.position = 'absolute';
+              linkCard.style.left = `${x + randomOffsetX}px`;
+              linkCard.style.top = `${y + randomOffsetY}px`;
+            } else {
+              // Fallback to completely random positioning if no safe positions
+              const boardRect = linkBoard.getBoundingClientRect();
+              const randomX = Math.random() * (boardRect.width - 200) + 50;
+              const randomY = Math.random() * (boardRect.height - 100) + 50;
+              
+              linkCard.style.position = 'absolute';
+              linkCard.style.left = `${randomX}px`;
+              linkCard.style.top = `${randomY}px`;
+            }
+            
+            // Generate random rotation
+            const randomRotation = (Math.random() - 0.5) * 30;
+            linkCard.style.setProperty('--random-rotation', `${randomRotation}deg`);
+            
+            // Create link content with normalized URL for href but clean display
+            const timestamp = row[0] ? new Date(row[0]).toLocaleString() : 'Unknown time';
+            const displayUrl = getDisplayUrl(normalizedUrl);
+            
+            linkCard.innerHTML = `
+              <a href="${normalizedUrl}" target="_blank">${displayUrl}</a>
+              <small>${timestamp}</small>
+            `;
+            
+            linkBoard.appendChild(linkCard);
+            
+            // Animate the card drop (only for new cards)
+            setTimeout(() => {
+              linkCard.classList.add('drop-animation');
+            }, newCardsAdded * 100 + 200);
+          }
+        });
+        
+        // Setup hover effects for all cards after they're created
+        setTimeout(() => {
+          setupCardHoverEffects();
+        }, newCardsAdded * 100 + 1000);
+        
+        console.log('New cards added this session:', newCardsAdded);
+      }
+      
+      // Smart polling system
+      function startSmartPolling() {
+        // Check every 5 seconds for new cards
+        setInterval(() => {
+          if (!isUserActive) {
+            console.log('Background check for new cards...');
+            fetchLinks();
+          }
+        }, 5000);
+      }
+
+      // Initialize
+      window.addEventListener('load', () => {
+        // Don't load processed links on initial page load - we want to show all cards
+        // Processed links will be loaded after the initial display
+        
+        setTimeout(animateCards, 300);
+        setupVideo();
+        
+        // Initial fetch - show all cards on page load
+        fetchLinks(true, true); // Force refresh on initial load, and mark as initial load
+        
+        // Load processed links after initial display to track future changes
+        setTimeout(() => {
+          loadProcessedLinks();
+        }, 1000);
+        
+        // Start smart polling
+        startSmartPolling();
+      });
+    })();
   </script>
 </body>
 </html>

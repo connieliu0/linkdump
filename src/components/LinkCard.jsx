@@ -1,12 +1,17 @@
 // src/components/LinkCard.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchMetadata, getBaseDomain } from '../utils/urlMetadata';
+import { normalizeUrl, getDisplayUrl } from '../utils/linkProcessing';
 
 const LinkCard = React.memo(function LinkCard({ url, itemId, initialMetadata, storage }) {
   const [metadata, setMetadata] = useState(initialMetadata || {});
   const [tweetHtml, setTweetHtml] = useState('');
   const [error, setError] = useState(null);
-  const domain = getBaseDomain(url);
+  
+  // Normalize URL for linking but keep original for display
+  const normalizedUrl = normalizeUrl(url);
+  const displayUrl = getDisplayUrl(normalizedUrl);
+  const domain = getBaseDomain(normalizedUrl);
   const tweetRef = useRef(null);
 
   useEffect(() => {
@@ -15,7 +20,7 @@ const LinkCard = React.memo(function LinkCard({ url, itemId, initialMetadata, st
     const getMetadata = async () => {
       setMetadata(prev => ({ ...prev, isLoading: true }));
       try {
-        const data = await fetchMetadata(url);
+        const data = await fetchMetadata(normalizedUrl);
         setMetadata({ ...data, isLoading: false });
         if (storage) {
           await storage.updateItem(itemId, {
@@ -29,22 +34,22 @@ const LinkCard = React.memo(function LinkCard({ url, itemId, initialMetadata, st
       } catch (error) {
         console.error('Error in LinkCard:', error);
         setMetadata({
-          title: url ?? '',
+          title: displayUrl ?? '',
           isLoading: false
         });
       }
     };
 
     getMetadata();
-  }, [url, itemId, initialMetadata, storage]);
+  }, [normalizedUrl, itemId, initialMetadata, storage, displayUrl]);
 
   useEffect(() => {
     const fetchTweetEmbed = async () => {
-      if (!url.includes('twitter.com') && !url.includes('x.com')) return;
+      if (!normalizedUrl.includes('twitter.com') && !normalizedUrl.includes('x.com')) return;
       
       try {
         // Convert Twitter URL to oEmbed URL
-        const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}&theme=light&dnt=true`;
+        const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(normalizedUrl)}&theme=light&dnt=true`;
         console.log('Fetching tweet from:', oembedUrl);
         
         const response = await fetch(oembedUrl, {
@@ -70,15 +75,15 @@ const LinkCard = React.memo(function LinkCard({ url, itemId, initialMetadata, st
       } catch (error) {
         console.error('Error fetching tweet embed:', error);
         setError(error.message);
-        setTweetHtml(`<a href="${url}" target="_blank" rel="noopener noreferrer">View tweet on Twitter</a>`);
+        setTweetHtml(`<a href="${normalizedUrl}" target="_blank" rel="noopener noreferrer">View tweet on Twitter</a>`);
       }
     };
 
     fetchTweetEmbed();
-  }, [url]);
+  }, [normalizedUrl]);
 
   // If it's a Twitter URL, render the tweet embed
-  if (url.includes('twitter.com') || url.includes('x.com')) {
+  if (normalizedUrl.includes('twitter.com') || normalizedUrl.includes('x.com')) {
     return (
       <div className="link-card tweet-card" ref={tweetRef}>
         {!tweetHtml ? (
@@ -98,11 +103,11 @@ const LinkCard = React.memo(function LinkCard({ url, itemId, initialMetadata, st
   }
 
   // If it's an Instagram post URL, render the Instagram embed
-  if (url.match(/instagram\.com\/p\//) || url.match(/instagram\.com\/reel\//)) {
+  if (normalizedUrl.match(/instagram\.com\/p\//) || normalizedUrl.match(/instagram\.com\/reel\//)) {
     return (
       <div className="link-card instagram-card">
         <iframe
-          src={`https://www.instagram.com/p/${url.split('/p/')[1]?.split('/')[0]}/embed`}
+          src={`https://www.instagram.com/p/${normalizedUrl.split('/p/')[1]?.split('/')[0]}/embed`}
           width="100%"
           height="400"
           scrolling="no"
@@ -128,8 +133,8 @@ const LinkCard = React.memo(function LinkCard({ url, itemId, initialMetadata, st
           <div className="link-header">
             <span className="link-domain">{domain}</span>
           </div>
-          <a href={url} target="_blank" rel="noopener noreferrer" className="link-title">
-            {metadata.title || url} <span className="external-link-icon">↗</span>
+          <a href={normalizedUrl} target="_blank" rel="noopener noreferrer" className="link-title">
+            {metadata.title || displayUrl} <span className="external-link-icon">↗</span>
           </a>
           {metadata.description && (
             <p className="link-description">{metadata.description}</p>
