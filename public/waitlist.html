@@ -20,13 +20,15 @@
     /* Page reset */
     html, body { height: 100%; margin: 0; }
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-
+    p{
+      font-family: "Schoolbell", cursive;
+    }
     /* Container to hold video and content */
     .hero {
       position: relative;
       height: 100vh;
       overflow: hidden;
-      background: #111 url('/output.jpg') center/cover no-repeat;
+      background: #111 url('/assets/thumbnail.png') center/cover no-repeat;
     }
 
     .video-container {
@@ -140,6 +142,11 @@
     .hero.ready .video-clear { opacity: 1; }
     .hero.ready .video-blur { opacity: 1; }
     
+    /* Show videos immediately when they have a poster */
+    .video-clear[poster], .video-blur[poster] {
+      opacity: 0.5;
+    }
+    
     /* Crossfade effect during transitions */
     .video-clear.transitioning { opacity: 0.3; }
     .video-blur.transitioning { opacity: 0.3; }
@@ -205,7 +212,6 @@
     .card p {
       font-size: clamp(1rem, 2.5vw, 1.25rem);
       opacity: .9;
-      font-family: "Schoolbell", cursive;
       color: white;
       margin: 0;
       mix-blend-mode: exclusion;
@@ -259,10 +265,10 @@
       position: relative;
       background-color: rgba(255, 255, 255, 0.5);
       padding: 1em;
-      border: 1px solid #645a5a;
+      border: 1px dashed #645a5a;
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: 0.5rem;
       opacity: 0;
       transform: translateY(-20px) rotate(0deg);
       transition: opacity 0.8s ease-out, transform 0.8s ease-out;
@@ -274,7 +280,6 @@
     }
 
     .signup-form {
-      font-family: "Schoolbell", cursive;
       display: flex;
       flex-direction: row;
       align-items: flex-end;
@@ -357,7 +362,7 @@
       align-items: flex-end;
       z-index: 101;
       position: relative;
-      margin-top: 1rem;
+      margin:0;
     }
 
     .link-form input {
@@ -427,20 +432,28 @@
     background: rgba(255, 255, 255, 0.1);
     height: auto;
     min-height: auto;
-    display: flex
-;   color:white;
+    display: flex;
+    color:white;
     flex-direction: column;
     justify-content: flex-start;
     align-items: flex-start;
     z-index: 1;
+    overflow: hidden;
     }
-    
+    .link-card a {
+      color: white;
+    }
+    .link-card a:hover {
+      color: #645a5a;
+    }
     /* Hover effect - only the hovered card moves */
     .link-card:hover {
         z-index: 10;
         transform: translateY(-15px) rotate(0deg) scale(1.1);
         transition: transform 0.3s ease-out, z-index 0s;
-        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 15px 30px rgba(124, 124, 124, 0.4);
+        background: rgba(255, 255, 255, 0.4);
+        color: #645a5a;
     }
     
     /* Reset animation for cards returning to original position */
@@ -462,18 +475,32 @@
       transform: translateY(0) rotate(var(--random-rotation, 0deg));
     }
     
-    .link-card a {
+    .link-card p {
       color: white;
       text-decoration: none;
       font-family: "Schoolbell", cursive;
       font-size: 0.9rem;
-      word-break: break-all;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
     }
     
     .link-card small {
       color: white;
       font-size: 0.7rem;
       margin-top: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    
+    /* Hover state for text elements */
+    .link-card:hover p,
+    .link-card:hover small {
+      color: #645a5a;
     }
 form{
   display: flex;
@@ -543,28 +570,32 @@ form{
 <body>
   <section class="hero" id="hero">
     <div class="video-container">
-      <!-- Original clear video -->
+      <!-- Clear video in center -->
       <video
         id="bgvideo"
         class="video-clear"
+        poster="/assets/thumbnail.png"
+        preload="auto"
         autoplay
         muted
         playsinline
-        preload="metadata"
       >
-        <!-- Video sources will be dynamically set by JavaScript -->
+        <source src="/assets/output.webm" type="video/webm">
+        <source src="/assets/output.mp4" type="video/mp4">
       </video>
       
-      <!-- Blurred copy of video -->
+      <!-- Blurred video for edges -->
       <video
         id="bgvideo-blur"
         class="video-blur"
+        poster="/assets/thumbnail.png"
+        preload="auto"
         autoplay
         muted
         playsinline
-        preload="metadata"
       >
-        <!-- Video sources will be dynamically set by JavaScript -->
+        <source src="/assets/output.webm" type="video/webm">
+        <source src="/assets/output.mp4" type="video/mp4">
       </video>
     </div>
 
@@ -676,47 +707,42 @@ form{
       
       // Optimized video setup
       function setupVideo() {
-        const videoBase = 'assets/output';
+        vid.loop = true;
         
-        [vid, vidBlur].forEach(video => {
-          video.innerHTML = '';
-          const webm = document.createElement('source');
-          webm.src = `${videoBase}.webm`;
-          webm.type = 'video/webm';
-          video.appendChild(webm);
-          
-          const mp4 = document.createElement('source');
-          mp4.src = `${videoBase}.mp4`;
-          mp4.type = 'video/mp4';
-          video.appendChild(mp4);
-          
-          video.poster = `${videoBase}.jpg`;
-          video.loop = true;
-        });
+        let hasStarted = false;
         
-        hero.style.backgroundImage = `url('${videoBase}.jpg')`;
-        
-        let readyCount = 0;
         const handleReady = () => {
-          if (++readyCount === 2) {
+          if (!hasStarted) {
+            hasStarted = true;
             hero.classList.add('ready');
             vid.play().catch(() => {});
-            vidBlur.play().catch(() => {});
           }
         };
         
-        vid.addEventListener('canplay', handleReady, { once: true });
-        vidBlur.addEventListener('canplay', handleReady, { once: true });
+        // Try multiple events for better compatibility
+        const events = ['canplay', 'loadeddata', 'canplaythrough'];
+        events.forEach(event => {
+          vid.addEventListener(event, handleReady, { once: true });
+        });
+        
+        // Fallback timeout - show video after 2 seconds regardless
+        setTimeout(() => {
+          if (!hasStarted) {
+            console.log('Video loading timeout - showing video anyway');
+            handleReady();
+          }
+        }, 2000);
+        
+        // Start playing immediately if possible
+        vid.play().catch(() => {});
       }
       
       // Intersection observer for performance
       new IntersectionObserver(([entry]) => {
         if (entry.isIntersecting) {
           vid.play().catch(() => {});
-          vidBlur.play().catch(() => {});
         } else {
           vid.pause();
-          vidBlur.pause();
         }
       }, { threshold: 0.01 }).observe(hero);
       
@@ -827,62 +853,67 @@ form{
       document.addEventListener('keydown', trackUserActivity);
       document.addEventListener('scroll', trackUserActivity);
       
-      // Store original position of a card
-      function storeOriginalPosition(card) {
-        const rect = card.getBoundingClientRect();
-        const linkBoard = document.getElementById('linkBoard');
-        const boardRect = linkBoard.getBoundingClientRect();
-        
-        cardOriginalPositions.set(card, {
-          left: card.style.left,
-          top: card.style.top,
-          transform: card.style.transform,
-          rotation: card.style.getProperty('--random-rotation')
-        });
+      // Store original position of a card wrapper
+      function storeOriginalPosition(wrapper) {
+        const card = wrapper.querySelector('.link-card');
+        if (card) {
+          cardOriginalPositions.set(wrapper, {
+            left: wrapper.style.left,
+            top: wrapper.style.top,
+            transform: card.style.transform,
+            rotation: card.style.getProperty('--random-rotation')
+          });
+        }
       }
       
       // Reset all cards to their original positions
       function resetCardsToOriginalPositions() {
-        const cards = document.querySelectorAll('.link-card');
-        cards.forEach(card => {
-          const originalPos = cardOriginalPositions.get(card);
-          if (originalPos) {
-            card.classList.add('resetting');
-            card.style.left = originalPos.left;
-            card.style.top = originalPos.top;
-            card.style.transform = originalPos.transform;
-            card.style.setProperty('--random-rotation', originalPos.rotation);
-            
-            // Remove resetting class after animation
-            setTimeout(() => {
-              card.classList.remove('resetting');
-            }, 500);
+        const linkWrappers = document.querySelectorAll('#linkBoard > a');
+        linkWrappers.forEach(wrapper => {
+          const card = wrapper.querySelector('.link-card');
+          if (card) {
+            const originalPos = cardOriginalPositions.get(wrapper);
+            if (originalPos) {
+              card.classList.add('resetting');
+              wrapper.style.left = originalPos.left;
+              wrapper.style.top = originalPos.top;
+              card.style.transform = originalPos.transform;
+              card.style.setProperty('--random-rotation', originalPos.rotation);
+              
+              // Remove resetting class after animation
+              setTimeout(() => {
+                card.classList.remove('resetting');
+              }, 500);
+            }
           }
         });
       }
       
       // Handle card hover with simple lift effect
       function setupCardHoverEffects() {
-        const cards = document.querySelectorAll('.link-card');
+        const linkWrappers = document.querySelectorAll('#linkBoard > a');
         
-        cards.forEach(card => {
-          // Store original position when card is created
-          storeOriginalPosition(card);
-          
-          card.addEventListener('mouseenter', () => {
-            // Clear any existing reset timer
-            if (resetTimer) {
-              clearTimeout(resetTimer);
-              resetTimer = null;
-            }
-          });
-          
-          card.addEventListener('mouseleave', () => {
-            // Start 5-second timer to reset cards
-            resetTimer = setTimeout(() => {
-              resetCardsToOriginalPositions();
-            }, 5000);
-          });
+        linkWrappers.forEach(wrapper => {
+          const card = wrapper.querySelector('.link-card');
+          if (card) {
+            // Store original position when card is created
+            storeOriginalPosition(wrapper);
+            
+            wrapper.addEventListener('mouseenter', () => {
+              // Clear any existing reset timer
+              if (resetTimer) {
+                clearTimeout(resetTimer);
+                resetTimer = null;
+              }
+            });
+            
+            wrapper.addEventListener('mouseleave', () => {
+              // Start 5-second timer to reset cards
+              resetTimer = setTimeout(() => {
+                resetCardsToOriginalPositions();
+              }, 5000);
+            });
+          }
         });
       }
 
@@ -1028,6 +1059,13 @@ form{
               newCardsAdded++;
             }
             
+            // Create the anchor wrapper
+            const linkWrapper = document.createElement('a');
+            linkWrapper.href = normalizedUrl;
+            linkWrapper.target = '_blank';
+            linkWrapper.style.textDecoration = 'none';
+            linkWrapper.style.color = 'inherit';
+            
             const linkCard = document.createElement('div');
             linkCard.className = 'link-card';
             
@@ -1041,18 +1079,18 @@ form{
               const randomOffsetX = (Math.random() - 0.5) * 40;
               const randomOffsetY = (Math.random() - 0.5) * 40;
               
-              linkCard.style.position = 'absolute';
-              linkCard.style.left = `${x + randomOffsetX}px`;
-              linkCard.style.top = `${y + randomOffsetY}px`;
+              linkWrapper.style.position = 'absolute';
+              linkWrapper.style.left = `${x + randomOffsetX}px`;
+              linkWrapper.style.top = `${y + randomOffsetY}px`;
             } else {
               // Fallback to completely random positioning if no safe positions
               const boardRect = linkBoard.getBoundingClientRect();
               const randomX = Math.random() * (boardRect.width - 200) + 50;
               const randomY = Math.random() * (boardRect.height - 100) + 50;
               
-              linkCard.style.position = 'absolute';
-              linkCard.style.left = `${randomX}px`;
-              linkCard.style.top = `${randomY}px`;
+              linkWrapper.style.position = 'absolute';
+              linkWrapper.style.left = `${randomX}px`;
+              linkWrapper.style.top = `${randomY}px`;
             }
             
             // Generate random rotation
@@ -1064,11 +1102,13 @@ form{
             const displayUrl = getDisplayUrl(normalizedUrl);
             
             linkCard.innerHTML = `
-              <a href="${normalizedUrl}" target="_blank">${displayUrl}</a>
+              <p>${displayUrl}</p>
               <small>${timestamp}</small>
             `;
             
-            linkBoard.appendChild(linkCard);
+            // Append card to wrapper, then wrapper to board
+            linkWrapper.appendChild(linkCard);
+            linkBoard.appendChild(linkWrapper);
             
             // Animate the card drop (only for new cards)
             setTimeout(() => {
