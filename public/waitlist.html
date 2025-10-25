@@ -694,15 +694,33 @@
       
       // Optimized video setup
       function setupVideo() {
-        vid.loop = true;
+        [vid, vidBlur].forEach(video => {
+          video.loop = true;
+        });
         
+        let readyCount = 0;
         let hasStarted = false;
         
         const handleReady = () => {
-          if (!hasStarted) {
+          readyCount++;
+          if (!hasStarted && readyCount >= 1) {
             hasStarted = true;
             hero.classList.add('ready');
+            // Synchronize both videos to start at the same time
+            const currentTime = vid.currentTime;
+            vidBlur.currentTime = currentTime;
             vid.play().catch(() => {});
+            vidBlur.play().catch(() => {});
+            
+            // Keep videos synchronized during playback
+            setInterval(() => {
+              if (!vid.paused && !vidBlur.paused) {
+                const timeDiff = Math.abs(vid.currentTime - vidBlur.currentTime);
+                if (timeDiff > 0.1) { // If more than 100ms difference
+                  vidBlur.currentTime = vid.currentTime;
+                }
+              }
+            }, 100); // Check every 100ms
           }
         };
         
@@ -710,26 +728,30 @@
         const events = ['canplay', 'loadeddata', 'canplaythrough'];
         events.forEach(event => {
           vid.addEventListener(event, handleReady, { once: true });
+          vidBlur.addEventListener(event, handleReady, { once: true });
         });
         
-        // Fallback timeout - show video after 2 seconds regardless
+        // Fallback timeout - show videos after 2 seconds regardless
         setTimeout(() => {
           if (!hasStarted) {
-            console.log('Video loading timeout - showing video anyway');
+            console.log('Video loading timeout - showing videos anyway');
             handleReady();
           }
         }, 2000);
         
         // Start playing immediately if possible
         vid.play().catch(() => {});
+        vidBlur.play().catch(() => {});
       }
       
       // Intersection observer for performance
       new IntersectionObserver(([entry]) => {
         if (entry.isIntersecting) {
           vid.play().catch(() => {});
+          vidBlur.play().catch(() => {});
         } else {
           vid.pause();
+          vidBlur.pause();
         }
       }, { threshold: 0.01 }).observe(hero);
       
