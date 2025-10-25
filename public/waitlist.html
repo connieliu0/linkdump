@@ -9,12 +9,14 @@
     
     @font-face {
       font-family: 'Decompositionphase1';
-      src: url('./assets/fonts/Decompositionphase1.woff2') format('woff2'),
-           url('./assets/fonts/Decompositionphase1.woff') format('woff'),
-           url('./assets/fonts/Decompositionphase1.ttf') format('truetype');
+      src: url('../src/assets/fonts/Decompositionphase1.woff2') format('woff2'),
+           url('../src/assets/fonts/Decompositionphase1.woff') format('woff'),
+           url('../src/assets/fonts/Decompositionphase1.ttf') format('truetype');
       font-weight: normal;
       font-style: normal;
       font-display: swap;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     /* Page reset */
@@ -282,7 +284,7 @@
     .signup-form {
       display: flex;
       flex-direction: row;
-      align-items: flex-end;
+      align-items: center;
       z-index: 101;
       position: relative;
     }
@@ -293,49 +295,38 @@
     }
     .signup small{
       color: #645a5a;
+      font-family: "Schoolbell", cursive;
+    }
+    .signup small a{
+      color: #3b343494;
+      font-family: "Schoolbell", cursive;
     }
 
-    .signup-form input {
+    /* Consolidated input styles */
+    input {
       padding: 0.75rem;
-      border: white;
-      background: rgba(242, 242, 242, 0.5);
+      background: rgba(242, 242, 242, 0.1);
+      border: none;
+      border-bottom: 1px dashed #645a5a;
       color: white;
       backdrop-filter: blur(10px);
       font-size: 1rem;
       outline: none;
       pointer-events: auto;
       z-index: 10;
-      border: solid 1px white;
+      width: 100%;
+      box-sizing: border-box;
+      height: auto;
+      line-height: 1;
     }
 
-    .signup-form input::placeholder {
+    input::placeholder {
       color: #645a5a94;
       font-family: "Schoolbell", cursive;
-      font-size: 1rem;
+      font-size: 0.8rem;
     }
 
-    .signup-form input:focus {
-      border-color: white;
-      background: rgba(73, 73, 73, 0.6);
-      color: white;
-    }
 
-    .signup-form button {
-      padding: 0.75rem;
-      background: rgba(255, 255, 255, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0);
-      color: #645a5a;
-      backdrop-filter: blur(10px);
-      cursor: pointer;
-      font-family: "Schoolbell", cursive;
-      z-index: 102;
-      position: relative;
-      pointer-events: auto;
-    }
-
-    .signup-form button:hover {
-      background: rgba(255, 255, 255, 0.3);
-    }
 
     .confirmation-message {
       margin-top: 1rem;
@@ -359,41 +350,23 @@
     .link-form {
       display: flex;
       flex-direction: row;
-      align-items: flex-end;
+      align-items: center;
       z-index: 101;
       position: relative;
       margin:0;
     }
 
-    .link-form input {
-      padding: 0.75rem;
-      border: white;
-      background: rgba(242, 242, 242, 0.5);
-      color: white;
-      backdrop-filter: blur(10px);
-      font-size: 1rem;
-      outline: none;
-      pointer-events: auto;
-      z-index: 10;
-      border: solid 1px white;
-    }
 
-    .link-form input::placeholder {
-      color: #645a5a94;
-      font-family: "Schoolbell", cursive;
-      font-size: 1rem;
-    }
-
-    .link-form input:focus {
+    input:focus {
       border-color: white;
-      background: rgba(73, 73, 73, 0.6);
+      background: rgba(73, 73, 73, 0.1);
       color: white;
     }
 
-    .link-form button {
+    button {
       padding: 0.75rem;
-      background: rgba(255, 255, 255, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0);
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid white;
       color: #645a5a;
       backdrop-filter: blur(10px);
       cursor: pointer;
@@ -401,10 +374,15 @@
       z-index: 102;
       position: relative;
       pointer-events: auto;
+      font-size: 1rem;
+      box-sizing: border-box;
+      height: auto;
+      line-height: 1;
     }
 
-    .link-form button:hover {
-      background: rgba(255, 255, 255, 0.3);
+    button:hover {
+      background: rgba(255, 255, 255, 0.9);
+
     }
 
     /* Link board styles */
@@ -427,7 +405,7 @@
     mix-blend-mode: multiply;
     opacity: 0;
     transform: translateY(-20px) rotate(var(--random-rotation, 0deg));
-    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out, box-shadow 0.4s ease-out;
     max-width: 200px;
     background: rgba(255, 255, 255, 0.1);
     height: auto;
@@ -445,13 +423,15 @@
     }
     .link-card a:hover {
       color: #645a5a;
+      transition: all 0.3s ease;  /* Smooth 0.3s transition */
+
     }
     /* Hover effect - only the hovered card moves */
     .link-card:hover {
         z-index: 10;
         transform: translateY(-15px) rotate(0deg) scale(1.1);
-        transition: transform 0.3s ease-out, z-index 0s;
-        box-shadow: 0 15px 30px rgba(124, 124, 124, 0.4);
+        transition: transform 0.3s ease-out, z-index 0s, box-shadow 0.4s ease-out, background 0.3s ease-out;
+        box-shadow: 0 20px 40px rgba(124, 124, 124, 0.6), 0 5px 15px rgba(0, 0, 0, 0.3);
         background: rgba(255, 255, 255, 0.4);
         color: #645a5a;
     }
@@ -502,10 +482,11 @@
     .link-card:hover small {
       color: #645a5a;
     }
-form{
-  display: flex;
-  justify-content: space-between;
-}
+    form{
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+    }
     /* Respect user's reduced motion preference: hide video and just use the poster/fallback */
     @media (prefers-reduced-motion: reduce) {
       #bgvideo { display: none; }
@@ -519,7 +500,11 @@ form{
         justify-content: space-between;
         align-items: center;
         text-align: center;
-        height: 100vh;
+        min-height: 100vh;
+        min-height: 100dvh; /* Dynamic viewport height for mobile */
+        min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        padding: 1rem;
+        box-sizing: border-box;
       }
       
       /* Show link dump cards on mobile - at the top */
@@ -547,7 +532,9 @@ form{
         display: flex !important;
         flex-direction: column;
         gap:0.5rem;
-        margin-bottom: 2rem;
+        margin-bottom: 1rem;
+        padding: 0 1rem;
+        box-sizing: border-box;
       }
       
       .mobile-descriptions p {
@@ -1113,14 +1100,14 @@ form{
             // Animate the card drop (only for new cards)
             setTimeout(() => {
               linkCard.classList.add('drop-animation');
-            }, newCardsAdded * 20 + 50);
+            }, newCardsAdded * 5 + 10);
           }
         });
         
         // Setup hover effects for all cards after they're created
         setTimeout(() => {
           setupCardHoverEffects();
-        }, newCardsAdded * 20 + 200);
+        }, newCardsAdded * 5 + 50);
         
         console.log('New cards added this session:', newCardsAdded);
       }
