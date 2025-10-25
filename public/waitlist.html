@@ -188,6 +188,12 @@
       transform: translateY(0) rotate(var(--random-rotation, 0deg));
     }
 
+    /* Signup drop animation */
+    .signup.drop-animation {
+      opacity: 1;
+      transform: translateY(0) rotate(0deg);
+    }
+
     .card h2 {
       font-size: 2.5rem;
       margin: 0 0 .5rem;
@@ -252,6 +258,14 @@
       z-index: 100;
       position: relative;
       background-color: rgba(255, 255, 255, 0.5);
+      padding: 1em;
+      border: 1px solid #645a5a;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      opacity: 0;
+      transform: translateY(-20px) rotate(0deg);
+      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
     }
 
     /* Hide mobile elements on desktop */
@@ -260,6 +274,7 @@
     }
 
     .signup-form {
+      font-family: "Schoolbell", cursive;
       display: flex;
       flex-direction: row;
       align-items: flex-end;
@@ -269,7 +284,10 @@
 
     .signup p{
       color: #645a5a;
-      font-family: "Schoolbell", cursive;
+      margin: 0;
+    }
+    .signup small{
+      color: #645a5a;
     }
 
     .signup-form input {
@@ -417,19 +435,12 @@
     z-index: 1;
     }
     
-    /* Hover effect to separate overlapping cards */
+    /* Hover effect - only the hovered card moves */
     .link-card:hover {
         z-index: 10;
-        transform: translateY(-10px) rotate(0deg) scale(1.05);
+        transform: translateY(-15px) rotate(0deg) scale(1.1);
         transition: transform 0.3s ease-out, z-index 0s;
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-    }
-    
-    /* Hover effect for nearby cards when one is hovered */
-    .link-card:hover ~ .link-card,
-    .link-card:hover + .link-card {
-        transform: translateY(5px) rotate(var(--random-rotation, 0deg)) scale(0.95);
-        transition: transform 0.3s ease-out;
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
     }
     
     /* Reset animation for cards returning to original position */
@@ -464,7 +475,10 @@
       font-size: 0.7rem;
       margin-top: 4px;
     }
-
+form{
+  display: flex;
+  justify-content: space-between;
+}
     /* Respect user's reduced motion preference: hide video and just use the poster/fallback */
     @media (prefers-reduced-motion: reduce) {
       #bgvideo { display: none; }
@@ -590,10 +604,11 @@
       
       <!-- Center: Signup Form -->
       <div class="signup">
-        <p>get an email when it's launched</p>
+        <p>waitlist sign up </p>
+        <small>(I promise to only send one email!)</small>
         <form id="submitForm" class="signup-form">
           <input type="email" id="emailInput" placeholder="Enter your email" required />
-          <button type="submit">Submit</button>
+          <button type="submit">→</button>
         </form>
         <div id="confirmationMessage" class="confirmation-message" style="display: none;">
           Submission confirmed!
@@ -602,11 +617,12 @@
         <!-- Link Form -->
         <form id="linkForm" class="link-form">
           <input type="text" id="linkInput" placeholder="Paste your link" />
-          <button type="submit">Submit Link</button>
+          <button type="submit">→</button>
         </form>
         <div id="linkConfirmationMessage" class="confirmation-message" style="display: none;">
           Link submitted!
         </div>
+        <small>try the beta <a href="linkdump.connie.surf" target="_blank">here</a> made by <a href="connie.surf" target="_blank">connie.surf</a></small>
       </div>
       
       <!-- Mobile Descriptions (hidden on desktop) -->
@@ -652,10 +668,10 @@
         
         cards.forEach((card, i) => {
           card.style.setProperty('--random-rotation', `${(Math.random() - 0.5) * 30}deg`);
-          setTimeout(() => card.classList.add('drop-animation'), i * 200 + 200);
+          setTimeout(() => card.classList.add('drop-animation'), i * 50 + 100);
         });
         
-        setTimeout(() => signup?.classList.add('drop-animation'), cards.length * 200 + 1200);
+        setTimeout(() => signup?.classList.add('drop-animation'), cards.length * 50 + 300);
       }
       
       // Optimized video setup
@@ -845,7 +861,7 @@
         });
       }
       
-      // Handle card hover with separation effect
+      // Handle card hover with simple lift effect
       function setupCardHoverEffects() {
         const cards = document.querySelectorAll('.link-card');
         
@@ -859,38 +875,6 @@
               clearTimeout(resetTimer);
               resetTimer = null;
             }
-            
-            // Separate overlapping cards
-            const allCards = document.querySelectorAll('.link-card');
-            const cardRect = card.getBoundingClientRect();
-            
-            allCards.forEach(otherCard => {
-              if (otherCard === card) return;
-              
-              const otherRect = otherCard.getBoundingClientRect();
-              
-              // Check if cards are overlapping
-              const isOverlapping = !(cardRect.right < otherRect.left || 
-                                    cardRect.left > otherRect.right || 
-                                    cardRect.bottom < otherRect.top || 
-                                    cardRect.top > otherRect.bottom);
-              
-              if (isOverlapping) {
-                // Move the other card away
-                const dx = otherRect.left - cardRect.left;
-                const dy = otherRect.top - cardRect.top;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                if (distance < 150) { // Only move if close enough
-                  const angle = Math.atan2(dy, dx);
-                  const newX = otherRect.left + Math.cos(angle) * 100;
-                  const newY = otherRect.top + Math.sin(angle) * 100;
-                  
-                  otherCard.style.transform = `translate(${newX - otherRect.left}px, ${newY - otherRect.top}px) rotate(var(--random-rotation, 0deg))`;
-                  otherCard.style.transition = 'transform 0.3s ease-out';
-                }
-              }
-            });
           });
           
           card.addEventListener('mouseleave', () => {
@@ -1089,14 +1073,14 @@
             // Animate the card drop (only for new cards)
             setTimeout(() => {
               linkCard.classList.add('drop-animation');
-            }, newCardsAdded * 100 + 200);
+            }, newCardsAdded * 20 + 50);
           }
         });
         
         // Setup hover effects for all cards after they're created
         setTimeout(() => {
           setupCardHoverEffects();
-        }, newCardsAdded * 100 + 1000);
+        }, newCardsAdded * 20 + 200);
         
         console.log('New cards added this session:', newCardsAdded);
       }
@@ -1117,7 +1101,7 @@
         // Don't load processed links on initial page load - we want to show all cards
         // Processed links will be loaded after the initial display
         
-        setTimeout(animateCards, 300);
+        setTimeout(animateCards, 100);
         setupVideo();
         
         // Initial fetch - show all cards on page load
