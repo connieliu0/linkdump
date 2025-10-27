@@ -900,7 +900,7 @@
             left: wrapper.style.left,
             top: wrapper.style.top,
             transform: card.style.transform,
-            rotation: card.style.getProperty('--random-rotation')
+            rotation: card.style.getPropertyValue('--random-rotation')
           });
         }
       }
@@ -988,7 +988,7 @@
 
       // Function to check if a position collides with existing cards
       function checkCardCollision(x, y, cardWidth, cardHeight, existingCards) {
-        const minDistance = 120; // Increased minimum distance between cards
+        const minDistance = 80; // Reduced minimum distance between cards
         
         return existingCards.some(card => {
           const cardRect = card.getBoundingClientRect();
@@ -1015,8 +1015,8 @@
           const zoneRight = zoneLeft + zoneRect.width;
           const zoneBottom = zoneTop + zoneRect.height;
           
-          // Add buffer around the zone
-          const buffer = 150; // Increased buffer
+          // Add buffer around the zone - smaller buffer to allow more positions
+          const buffer = zone.classList.contains('signup') ? 100 : 80;
           const expandedLeft = zoneLeft - buffer;
           const expandedTop = zoneTop - buffer;
           const expandedRight = zoneRight + buffer;
@@ -1031,6 +1031,28 @@
         });
       }
 
+      // Function to check if position is in center exclusion zone
+      function checkCenterExclusion(x, y, cardWidth, cardHeight, boardRect) {
+        const centerX = boardRect.width / 2;
+        const centerY = boardRect.height / 2;
+        
+        // Define exclusion zone - larger area around center
+        const exclusionWidth = 400; // Width of exclusion zone
+        const exclusionHeight = 300; // Height of exclusion zone
+        
+        const exclusionLeft = centerX - exclusionWidth / 2;
+        const exclusionTop = centerY - exclusionHeight / 2;
+        const exclusionRight = centerX + exclusionWidth / 2;
+        const exclusionBottom = centerY + exclusionHeight / 2;
+        
+        // Check if card would overlap with center exclusion zone
+        const cardRight = x + cardWidth;
+        const cardBottom = y + cardHeight;
+        
+        return (x < exclusionRight && cardRight > exclusionLeft && 
+                y < exclusionBottom && cardBottom > exclusionTop);
+      }
+
       // Function to generate evenly distributed grid positions
       function generateGridPositions(boardRect, cardWidth, cardHeight, margin) {
         const positions = [];
@@ -1041,7 +1063,11 @@
           for (let col = 0; col < cols; col++) {
             const x = margin + col * (cardWidth + margin);
             const y = margin + row * (cardHeight + margin);
-            positions.push({ x, y });
+            
+            // Skip positions in the center exclusion zone
+            if (!checkCenterExclusion(x, y, cardWidth, cardHeight, boardRect)) {
+              positions.push({ x, y });
+            }
           }
         }
         
@@ -1051,12 +1077,13 @@
 
       // Function to find the best available position
       function findBestPosition(boardRect, cardWidth, cardHeight, forbiddenZones, existingCards) {
-        const margin = 80;
+        const margin = 60;
         const gridPositions = generateGridPositions(boardRect, cardWidth, cardHeight, margin);
         
         // Try grid positions first
         for (const position of gridPositions) {
           if (!checkZoneCollision(position.x, position.y, cardWidth, cardHeight, forbiddenZones, boardRect) &&
+              !checkCenterExclusion(position.x, position.y, cardWidth, cardHeight, boardRect) &&
               !checkCardCollision(position.x, position.y, cardWidth, cardHeight, existingCards)) {
             return position;
           }
@@ -1068,6 +1095,7 @@
           const y = Math.random() * (boardRect.height - cardHeight - margin * 2) + margin;
           
           if (!checkZoneCollision(x, y, cardWidth, cardHeight, forbiddenZones, boardRect) &&
+              !checkCenterExclusion(x, y, cardWidth, cardHeight, boardRect) &&
               !checkCardCollision(x, y, cardWidth, cardHeight, existingCards)) {
             return { x, y };
           }
