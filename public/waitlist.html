@@ -265,9 +265,9 @@
       align-self: center;
       z-index: 100;
       position: relative;
-      background-color: rgba(255, 255, 255, 0.5);
+      background: radial-gradient(50% 50% at 50% 50%, rgba(255, 255, 255, 0.00) 14.96%, rgba(255, 255, 255, 0.34) 42.99%, rgba(255, 255, 255, 0.50) 100%);
       padding: 1em;
-      border: 1px dashed #645a5a;
+      border: 1px dashed #c6bbbb;
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
@@ -304,11 +304,12 @@
 
     /* Consolidated input styles */
     input {
+      font-family: "Schoolbell", cursive;
       padding: 0.75rem;
       background: rgba(242, 242, 242, 0.1);
       border: none;
       border-bottom: 1px dashed #645a5a;
-      color: white;
+      color: #3b343494;
       backdrop-filter: blur(10px);
       font-size: 1rem;
       outline: none;
@@ -324,21 +325,6 @@
       color: #645a5a94;
       font-family: "Schoolbell", cursive;
       font-size: 0.8rem;
-    }
-
-
-
-    .confirmation-message {
-      margin-top: 1rem;
-      padding: 0.75rem;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      color: white;
-      text-align: center;
-      font-family: "Schoolbell", cursive;
-      font-size: 1rem;
-      backdrop-filter: blur(10px);
-      animation: fadeIn 0.5s ease-in;
     }
 
     @keyframes fadeIn {
@@ -360,7 +346,6 @@
     input:focus {
       border-color: white;
       background: rgba(73, 73, 73, 0.1);
-      color: white;
     }
 
     button {
@@ -453,6 +438,21 @@
     .link-card.drop-animation {
       opacity: 1;
       transform: translateY(0) rotate(var(--random-rotation, 0deg));
+    }
+    
+    /* Initial hovered state for new cards */
+    .link-card.initial-hovered {
+      z-index: 10;
+      transform: translateY(-15px) rotate(0deg) scale(1.1);
+      box-shadow: 0 20px 40px rgba(124, 124, 124, 0.2), 0 5px 15px rgba(0, 0, 0, 0.1);
+      background: rgba(255, 255, 255, 0.4);
+      color: #645a5a;
+      transition: all 0.8s ease-out;
+    }
+    
+    .link-card.initial-hovered p,
+    .link-card.initial-hovered small {
+      color: #645a5a;
     }
     
     .link-card p {
@@ -759,26 +759,42 @@
         e.preventDefault();
         const email = document.getElementById('emailInput').value;
         const button = document.querySelector('#submitForm button');
+        const input = document.getElementById('emailInput');
         const message = document.getElementById('confirmationMessage');
         
-        button.textContent = 'Submitting...';
+        button.textContent = '꩜';
         button.disabled = true;
         
+        // Show "Submitting" first
+        input.value = 'Submitting';
+        input.disabled = true;
+        input.style.color = '#645a5a';
+        input.style.fontFamily = '"Schoolbell", cursive';
+        
         try {
-          await fetch('https://script.google.com/macros/s/AKfycby4RsYH7iCE-3OgohinJzwqTWrC3CK4S8OZePzd8VfxjC8Eu0m0sdXAFCyr3p6pLbjZ0w/exec', {
+          const formData = new FormData();
+          formData.append('email', email);
+          
+          await fetch('https://script.google.com/macros/s/AKfycbylPGBqsBh6gH_1bsKGo0IcybmY2sDZXs8kuSY_FROYwktv_7i0kj25qabEmlzRJdp4Zw/exec', {
             method: 'POST',
-            body: new FormData(e.target)
+            body: formData
           });
         } catch (error) {
           console.error('Error:', error);
         }
         
-        message.style.display = 'block';
-        e.target.reset();
-        button.textContent = 'Submit';
+        // Change input to show "Submitted!"
+        input.value = 'Submitted!';
+        
+        button.textContent = '→';
         button.disabled = false;
         
-        setTimeout(() => message.style.display = 'none', 5000);
+        // Reset input after 2 seconds
+        setTimeout(() => {
+          input.value = '';
+          input.disabled = false;
+          input.style.fontFamily = '';
+        }, 2000);
       });
 
       // Link form submission
@@ -786,12 +802,19 @@
         e.preventDefault();
         const link = document.getElementById('linkInput').value;
         const button = document.querySelector('#linkForm button');
+        const input = document.getElementById('linkInput');
         const message = document.getElementById('linkConfirmationMessage');
         
         if (!link) return;
         
-        button.textContent = 'Submitting...';
+        button.textContent = '꩜';
         button.disabled = true;
+        
+        // Show "Submitting" first
+        input.value = 'Submitting';
+        input.disabled = true;
+        input.style.color = '#645a5a';
+        input.style.fontFamily = '"Schoolbell", cursive';
         
         try {
           const formData = new FormData();
@@ -805,10 +828,18 @@
           console.error('Error:', error);
         }
         
-        message.style.display = 'block';
-        e.target.reset();
-        button.textContent = 'Submit Link';
+        // Change input to show "Submitted!"
+        input.value = 'Submitted!';
+        
+        button.textContent = '→';
         button.disabled = false;
+        
+        // Reset input after 2 seconds
+        setTimeout(() => {
+          input.value = '';
+          input.disabled = false;
+          input.style.fontFamily = '';
+        }, 2000);
         
         // Clear cache and refresh links after submission
         localStorage.removeItem('linkDumpLinks');
@@ -955,66 +986,97 @@
           });
       }
 
-      // Function to calculate safe positions that avoid existing UI elements
-      function calculateSafePositions(linkBoard, forbiddenZones) {
-        const boardRect = linkBoard.getBoundingClientRect();
-        const safePositions = [];
-        const cardWidth = 200; // Approximate card width
-        const cardHeight = 100; // Approximate card height
-        const margin = 50; // Minimum distance from edges and other elements
+      // Function to check if a position collides with existing cards
+      function checkCardCollision(x, y, cardWidth, cardHeight, existingCards) {
+        const minDistance = 120; // Increased minimum distance between cards
+        
+        return existingCards.some(card => {
+          const cardRect = card.getBoundingClientRect();
+          const cardX = cardRect.left;
+          const cardY = cardRect.top;
+          
+          // Check if cards are too close using circular distance
+          const distanceX = Math.abs(x - cardX);
+          const distanceY = Math.abs(y - cardY);
+          const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+          
+          return distance < minDistance;
+        });
+      }
 
-        // Generate more potential positions for better distribution
-        for (let i = 0; i < 50; i++) {
+      // Function to check if position conflicts with forbidden zones
+      function checkZoneCollision(x, y, cardWidth, cardHeight, forbiddenZones, boardRect) {
+        return forbiddenZones.some(zone => {
+          if (!zone) return false;
+          
+          const zoneRect = zone.getBoundingClientRect();
+          const zoneLeft = zoneRect.left - boardRect.left;
+          const zoneTop = zoneRect.top - boardRect.top;
+          const zoneRight = zoneLeft + zoneRect.width;
+          const zoneBottom = zoneTop + zoneRect.height;
+          
+          // Add buffer around the zone
+          const buffer = 150; // Increased buffer
+          const expandedLeft = zoneLeft - buffer;
+          const expandedTop = zoneTop - buffer;
+          const expandedRight = zoneRight + buffer;
+          const expandedBottom = zoneBottom + buffer;
+          
+          // Check if card would overlap with expanded zone
+          const cardRight = x + cardWidth;
+          const cardBottom = y + cardHeight;
+          
+          return (x < expandedRight && cardRight > expandedLeft && 
+                  y < expandedBottom && cardBottom > expandedTop);
+        });
+      }
+
+      // Function to generate evenly distributed grid positions
+      function generateGridPositions(boardRect, cardWidth, cardHeight, margin) {
+        const positions = [];
+        const cols = Math.floor((boardRect.width - margin * 2) / (cardWidth + margin));
+        const rows = Math.floor((boardRect.height - margin * 2) / (cardHeight + margin));
+        
+        for (let row = 0; row < rows; row++) {
+          for (let col = 0; col < cols; col++) {
+            const x = margin + col * (cardWidth + margin);
+            const y = margin + row * (cardHeight + margin);
+            positions.push({ x, y });
+          }
+        }
+        
+        // Shuffle positions for random distribution
+        return positions.sort(() => Math.random() - 0.5);
+      }
+
+      // Function to find the best available position
+      function findBestPosition(boardRect, cardWidth, cardHeight, forbiddenZones, existingCards) {
+        const margin = 80;
+        const gridPositions = generateGridPositions(boardRect, cardWidth, cardHeight, margin);
+        
+        // Try grid positions first
+        for (const position of gridPositions) {
+          if (!checkZoneCollision(position.x, position.y, cardWidth, cardHeight, forbiddenZones, boardRect) &&
+              !checkCardCollision(position.x, position.y, cardWidth, cardHeight, existingCards)) {
+            return position;
+          }
+        }
+        
+        // If no grid position works, try random positions
+        for (let i = 0; i < 200; i++) {
           const x = Math.random() * (boardRect.width - cardWidth - margin * 2) + margin;
           const y = Math.random() * (boardRect.height - cardHeight - margin * 2) + margin;
           
-          // Check if position conflicts with forbidden zones
-          const isSafe = forbiddenZones.every(zone => {
-            if (!zone) return true; // Skip if zone doesn't exist
-            
-            const zoneRect = zone.getBoundingClientRect();
-            const zoneLeft = zoneRect.left - boardRect.left;
-            const zoneTop = zoneRect.top - boardRect.top;
-            const zoneRight = zoneLeft + zoneRect.width;
-            const zoneBottom = zoneTop + zoneRect.height;
-            
-            // Add buffer around the zone
-            const buffer = 80;
-            const expandedLeft = zoneLeft - buffer;
-            const expandedTop = zoneTop - buffer;
-            const expandedRight = zoneRight + buffer;
-            const expandedBottom = zoneBottom + buffer;
-            
-            // Check if card would overlap with expanded zone
-            const cardRight = x + cardWidth;
-            const cardBottom = y + cardHeight;
-            
-            return !(x < expandedRight && cardRight > expandedLeft && 
-                    y < expandedBottom && cardBottom > expandedTop);
-          });
-
-          if (isSafe) {
-            safePositions.push({ x, y });
+          if (!checkZoneCollision(x, y, cardWidth, cardHeight, forbiddenZones, boardRect) &&
+              !checkCardCollision(x, y, cardWidth, cardHeight, existingCards)) {
+            return { x, y };
           }
         }
-
-        // If we don't have enough safe positions, add some fallback positions
-        if (safePositions.length < 10) {
-          const fallbackPositions = [
-            { x: boardRect.width * 0.1, y: boardRect.height * 0.1 },
-            { x: boardRect.width * 0.9, y: boardRect.height * 0.1 },
-            { x: boardRect.width * 0.1, y: boardRect.height * 0.9 },
-            { x: boardRect.width * 0.9, y: boardRect.height * 0.9 },
-            { x: boardRect.width * 0.3, y: boardRect.height * 0.3 },
-            { x: boardRect.width * 0.7, y: boardRect.height * 0.3 },
-            { x: boardRect.width * 0.3, y: boardRect.height * 0.7 },
-            { x: boardRect.width * 0.7, y: boardRect.height * 0.7 }
-          ];
-          
-          safePositions.push(...fallbackPositions);
-        }
-
-        return safePositions;
+        
+        // Fallback: return a position even if it might overlap
+        const fallbackX = Math.random() * (boardRect.width - cardWidth - margin * 2) + margin;
+        const fallbackY = Math.random() * (boardRect.height - cardHeight - margin * 2) + margin;
+        return { x: fallbackX, y: fallbackY };
       }
 
       // Function to display links as cards
@@ -1028,7 +1090,11 @@
           document.querySelector('.signup')
         ];
 
-        const safePositions = calculateSafePositions(linkBoard, forbiddenZones);
+        // Get existing cards for collision detection
+        const existingCards = Array.from(linkBoard.querySelectorAll('.link-card'));
+        const boardRect = linkBoard.getBoundingClientRect();
+        const cardWidth = 200;
+        const cardHeight = 100;
         
         // Skip header row and reverse to show newest first
         const links = data.slice(1).reverse();
@@ -1077,29 +1143,15 @@
             const linkCard = document.createElement('div');
             linkCard.className = 'link-card';
             
-            // Use safe positions if available, with some randomization
-            if (safePositions.length > 0) {
-              // Use the current card index for positioning, not processedLinks.size
-              const positionIndex = index % safePositions.length;
-              const { x, y } = safePositions[positionIndex];
-              
-              // Add small random offset to prevent perfect alignment
-              const randomOffsetX = (Math.random() - 0.5) * 40;
-              const randomOffsetY = (Math.random() - 0.5) * 40;
-              
-              linkWrapper.style.position = 'absolute';
-              linkWrapper.style.left = `${x + randomOffsetX}px`;
-              linkWrapper.style.top = `${y + randomOffsetY}px`;
-            } else {
-              // Fallback to completely random positioning if no safe positions
-              const boardRect = linkBoard.getBoundingClientRect();
-              const randomX = Math.random() * (boardRect.width - 200) + 50;
-              const randomY = Math.random() * (boardRect.height - 100) + 50;
-              
-              linkWrapper.style.position = 'absolute';
-              linkWrapper.style.left = `${randomX}px`;
-              linkWrapper.style.top = `${randomY}px`;
-            }
+            // Use the new positioning system for all cards
+            const position = findBestPosition(boardRect, cardWidth, cardHeight, forbiddenZones, existingCards);
+            
+            linkWrapper.style.position = 'absolute';
+            linkWrapper.style.left = `${position.x}px`;
+            linkWrapper.style.top = `${position.y}px`;
+            
+            // Add this card to existing cards for next iteration
+            existingCards.push(linkCard);
             
             // Generate random rotation
             const randomRotation = (Math.random() - 0.5) * 30;
@@ -1119,16 +1171,26 @@
             linkBoard.appendChild(linkWrapper);
             
             // Animate the card drop (only for new cards)
+            const delay = !isInitialLoad ? 50 : newCardsAdded * 5 + 10; // Much faster for new submissions
             setTimeout(() => {
               linkCard.classList.add('drop-animation');
-            }, newCardsAdded * 5 + 10);
+              // Start with hovered state for new cards
+              if (!isInitialLoad) {
+                linkCard.classList.add('initial-hovered');
+                // Fade to normal state after 1.5 seconds
+                setTimeout(() => {
+                  linkCard.classList.remove('initial-hovered');
+                }, 1500);
+              }
+            }, delay);
           }
         });
         
         // Setup hover effects for all cards after they're created
+        const hoverDelay = !isInitialLoad ? 100 : newCardsAdded * 5 + 50; // Faster for new submissions
         setTimeout(() => {
           setupCardHoverEffects();
-        }, newCardsAdded * 5 + 50);
+        }, hoverDelay);
         
         console.log('New cards added this session:', newCardsAdded);
       }
