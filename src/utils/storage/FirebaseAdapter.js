@@ -82,7 +82,7 @@ export class FirebaseAdapter extends StorageAdapter {
         this.setBoardId(customId);
         
         // Initialize the board with empty structure
-        await set(this.boardRef, { items: {}, timeSettings: null });
+        await set(this.boardRef, { items: {}, sections: {}, timeSettings: null });
         
         return customId;
       } else {
@@ -93,7 +93,7 @@ export class FirebaseAdapter extends StorageAdapter {
         this.setBoardId(newId);
         
         // Initialize the board with empty structure
-        await set(this.boardRef, { items: {}, timeSettings: null });
+        await set(this.boardRef, { items: {}, sections: {}, timeSettings: null });
         
         return newId;
       }
@@ -351,6 +351,129 @@ export class FirebaseAdapter extends StorageAdapter {
         message: error.message,
         stack: error.stack
       });
+      return () => {};
+    }
+  }
+
+  // Section operations
+  async saveSection(section) {
+    try {
+      if (!this.boardId) throw new Error("No board ID set");
+      if (!this.connected) {
+        console.warn('Firebase not connected when trying to save section');
+      }
+      
+      const sectionId = push(ref(db, `boards/${this.boardId}/sections`)).key;
+      
+      await set(ref(db, `boards/${this.boardId}/sections/${sectionId}`), {
+        ...section,
+        id: sectionId,
+        timestamp: Date.now()
+      });
+      
+      console.log('Section saved successfully with id:', sectionId);
+      return sectionId;
+    } catch (error) {
+      console.error('Error saving section:', error);
+      throw error;
+    }
+  }
+
+  async loadSections() {
+    try {
+      if (!this.boardId) {
+        console.error('No boardId set when trying to load sections');
+        return [];
+      }
+      
+      const snapshot = await get(ref(db, `boards/${this.boardId}/sections`));
+      
+      if (snapshot.exists()) {
+        const sections = [];
+        const data = snapshot.val();
+        
+        for (const [id, section] of Object.entries(data)) {
+          sections.push({...section, id});
+        }
+        
+        return sections;
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Error loading sections:', error);
+      return [];
+    }
+  }
+
+  async updateSection(id, updates) {
+    try {
+      if (!this.boardId) throw new Error("No board ID set");
+      await update(ref(db, `boards/${this.boardId}/sections/${id}`), updates);
+      return true;
+    } catch (error) {
+      console.error('Error updating section:', error);
+      throw error;
+    }
+  }
+
+  async deleteSection(id) {
+    try {
+      if (!this.boardId) throw new Error("No board ID set");
+      await remove(ref(db, `boards/${this.boardId}/sections/${id}`));
+      return true;
+    } catch (error) {
+      console.error('Error deleting section:', error);
+      throw error;
+    }
+  }
+
+  async clearSections() {
+    try {
+      if (!this.boardId) throw new Error("No board ID set");
+      await remove(ref(db, `boards/${this.boardId}/sections`));
+      console.log('[FirebaseAdapter] Sections cleared successfully');
+      return true;
+    } catch (error) {
+      console.error('[FirebaseAdapter] Error clearing sections:', error);
+      return false;
+    }
+  }
+
+  // Set up real-time updates for sections
+  setupSectionsRealtimeListener(callback) {
+    if (!this.boardId) {
+      console.error('Cannot setup sections listener: No boardId set');
+      return () => {};
+    }
+    
+    const sectionsRef = ref(db, `boards/${this.boardId}/sections`);
+    
+    try {
+      return onValue(sectionsRef, (snapshot) => {
+        try {
+          if (snapshot.exists()) {
+            const sections = [];
+            const data = snapshot.val();
+            
+            for (const [id, section] of Object.entries(data)) {
+              sections.push({...section, id});
+            }
+            
+            callback(sections);
+          } else {
+            callback([]);
+          }
+        } catch (error) {
+          console.error('Error processing sections data:', error);
+          callback([]);
+        }
+      }, (error) => {
+        console.error('Firebase sections onValue error:', error);
+        callback([]);
+      });
+    } catch (error) {
+      console.error('Error setting up Firebase sections listener:', error);
       return () => {};
     }
   }

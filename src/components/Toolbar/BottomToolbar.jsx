@@ -14,7 +14,9 @@ const BottomToolbar = ({
   isCollaborative,
   onConvertToCollaborative,
   storageMode,
-  onCreateBoard
+  onCreateBoard,
+  onAddSection,
+  isDrawingSection
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [showAddContentModal, setShowAddContentModal] = useState(false);
@@ -117,6 +119,17 @@ const BottomToolbar = ({
               backgroundColor: 'rgba(0, 0, 0, 0.3)', 
               margin: '12px auto 0 auto' 
             }} />
+          </div>
+        </div>
+
+        {/* Add Section button */}
+        <div className="action section-tool">
+          <div 
+            className={`clickable-div add-section-btn ${isDrawingSection ? 'active' : ''}`}
+            onClick={onAddSection}
+          >
+            <span style={{ fontSize: '1.4em' }}>⬚</span>
+            Add section
           </div>
         </div>
         

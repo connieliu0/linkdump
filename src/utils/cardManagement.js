@@ -27,4 +27,17 @@ export const createTextCard = (text, position, isEmpty = false) => {
 
 export const createLinkCard = (url, position) => {
   return createNewCard('link', url, position);
-}; 
+};
+
+export const createSection = (name, bounds) => ({
+  id: `section-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+  type: 'section',
+  name: name || 'Untitled Section',
+  bounds: {
+    x: bounds.x || 0,
+    y: bounds.y || 0,
+    width: bounds.width || 300,
+    height: bounds.height || 200
+  },
+  timestamp: Date.now()
+}); 

@@ -921,6 +921,30 @@ main {
   rotate: -1deg;
 }
 
+.section-tool {
+  right: calc(50% - 350px);
+  text-align: center;
+  min-width: 80px;
+  transform: translateY(calc(100% - 50px));
+  transition: transform 0.3s ease;
+  rotate: 1deg;
+}
+
+.clickable-div.add-section-btn {
+  rotate: -1deg;
+  position: relative;
+  left: -30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.clickable-div.add-section-btn.active {
+  background: rgba(91, 141, 239, 0.2);
+  border: 2px solid #5B8DEF;
+}
+
 .share-button {
   padding: 8px 16px;
   border: 1px solid rgba(0, 0, 0, 0.2);
@@ -1215,4 +1239,213 @@ You can find the assignment logic in useAgingEffect.js.
 .tweet-fallback-link:hover {
   background: #1DA1F2;
   color: white;
+}
+
+/* ============================================
+   Section Card Styles (Figma-like sections)
+   ============================================ */
+
+/* Section element wrapper - rendered via react-panzoom Element */
+.section-element {
+  z-index: 0 !important;
+  pointer-events: auto;
+  overflow: visible !important; /* Allow resize handles to extend beyond bounds */
+}
+
+.section-card {
+  background: rgba(200, 220, 255, 0.15);
+  border: 2px dashed rgba(100, 140, 200, 0.4);
+  border-radius: 8px;
+  cursor: move;
+  user-select: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  overflow: visible; /* Allow resize handles to extend beyond bounds */
+}
+
+.section-card:hover {
+  border-color: rgba(100, 140, 200, 0.6);
+  background: rgba(200, 220, 255, 0.2);
+}
+
+.section-card.selected {
+  border-color: #5B8DEF;
+  border-style: solid;
+  background: rgba(91, 141, 239, 0.08);
+}
+
+.section-card.resizing {
+  transition: none;
+}
+
+/* Section header with title */
+.section-header {
+  position: absolute;
+  top: -28px;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 4px 4px 0 0;
+  font-size: 13px;
+  color: var(--secondary-color);
+  cursor: move;
+  max-width: calc(100% - 16px);
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.section-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  color: #5B8DEF;
+}
+
+.section-name-input {
+  border: none;
+  background: transparent;
+  font-size: inherit;
+  font-weight: 500;
+  color: #5B8DEF;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  min-width: 80px;
+}
+
+.section-delete-btn {
+  background: none;
+  border: none;
+  color: var(--tertiary-color);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 4px;
+  margin-left: auto;
+  transition: color 0.2s ease;
+}
+
+.section-delete-btn:hover {
+  color: var(--error-color);
+}
+
+/* Section body - the container area */
+.section-body {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Resize handles */
+.resize-handle {
+  position: absolute;
+  background: #5B8DEF;
+  border: 2px solid white;
+  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+  z-index: 100;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Corner handles */
+.resize-handle.nw {
+  top: -5px;
+  left: -5px;
+  cursor: nwse-resize;
+}
+
+.resize-handle.ne {
+  top: -5px;
+  right: -5px;
+  cursor: nesw-resize;
+}
+
+.resize-handle.sw {
+  bottom: -5px;
+  left: -5px;
+  cursor: nesw-resize;
+}
+
+.resize-handle.se {
+  bottom: -5px;
+  right: -5px;
+  cursor: nwse-resize;
+}
+
+/* Edge handles */
+.resize-handle.n {
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: ns-resize;
+}
+
+.resize-handle.s {
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: ns-resize;
+}
+
+.resize-handle.e {
+  right: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: ew-resize;
+}
+
+.resize-handle.w {
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: ew-resize;
+}
+
+/* Section drawing overlay - covers viewport when drawing */
+.section-drawing-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  cursor: crosshair;
+  background: transparent;
+}
+
+/* Section drawing preview */
+.section-drawing-preview {
+  position: fixed;
+  background: rgba(91, 141, 239, 0.15);
+  border: 2px dashed #5B8DEF;
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 10000;
+}
+
+/* Drawing mode cursor */
+.paste-container.drawing-section {
+  cursor: crosshair;
+}
+
+/* Section drawing mode indicator */
+.section-drawing-indicator {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(91, 141, 239, 0.9);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  z-index: 10001;
+  pointer-events: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }

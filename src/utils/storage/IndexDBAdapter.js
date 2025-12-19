@@ -17,6 +17,13 @@ export class IndexedDBAdapter extends StorageAdapter {
       settings: 'id,endTime,halfwayPoint,totalSeconds,description',
       preferences: 'key,value'
     });
+    // Version 3: Add sections table
+    this.db.version(3).stores({
+      items: '++id,type,content,position,sourceUrl',
+      settings: 'id,endTime,halfwayPoint,totalSeconds,description',
+      preferences: 'key,value',
+      sections: '++id,name,bounds'
+    });
     await this.db.open();
   }
 
@@ -122,10 +129,11 @@ export class IndexedDBAdapter extends StorageAdapter {
       await this.ensureDB();
       console.log('[IndexDBAdapter] Starting board clear...');
       
-      // Clear both items and settings
+      // Clear items, settings, and sections
       await Promise.all([
         this.db.items.clear(),
-        this.db.settings.clear()
+        this.db.settings.clear(),
+        this.db.sections.clear()
       ]);
       
       console.log('[IndexDBAdapter] Board cleared successfully');
@@ -157,6 +165,70 @@ export class IndexedDBAdapter extends StorageAdapter {
       return true;
     } catch (error) {
       console.error('Error saving custom URL backhalf to IndexDB:', error);
+      return false;
+    }
+  }
+
+  // Section operations
+  async saveSection(section) {
+    try {
+      await this.ensureDB();
+      
+      if (!section.timestamp) {
+        section.timestamp = Date.now();
+      }
+      
+      // Remove the id field so Dexie can auto-generate one
+      const { id: _, ...sectionWithoutId } = section;
+      
+      const id = await this.db.sections.add(sectionWithoutId);
+      return id;
+    } catch (error) {
+      console.error('Error saving section to IndexDB:', error);
+      throw error;
+    }
+  }
+
+  async loadSections() {
+    try {
+      await this.ensureDB();
+      return await this.db.sections.toArray();
+    } catch (error) {
+      console.error('Error loading sections from IndexDB:', error);
+      return [];
+    }
+  }
+
+  async updateSection(id, updates) {
+    try {
+      await this.ensureDB();
+      await this.db.sections.update(id, updates);
+      return true;
+    } catch (error) {
+      console.error('Error updating section in IndexDB:', error);
+      throw error;
+    }
+  }
+
+  async deleteSection(id) {
+    try {
+      await this.ensureDB();
+      await this.db.sections.delete(id);
+      return true;
+    } catch (error) {
+      console.error('Error deleting section from IndexDB:', error);
+      throw error;
+    }
+  }
+
+  async clearSections() {
+    try {
+      await this.ensureDB();
+      await this.db.sections.clear();
+      console.log('[IndexDBAdapter] Sections cleared successfully');
+      return true;
+    } catch (error) {
+      console.error('[IndexDBAdapter] Error clearing sections:', error);
       return false;
     }
   }
