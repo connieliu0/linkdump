@@ -103,6 +103,10 @@ const PasteArea = ({ onExport }) => {
   const [drawEnd, setDrawEnd] = useState(null);
   const [sectionDragState, setSectionDragState] = useState(null);
 
+  // Animation state for card separation
+  const [separatingCardId, setSeparatingCardId] = useState(null);
+  const [newCardAnimations, setNewCardAnimations] = useState({});
+
   // Add a ref to track if we're clearing
   const isClearingRef = useRef(false);
 
@@ -425,7 +429,7 @@ const PasteArea = ({ onExport }) => {
     await deleteAndRemoveItem(storage, id, setItems);
   };
 
-  // Define handleSeparateCard function
+  // Define handleSeparateCard function with animation
   const handleSeparateCard = useCallback(async (cardId) => {
     if (!storage) return;
 
@@ -436,12 +440,27 @@ const PasteArea = ({ onExport }) => {
     const lines = (card.content || '').split(/\r?\n/).filter(line => line.trim() !== '');
     if (lines.length <= 1) return;
 
+    // Step 1: Trigger fade-out animation on original card
+    setSeparatingCardId(cardId);
+    setSelectedId(null); // Deselect the card
+
+    // Step 2: Wait for fade-out animation to complete (300ms)
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Step 3: Delete the original card
+    await deleteAndRemoveItem(storage, cardId, setItems);
+    setSeparatingCardId(null);
+
+    // Step 4: Create new cards with staggered animation delays
     const basePosition = card.position || { x: 100, y: 100 };
     const cardWidth = 350;   // Horizontal spacing between cards
     const cardHeight = 150;  // Vertical spacing between rows
     const cardsPerRow = 5;   // Number of cards per row before wrapping
+    const staggerDelay = 0.08; // 80ms between each card
 
-    // Create new cards for each line in a grid pattern
+    const newCardIds = [];
+    const animationEntries = {};
+
     for (let i = 0; i < lines.length; i++) {
       const col = i % cardsPerRow;
       const row = Math.floor(i / cardsPerRow);
@@ -450,11 +469,28 @@ const PasteArea = ({ onExport }) => {
         y: basePosition.y + (row * cardHeight)
       };
       const newCard = createTextCard(lines[i], newPosition, false);
+      newCardIds.push(newCard.id);
+      
+      // Track animation delay for this card
+      animationEntries[newCard.id] = {
+        delay: i * staggerDelay,
+        createdAt: Date.now()
+      };
+      
       await saveAndUpdateItems(storage, newCard, setItems);
     }
-    
-    // Delete the original card
-    await deleteAndRemoveItem(storage, cardId, setItems);
+
+    // Set animation entries for staggered fade-in
+    setNewCardAnimations(prev => ({ ...prev, ...animationEntries }));
+
+    // Clean up animation entries after animations complete (2 seconds should be enough)
+    setTimeout(() => {
+      setNewCardAnimations(prev => {
+        const updated = { ...prev };
+        newCardIds.forEach(id => delete updated[id]);
+        return updated;
+      });
+    }, 2000);
   }, [storage, items, setItems]);
 
   // Section CRUD functions
@@ -1610,7 +1646,11 @@ const PasteArea = ({ onExport }) => {
                     );
                   })}
 
-                  {visibleItems.map(item => (
+                  {visibleItems.map(item => {
+                    const isSeparating = separatingCardId === item.id;
+                    const animationEntry = newCardAnimations[item.id];
+                    
+                    return (
                     <Element
                       key={item.id + '-outer'}
                       id={item.id}
@@ -1620,22 +1660,13 @@ const PasteArea = ({ onExport }) => {
                           const now = Date.now();
                           const timeSinceLastClick = now - lastClickTimeRef.current;
                           
-                          // console.log('Item clicked:', { 
-                          //   itemId: item.id, 
-                          //   activeItemRef: activeItemRef.current,
-                          //   timeSinceLastClick,
-                          //   lastSelectedId: lastSelectedIdRef.current
-                          // });
-                          
                           // If clicking the same item within 300ms, it's a double click
                           if (lastSelectedIdRef.current === item.id && timeSinceLastClick < 300) {
                             // Double click - do nothing, let TextCard handle it
-                            // console.log('Double click detected, letting TextCard handle it');
                             lastClickTimeRef.current = 0;
                             lastSelectedIdRef.current = null;
                           } else {
                             // Single click - select the item
-                            // console.log('Single click detected, selecting item');
                             setSelectedId(item.id);
                             activeItemRef.current = item.id;
                             lastClickTimeRef.current = now;
@@ -1646,6 +1677,19 @@ const PasteArea = ({ onExport }) => {
                       x={item.position?.x || 0}
                       y={item.position?.y || 0}
                     >
+                      <motion.div
+                        initial={animationEntry ? { opacity: 0, y: -20, scale: 0.95 } : false}
+                        animate={{ 
+                          opacity: isSeparating ? 0 : 1, 
+                          y: 0,
+                          scale: isSeparating ? 0.95 : 1
+                        }}
+                        transition={{ 
+                          duration: 0.3,
+                          delay: animationEntry?.delay || 0,
+                          ease: "easeOut"
+                        }}
+                      >
                       {item.type === 'image' ? (
                         <ImageCard 
                           src={item.content} 
@@ -1690,8 +1734,10 @@ const PasteArea = ({ onExport }) => {
                           onSeparate={() => handleSeparateCard(item.id)}
                         />
                       ) : null}
+                      </motion.div>
                     </Element>
-                  ))}
+                    );
+                  })}
                 </PanZoom>
               </motion.div>
             </AnimatePresence>
