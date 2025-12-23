@@ -461,11 +461,25 @@ const PasteArea = ({ onExport }) => {
     setSeparatingCardId(null);
 
     // Step 4: Create new cards with staggered animation delays
-    const basePosition = card.position || { x: 100, y: 100 };
+    // Use a safe starting position - either the original card position if reasonable,
+    // or default to a visible area on the canvas
     const cardWidth = 350;   // Horizontal spacing between cards
     const cardHeight = 150;  // Vertical spacing between rows
     const cardsPerRow = 5;   // Number of cards per row before wrapping
     const staggerDelay = 0.08; // 80ms between each card
+    
+    // Calculate a reasonable base position
+    // Start at position that keeps all cards visible (accounting for grid size)
+    const totalRows = Math.ceil(lines.length / cardsPerRow);
+    const gridWidth = cardsPerRow * cardWidth;
+    const gridHeight = totalRows * cardHeight;
+    
+    // Use original position if it would keep cards on canvas, otherwise use a safe default
+    const originalPos = card.position || { x: 100, y: 100 };
+    const basePosition = {
+      x: Math.max(50, Math.min(originalPos.x, 1500 - gridWidth)),
+      y: Math.max(100, Math.min(originalPos.y, 800 - gridHeight))
+    };
 
     const newCardIds = [];
     const animationEntries = {};
