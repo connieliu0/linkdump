@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import RoadmapDialog from '../Dialog/RoadmapDialog';
+import ChangelogDialog from '../Dialog/ChangelogDialog';
 import AddContentDialog from '../Dialog/AddContentDialog';
 import ImportArenaDialog from '../Dialog/ImportArenaDialog';
 import { formatTimeRemaining, getTimePhase, getTimeMessage } from '../../utils/timeFormatting';
 import { AnimatePresence, motion } from 'framer-motion';
+
+// Helper to check if user has seen the changelog
+const CHANGELOG_VERSION = '1.0'; // Increment this when you want to show the changelog again
+const hasSeenChangelog = () => {
+  return localStorage.getItem('seenChangelogVersion') === CHANGELOG_VERSION;
+};
+const markChangelogSeen = () => {
+  localStorage.setItem('seenChangelogVersion', CHANGELOG_VERSION);
+};
 
 const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription, onProjectDescriptionChange }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -120,7 +129,7 @@ const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription, onProjec
 };
 
 
-const MoreMenu = ({ onClearCanvas, onShowRoadmap, onConvertToCollaborative, storageMode }) => {
+const MoreMenu = ({ onClearCanvas, onShowChangelog, onConvertToCollaborative, storageMode }) => {
   const [open, setOpen] = useState(false);
 
   const variants = {
@@ -173,7 +182,7 @@ const MoreMenu = ({ onClearCanvas, onShowRoadmap, onConvertToCollaborative, stor
             >
               <button>Give feedback</button>
             </a>
-            <button onClick={onShowRoadmap}>Roadmap</button>
+            <button onClick={onShowChangelog}>What's new</button>
             <a 
               href="https://decay.connie.surf"
               target="_blank"
@@ -200,7 +209,8 @@ const Toolbar = ({
   storageMode,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const [showRoadmap, setShowRoadmap] = useState(false);
+  const [showChangelog, setShowChangelog] = useState(false);
+  const hasShownInitialChangelog = React.useRef(false);
 
   useEffect(() => {
     // Small delay to ensure the initial render is complete
@@ -208,10 +218,21 @@ const Toolbar = ({
     return () => clearTimeout(timer);
   }, []);
 
-  // Reset roadmap dialog when timeSettings changes or when expired
+  // Show changelog on first visit after board has loaded
   useEffect(() => {
-    setShowRoadmap(false);
-  }, [timeSettings, isExpired]);
+    if (timeSettings && !hasShownInitialChangelog.current && !hasSeenChangelog()) {
+      hasShownInitialChangelog.current = true;
+      // Delay showing changelog to ensure board is fully rendered
+      setTimeout(() => {
+        setShowChangelog(true);
+      }, 500);
+    }
+  }, [timeSettings]);
+
+  const handleCloseChangelog = () => {
+    markChangelogSeen();
+    setShowChangelog(false);
+  };
 
   const handleClear = async () => {
     if (window.confirm('Are you sure you want to clear the canvas? This cannot be undone.')) {
@@ -230,15 +251,15 @@ const Toolbar = ({
         />
         <MoreMenu 
           onClearCanvas={handleClear}
-          onShowRoadmap={() => setShowRoadmap(true)}
+          onShowChangelog={() => setShowChangelog(true)}
           onConvertToCollaborative={onConvertToCollaborative}
           storageMode={storageMode}
         />
       </div>
       
-      <RoadmapDialog 
-        isOpen={showRoadmap} 
-        onClose={() => setShowRoadmap(false)} 
+      <ChangelogDialog 
+        isOpen={showChangelog} 
+        onClose={handleCloseChangelog} 
       />
      
     </>
