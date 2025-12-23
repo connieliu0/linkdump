@@ -4,16 +4,17 @@
 const DEFAULT_CARD_WIDTH = 200;
 const DEFAULT_CARD_HEIGHT = 150;
 
+// Minimum overlap percentage to consider a card "in" a section (50% = majority)
+const OVERLAP_THRESHOLD = 0.5;
+
 /**
- * Check if a card is fully inside a section's bounds
+ * Calculate the overlap area between a card and a section
  * @param {Object} card - Card object with position {x, y}
  * @param {Object} section - Section object with bounds {x, y, width, height}
  * @param {Object} cardDimensions - Optional {width, height} of the card
- * @returns {boolean}
+ * @returns {number} The overlap area in pixels squared
  */
-export const isCardFullyInsideSection = (card, section, cardDimensions = null) => {
-  if (!card?.position || !section?.bounds) return false;
-  
+const calculateOverlapArea = (card, section, cardDimensions = null) => {
   const cardWidth = cardDimensions?.width || DEFAULT_CARD_WIDTH;
   const cardHeight = cardDimensions?.height || DEFAULT_CARD_HEIGHT;
   
@@ -27,32 +28,61 @@ export const isCardFullyInsideSection = (card, section, cardDimensions = null) =
   const sectionTop = section.bounds.y;
   const sectionBottom = section.bounds.y + section.bounds.height;
   
-  return (
-    cardLeft >= sectionLeft &&
-    cardRight <= sectionRight &&
-    cardTop >= sectionTop &&
-    cardBottom <= sectionBottom
-  );
+  // Calculate overlap in each dimension
+  const overlapLeft = Math.max(cardLeft, sectionLeft);
+  const overlapRight = Math.min(cardRight, sectionRight);
+  const overlapTop = Math.max(cardTop, sectionTop);
+  const overlapBottom = Math.min(cardBottom, sectionBottom);
+  
+  // If no overlap, return 0
+  if (overlapRight <= overlapLeft || overlapBottom <= overlapTop) {
+    return 0;
+  }
+  
+  return (overlapRight - overlapLeft) * (overlapBottom - overlapTop);
 };
 
 /**
- * Get all cards that are fully inside a section
+ * Check if a card has majority overlap with a section (>50% of card area)
+ * @param {Object} card - Card object with position {x, y}
+ * @param {Object} section - Section object with bounds {x, y, width, height}
+ * @param {Object} cardDimensions - Optional {width, height} of the card
+ * @returns {boolean}
+ */
+export const isCardInSection = (card, section, cardDimensions = null) => {
+  if (!card?.position || !section?.bounds) return false;
+  
+  const cardWidth = cardDimensions?.width || DEFAULT_CARD_WIDTH;
+  const cardHeight = cardDimensions?.height || DEFAULT_CARD_HEIGHT;
+  const cardArea = cardWidth * cardHeight;
+  
+  const overlapArea = calculateOverlapArea(card, section, cardDimensions);
+  
+  // Card is "in" section if majority (>50%) of its area overlaps
+  return overlapArea / cardArea > OVERLAP_THRESHOLD;
+};
+
+// Keep the old function name as an alias for backwards compatibility
+export const isCardFullyInsideSection = isCardInSection;
+
+/**
+ * Get all cards that have majority overlap with a section
  * @param {Array} cards - Array of card objects
  * @param {Object} section - Section object with bounds
  * @param {Map} cardDimensionsMap - Optional map of cardId -> {width, height}
- * @returns {Array} Cards inside the section
+ * @returns {Array} Cards in the section (>50% overlap)
  */
 export const getCardsInSection = (cards, section, cardDimensionsMap = null) => {
   if (!cards || !section) return [];
   
   return cards.filter(card => {
     const dimensions = cardDimensionsMap?.get(card.id) || null;
-    return isCardFullyInsideSection(card, section, dimensions);
+    return isCardInSection(card, section, dimensions);
   });
 };
 
 /**
- * Find which section a card belongs to (first matching section)
+ * Find which section a card belongs to (first section with majority overlap)
  * @param {Object} card - Card object
  * @param {Array} sections - Array of section objects
  * @param {Object} cardDimensions - Optional card dimensions
@@ -62,7 +92,7 @@ export const findSectionForCard = (card, sections, cardDimensions = null) => {
   if (!card || !sections || sections.length === 0) return null;
   
   return sections.find(section => 
-    isCardFullyInsideSection(card, section, cardDimensions)
+    isCardInSection(card, section, cardDimensions)
   ) || null;
 };
 

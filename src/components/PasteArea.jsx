@@ -25,7 +25,7 @@ import { createDefaultTimeSettings } from '../utils/timeFormatting';
 import { getDefaultHomepageItems } from '../utils/defaultItems';
 import MergedDialog from './Dialog/MergedDialog';
 import ConvertToCollaborativeDialog from './Dialog/ConvertToCollaborativeDialog';
-import { normalizeSectionBounds, getCardsToMoveWithSection, moveCardsWithSection } from '../utils/sectionUtils';
+import { normalizeSectionBounds, getCardsToMoveWithSection, moveCardsWithSection, getCardsInSection, isCardInSection } from '../utils/sectionUtils';
 
 // Helper to get/set visited boards
 const getVisitedBoards = () => {
@@ -94,6 +94,7 @@ const PasteArea = ({ onExport }) => {
   const isDraggingRef = useRef(false);
   const lastClickTimeRef = useRef(0);
   const lastSelectedIdRef = useRef(null);
+  const originalSectionIdRef = useRef(null); // Track which section a card was in when drag started
 
   // Section state
   const [sections, setSections] = useState([]);
@@ -102,6 +103,14 @@ const PasteArea = ({ onExport }) => {
   const [drawStart, setDrawStart] = useState(null);
   const [drawEnd, setDrawEnd] = useState(null);
   const [sectionDragState, setSectionDragState] = useState(null);
+  const [dropTargetSectionId, setDropTargetSectionId] = useState(null);
+
+  // Clear drop target when dragging stops
+  useEffect(() => {
+    if (!isDragging && dropTargetSectionId) {
+      setDropTargetSectionId(null);
+    }
+  }, [isDragging, dropTargetSectionId]);
 
   // Animation state for card separation
   const [separatingCardId, setSeparatingCardId] = useState(null);
@@ -495,32 +504,16 @@ const PasteArea = ({ onExport }) => {
 
   // Section CRUD functions
   const addSection = async (sectionData) => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/8297760a-d8b0-4708-b45f-d146dc98aa2b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PasteArea.jsx:addSection',message:'addSection called',data:{sectionData,hasStorage:!!storage},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
     try {
       if (!storage) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/8297760a-d8b0-4708-b45f-d146dc98aa2b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PasteArea.jsx:addSection',message:'No storage!',data:{},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-        // #endregion
         return;
       }
       
       const newSection = createSection(sectionData.name, sectionData.bounds);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/8297760a-d8b0-4708-b45f-d146dc98aa2b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PasteArea.jsx:addSection',message:'Created section',data:{newSection},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
-      
       const savedId = await saveAndUpdateSections(storage, newSection, setSections);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/8297760a-d8b0-4708-b45f-d146dc98aa2b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PasteArea.jsx:addSection',message:'Section saved',data:{savedId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C,D'})}).catch(()=>{});
-      // #endregion
       
       return savedId || newSection.id;
     } catch (error) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/8297760a-d8b0-4708-b45f-d146dc98aa2b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PasteArea.jsx:addSection',message:'Error in addSection',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
       console.error('Error adding section:', error);
     }
   };
@@ -828,9 +821,39 @@ const PasteArea = ({ onExport }) => {
     }
   };
 
+  // Delete a section and all cards inside it
+  const handleDeleteSectionWithCards = async (sectionId) => {
+    if (!storage) return;
+    
+    const section = sections.find(s => s.id === sectionId);
+    if (!section) return;
+    
+    try {
+      // Get all cards inside the section
+      const cardsInSection = getCardsInSection(items, section);
+      
+      // Delete all cards inside the section
+      for (const card of cardsInSection) {
+        await deleteCard(card.id);
+      }
+      
+      // Delete the section itself
+      await deleteSection(sectionId);
+    } catch (error) {
+      console.error('Error deleting section with cards:', error);
+    }
+  };
+
   const handleKeyDown = (e) => {
-    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && !isInputActive) {
-      handleDelete(selectedId);
+    if ((e.key === 'Delete' || e.key === 'Backspace') && !isInputActive) {
+      // Delete selected card
+      if (selectedId) {
+        handleDelete(selectedId);
+      }
+      // Delete selected section (and all cards inside it)
+      else if (selectedSectionId) {
+        handleDeleteSectionWithCards(selectedSectionId);
+      }
     }
   };
 
@@ -1081,16 +1104,12 @@ const PasteArea = ({ onExport }) => {
   }, [items]);
 
   const visibleSections = useMemo(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/8297760a-d8b0-4708-b45f-d146dc98aa2b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PasteArea.jsx:visibleSections',message:'Computing visibleSections',data:{sectionsCount:sections.length,sections:sections},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D,E'})}).catch(()=>{});
-    // #endregion
     const seen = new Set();
-    const result = sections.filter(section => {
+    return sections.filter(section => {
       if (!section?.id || seen.has(section.id)) return false;
       seen.add(section.id);
       return true;
     });
-    return result;
   }, [sections]);
 
   // Section drawing handlers
@@ -1132,9 +1151,6 @@ const PasteArea = ({ onExport }) => {
   }, []);
 
   const handleDrawingMouseDown = useCallback((e) => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/8297760a-d8b0-4708-b45f-d146dc98aa2b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PasteArea.jsx:handleDrawingMouseDown',message:'MouseDown fired',data:{hasRef:!!panzoomRef.current,clientX:e.clientX,clientY:e.clientY},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     if (!panzoomRef.current) return;
     e.preventDefault();
     e.stopPropagation();
@@ -1145,9 +1161,6 @@ const PasteArea = ({ onExport }) => {
     
     // Canvas coordinates for section creation - use manual conversion
     const pos = screenToCanvas(e.clientX, e.clientY);
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/8297760a-d8b0-4708-b45f-d146dc98aa2b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PasteArea.jsx:handleDrawingMouseDown',message:'Canvas pos calculated',data:{pos,screenX:e.clientX,screenY:e.clientY},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'F'})}).catch(()=>{});
-    // #endregion
     setDrawStart(pos);
     setDrawEnd(pos);
   }, [screenToCanvas]);
@@ -1165,13 +1178,7 @@ const PasteArea = ({ onExport }) => {
   }, [drawStart, screenToCanvas]);
 
   const handleDrawingMouseUp = useCallback(async (e) => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/8297760a-d8b0-4708-b45f-d146dc98aa2b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PasteArea.jsx:handleDrawingMouseUp',message:'MouseUp fired',data:{hasDrawStart:!!drawStart,hasDrawEnd:!!drawEnd,drawStart,drawEnd},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B'})}).catch(()=>{});
-    // #endregion
     if (!drawStart || !drawEnd) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/8297760a-d8b0-4708-b45f-d146dc98aa2b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PasteArea.jsx:handleDrawingMouseUp',message:'Early return - no drawStart/drawEnd',data:{drawStart,drawEnd},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       setIsDrawingSection(false);
       setDrawStartScreen(null);
       setDrawEndScreen(null);
@@ -1179,9 +1186,6 @@ const PasteArea = ({ onExport }) => {
     }
     
     const bounds = normalizeSectionBounds(drawStart, drawEnd);
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/8297760a-d8b0-4708-b45f-d146dc98aa2b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PasteArea.jsx:handleDrawingMouseUp',message:'Bounds calculated',data:{bounds,isBigEnough:bounds.width>=50&&bounds.height>=50},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     
     // Only create section if it's big enough (at least 50x50 in canvas coords)
     if (bounds.width >= 50 && bounds.height >= 50) {
@@ -1247,8 +1251,9 @@ const PasteArea = ({ onExport }) => {
       
       // Get current zoom level from panzoom
       const zoom = panzoomRef.current?.getZoom() || 1;
-      const scaledDx = dx / zoom;
-      const scaledDy = dy / zoom;
+      // Round to prevent floating point jiggle when drag ends
+      const scaledDx = Math.round(dx / zoom);
+      const scaledDy = Math.round(dy / zoom);
       
       // Update section bounds
       const newBounds = {
@@ -1263,15 +1268,15 @@ const PasteArea = ({ onExport }) => {
           : s
       ));
       
-      // Update card positions
+      // Update card positions (rounded to match react-panzoom expectations)
       setItems(prev => prev.map(item => {
         if (sectionDragState.cardIdsToMove.includes(item.id)) {
           const startPos = sectionDragState.cardStartPositions[item.id];
           return {
             ...item,
             position: {
-              x: startPos.x + scaledDx,
-              y: startPos.y + scaledDy
+              x: Math.round(startPos.x + scaledDx),
+              y: Math.round(startPos.y + scaledDy)
             }
           };
         }
@@ -1280,21 +1285,38 @@ const PasteArea = ({ onExport }) => {
     };
 
     const handleMouseUp = async () => {
-      // Save final positions to storage
-      const section = sections.find(s => s.id === sectionDragState.sectionId);
-      if (section) {
-        await updateSection(sectionDragState.sectionId, { bounds: section.bounds });
-      }
+      // Capture drag state before clearing
+      const dragState = sectionDragState;
       
-      // Save card positions
-      for (const cardId of sectionDragState.cardIdsToMove) {
-        const card = items.find(i => i.id === cardId);
-        if (card) {
-          await updateCard(cardId, { position: card.position });
+      // Save final positions to storage BEFORE clearing drag state
+      // This ensures positions are persisted while react-panzoom is still disabled
+      const section = sections.find(s => s.id === dragState.sectionId);
+      if (section && storage) {
+        try {
+          await storage.updateSection(dragState.sectionId, { bounds: section.bounds });
+        } catch (e) {
+          console.error('Error saving section position:', e);
         }
       }
       
-      setSectionDragState(null);
+      // Save card positions directly to storage (in parallel for performance)
+      const savePromises = dragState.cardIdsToMove.map(async (cardId) => {
+        const card = items.find(i => i.id === cardId);
+        if (card && storage) {
+          try {
+            await storage.updateItem(cardId, { position: card.position });
+          } catch (e) {
+            console.error('Error saving card position:', e);
+          }
+        }
+      });
+      await Promise.all(savePromises);
+      
+      // Clear drag state AFTER all saves complete - this re-enables react-panzoom
+      // Use requestAnimationFrame to ensure React has finished rendering with final positions
+      requestAnimationFrame(() => {
+        setSectionDragState(null);
+      });
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -1304,7 +1326,7 @@ const PasteArea = ({ onExport }) => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [sectionDragState, sections, items, updateSection, updateCard]);
+  }, [sectionDragState, sections, items, storage]);
 
   // // Add this log before rendering the items list
   // useEffect(() => {
@@ -1496,8 +1518,8 @@ const PasteArea = ({ onExport }) => {
                     setSelectedId(null);
                     setSelectedSectionId(null);
                   }}
-                  disabled={isInputActive || isEditing || isDrawingSection}
-                  draggable={!isInputActive && !isEditing && !isDrawingSection}
+                  disabled={isInputActive || isEditing || isDrawingSection || !!sectionDragState}
+                  draggable={!isInputActive && !isEditing && !isDrawingSection && !sectionDragState}
                   containerClassNames={{
                     outer: 'canvas-area',
                     inner: 'canvas-area__in'
@@ -1528,7 +1550,25 @@ const PasteArea = ({ onExport }) => {
                         if (element) {
                           element.classList.add('dragging');
                         }
+                        
+                        // Record which section the card was originally in (if any)
+                        const draggedCard = items.find(item => item.id === activeItemRef.current);
+                        if (draggedCard) {
+                          const originalSection = sections.find(section => 
+                            isCardInSection(draggedCard, section)
+                          );
+                          originalSectionIdRef.current = originalSection?.id || null;
+                        }
                       }
+
+                      // Check if dragged card is entering a NEW section (not the one it was originally in)
+                      const tempCard = { position: { x, y } };
+                      const targetSection = sections.find(section => 
+                        isCardInSection(tempCard, section)
+                      );
+                      // Only show drop target if entering a different section than where the card started
+                      const isEnteringNewSection = targetSection && targetSection.id !== originalSectionIdRef.current;
+                      setDropTargetSectionId(isEnteringNewSection ? targetSection.id : null);
 
                       // Update local state immediately for smooth dragging
                       setItems(prevItems => 
@@ -1551,9 +1591,24 @@ const PasteArea = ({ onExport }) => {
                       setIsDragging(true);
                       activeItemRef.current = element.id;
                       wasDraggedRef.current = true;
+                      
+                      // Record which section the card was originally in (if any)
+                      const draggedCard = items.find(item => item.id === element.id);
+                      if (draggedCard) {
+                        const originalSection = sections.find(section => 
+                          isCardInSection(draggedCard, section)
+                        );
+                        originalSectionIdRef.current = originalSection?.id || null;
+                      } else {
+                        originalSectionIdRef.current = null;
+                      }
                     }
                   }}
                   onElementsChangeEnd={(element) => {
+                    // Always clear drop target highlight and original section tracking on drag end
+                    setDropTargetSectionId(null);
+                    originalSectionIdRef.current = null;
+                    
                     // Don't handle element changes if input is active
                     if (isInputActive || isEditing) {
                       return;
@@ -1619,11 +1674,7 @@ const PasteArea = ({ onExport }) => {
                   )}
 
                   {/* Render sections (below cards) */}
-                  {visibleSections.map(section => {
-                    // #region agent log
-                    fetch('http://127.0.0.1:7242/ingest/8297760a-d8b0-4708-b45f-d146dc98aa2b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PasteArea.jsx:renderSection',message:'Rendering section',data:{sectionId:section.id,bounds:section.bounds},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
-                    // #endregion
-                    return (
+                  {visibleSections.map(section => (
                       <Element
                         key={`section-${section.id}`}
                         id={`section-${section.id}`}
@@ -1634,6 +1685,7 @@ const PasteArea = ({ onExport }) => {
                         <SectionCard
                           section={section}
                           isSelected={selectedSectionId === section.id}
+                          isDropTarget={dropTargetSectionId === section.id}
                           onSelect={(id) => {
                             setSelectedSectionId(id);
                             setSelectedId(null);
@@ -1643,8 +1695,7 @@ const PasteArea = ({ onExport }) => {
                           onDragStart={handleSectionDragStart}
                         />
                       </Element>
-                    );
-                  })}
+                  ))}
 
                   {visibleItems.map(item => {
                     const isSeparating = separatingCardId === item.id;

@@ -1253,8 +1253,8 @@ You can find the assignment logic in useAgingEffect.js.
 }
 
 .section-card {
-  background: rgba(200, 220, 255, 0.15);
-  border: 2px dashed rgba(100, 140, 200, 0.4);
+  background: rgba(200, 220, 255, 0.35);
+  border: 2px dashed rgba(35, 51, 76, 0.4);
   border-radius: 8px;
   cursor: move;
   user-select: none;
@@ -1263,33 +1263,33 @@ You can find the assignment logic in useAgingEffect.js.
   overflow: visible; /* Allow resize handles to extend beyond bounds */
 }
 
-.section-card:hover {
-  border-color: rgba(100, 140, 200, 0.6);
-  background: rgba(200, 220, 255, 0.2);
-}
 
 .section-card.selected {
   border-color: #5B8DEF;
   border-style: solid;
-  background: rgba(91, 141, 239, 0.08);
 }
 
 .section-card.resizing {
   transition: none;
 }
 
+.section-card.drop-target {
+  border: 2px solid rgba(91, 141, 239, 0.8);
+  background: rgba(91, 141, 239, 0.15);
+}
+
 /* Section header with title */
 .section-header {
   position: absolute;
-  top: -28px;
+  top: -40px;
   left: 0;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 8px;
+  padding: 6px 8px;
   background: rgba(255, 255, 255, 0.9);
   border-radius: 4px 4px 0 0;
-  font-size: 13px;
+  font-size: 20px;
   color: var(--secondary-color);
   cursor: move;
   max-width: calc(100% - 16px);
@@ -1337,7 +1337,7 @@ You can find the assignment logic in useAgingEffect.js.
 .section-body {
   position: absolute;
   inset: 0;
-  pointer-events: none;
+  cursor: move;
 }
 
 /* Resize handles */

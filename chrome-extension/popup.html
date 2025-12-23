@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Linkdump Saver</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Linkdump</h1>
+      <p class="subtitle">Save to your board</p>
+    </header>
+
+    <section class="board-section">
+      <label for="boardUrl">Board URL</label>
+      <div class="input-row">
+        <input 
+          type="text" 
+          id="boardUrl" 
+          placeholder="linkdump.app/abc12 or just abc12"
+          spellcheck="false"
+        >
+        <button id="clearBoard" class="icon-btn" title="Clear saved board">×</button>
+      </div>
+      <p class="hint" id="boardStatus">No board connected</p>
+    </section>
+
+    <section class="actions-section">
+      <button id="savePageBtn" class="primary-btn" disabled>
+        <span class="icon">🔗</span>
+        Save Current Page
+      </button>
+      
+      <div class="divider">
+        <span>or</span>
+      </div>
+
+      <label for="textInput">Save text or link</label>
+      <textarea 
+        id="textInput" 
+        placeholder="Paste text or a URL..."
+        rows="3"
+      ></textarea>
+      <button id="saveTextBtn" class="secondary-btn" disabled>
+        Save Text
+      </button>
+    </section>
+
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>
+
+

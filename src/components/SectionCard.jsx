@@ -7,6 +7,7 @@ const MIN_SECTION_HEIGHT = 100;
 const SectionCard = React.memo(function SectionCard({
   section,
   isSelected,
+  isDropTarget,
   onSelect,
   onUpdate,
   onDelete,
@@ -64,9 +65,6 @@ const SectionCard = React.memo(function SectionCard({
 
   const handleClick = useCallback((e) => {
     e.stopPropagation();
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/8297760a-d8b0-4708-b45f-d146dc98aa2b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SectionCard.jsx:handleClick',message:'Section clicked',data:{sectionId:section.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'G'})}).catch(()=>{});
-    // #endregion
     onSelect(section.id);
   }, [onSelect, section.id]);
 
@@ -79,10 +77,6 @@ const SectionCard = React.memo(function SectionCard({
   const handleResizeMouseDown = useCallback((e, handle) => {
     e.stopPropagation();
     e.preventDefault();
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/8297760a-d8b0-4708-b45f-d146dc98aa2b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SectionCard.jsx:handleResizeMouseDown',message:'Resize started',data:{handle,sectionId:section.id,bounds:section.bounds},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H'})}).catch(()=>{});
-    // #endregion
-    
     setIsResizing(true);
     setResizeHandle(handle);
     startBoundsRef.current = { ...section.bounds };
@@ -102,10 +96,6 @@ const SectionCard = React.memo(function SectionCard({
       const dx = e.clientX - startMouseRef.current.x;
       const dy = e.clientY - startMouseRef.current.y;
       const start = startBoundsRef.current;
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/8297760a-d8b0-4708-b45f-d146dc98aa2b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SectionCard.jsx:resizeMouseMove',message:'Resize move',data:{dx,dy,handle:resizeHandle},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'I,J'})}).catch(()=>{});
-      // #endregion
-      
       let newBounds = { ...start };
 
       // Calculate new bounds based on which handle is being dragged
@@ -189,10 +179,11 @@ const SectionCard = React.memo(function SectionCard({
     };
   }, [isResizing, resizeHandle, section.id, onUpdate, onResizeEnd]);
 
-  // Handle drag start for the header
-  const handleHeaderMouseDown = useCallback((e) => {
+  // Handle drag start for the header or body
+  const handleDragMouseDown = useCallback((e) => {
     if (isEditing) return;
     e.stopPropagation();
+    e.preventDefault();
     
     if (onDragStart) {
       onDragStart(section.id, e);
@@ -200,14 +191,11 @@ const SectionCard = React.memo(function SectionCard({
   }, [isEditing, onDragStart, section.id]);
 
   const bounds = section.bounds || { x: 0, y: 0, width: 300, height: 200 };
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/8297760a-d8b0-4708-b45f-d146dc98aa2b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SectionCard.jsx:render',message:'Section rendering',data:{sectionId:section.id,isSelected,bounds},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'G'})}).catch(()=>{});
-  // #endregion
 
   return (
     <div
       ref={sectionRef}
-      className={`section-card ${isSelected ? 'selected' : ''} ${isResizing ? 'resizing' : ''}`}
+      className={`section-card ${isSelected ? 'selected' : ''} ${isResizing ? 'resizing' : ''} ${isDropTarget ? 'drop-target' : ''}`}
       style={{
         width: bounds.width,
         height: bounds.height,
@@ -215,10 +203,10 @@ const SectionCard = React.memo(function SectionCard({
       }}
       onClick={handleClick}
     >
-      {/* Section header with title */}
+      {/* Section header with title - use onMouseDownCapture to capture before PanZoom Element */}
       <div 
         className="section-header"
-        onMouseDown={handleHeaderMouseDown}
+        onMouseDownCapture={handleDragMouseDown}
         onDoubleClick={handleDoubleClick}
       >
         {isEditing ? (
@@ -247,8 +235,11 @@ const SectionCard = React.memo(function SectionCard({
         )}
       </div>
 
-      {/* Section body - the container area */}
-      <div className="section-body" />
+      {/* Section body - the container area, also draggable */}
+      <div 
+        className="section-body" 
+        onMouseDownCapture={handleDragMouseDown}
+      />
 
       {/* Resize handles - only show when selected */}
       {isSelected && (
