@@ -43,7 +43,11 @@ const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect, forceTi
   const handleStorageModeSelect = useCallback((mode) => {
     if (mode === storageMode) return;
     setStorageMode(mode);
-    onStorageModeSelect(mode);
+    // Only sync with parent for local mode - collaborative mode is handled entirely in handleSubmit
+    // (We don't want to trigger PasteArea's useEffect that forces switch back to local when no URL boardId exists)
+    if (mode === 'local') {
+      onStorageModeSelect(mode);
+    }
     logEvent(analytics, 'storage_mode_selected', { mode });
   }, [storageMode, onStorageModeSelect]);
 

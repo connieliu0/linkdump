@@ -21,8 +21,8 @@ export const createImageCard = (dataUrl, position, sourceUrl = '') => {
   return createNewCard('image', dataUrl, position, { sourceUrl });
 };
 
-export const createTextCard = (text, position, isEmpty = false) => {
-  return createNewCard('newText', text, position, { isEmpty });
+export const createTextCard = (text, position, isEmpty = false, options = {}) => {
+  return createNewCard('newText', text, position, { isEmpty, ...options });
 };
 
 export const createLinkCard = (url, position) => {

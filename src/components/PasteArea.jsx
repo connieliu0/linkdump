@@ -425,6 +425,38 @@ const PasteArea = ({ onExport }) => {
     await deleteAndRemoveItem(storage, id, setItems);
   };
 
+  // Define handleSeparateCard function
+  const handleSeparateCard = useCallback(async (cardId) => {
+    if (!storage) return;
+
+    const card = items.find(item => item.id === cardId);
+    if (!card) return;
+
+    // Split by line breaks, filter empty lines
+    const lines = (card.content || '').split(/\r?\n/).filter(line => line.trim() !== '');
+    if (lines.length <= 1) return;
+
+    const basePosition = card.position || { x: 100, y: 100 };
+    const cardWidth = 350;   // Horizontal spacing between cards
+    const cardHeight = 150;  // Vertical spacing between rows
+    const cardsPerRow = 5;   // Number of cards per row before wrapping
+
+    // Create new cards for each line in a grid pattern
+    for (let i = 0; i < lines.length; i++) {
+      const col = i % cardsPerRow;
+      const row = Math.floor(i / cardsPerRow);
+      const newPosition = {
+        x: basePosition.x + (col * cardWidth),
+        y: basePosition.y + (row * cardHeight)
+      };
+      const newCard = createTextCard(lines[i], newPosition, false);
+      await saveAndUpdateItems(storage, newCard, setItems);
+    }
+    
+    // Delete the original card
+    await deleteAndRemoveItem(storage, cardId, setItems);
+  }, [storage, items, setItems]);
+
   // Section CRUD functions
   const addSection = async (sectionData) => {
     // #region agent log
@@ -538,10 +570,10 @@ const PasteArea = ({ onExport }) => {
       const text = clipboardData.getData('text');
       if (text) {
         const isUrl = /^(https?:\/\/[^\s]+)$/.test(text);
+        const hasLineBreaks = /\r?\n/.test(text);
         const newItem = isUrl 
           ? createLinkCard(text, { x, y })
-          : createTextCard(text, { x, y }, false);
-        // console.log('New text/link card id:', newItem.id);
+          : createTextCard(text, { x, y }, false, { canSeparate: hasLineBreaks });
         await saveAndUpdateItems(storage, newItem, setItems);
       }
     } catch (error) {
@@ -671,7 +703,7 @@ const PasteArea = ({ onExport }) => {
       await storage.clearBoard(); // Clear IndexedDB
       localStorage.removeItem('localBoardActive'); // Remove local board flag
 
-      console.log('Successfully converted to collaborative mode');
+      // console.log('Successfully converted to collaborative mode');
       return newBoardId;
     } catch (error) {
       console.error('Error converting to collaborative mode:', error);
@@ -1435,15 +1467,8 @@ const PasteArea = ({ onExport }) => {
                     inner: 'canvas-area__in'
                   }}
                   onElementsChange={(element) => {
-                    console.log('PasteArea: PanZoom onElementsChange', {
-                      isInputActive,
-                      isEditing,
-                      element
-                    });
-                    
                     // Don't handle element changes if input is active
                     if (isInputActive || isEditing) {
-                      console.log('PasteArea: Element change prevented - input is active');
                       return;
                     }
                     
@@ -1480,15 +1505,8 @@ const PasteArea = ({ onExport }) => {
                     }
                   }}
                   onElementsChangeStart={(elements) => {
-                    console.log('PasteArea: PanZoom onElementsChangeStart', {
-                      isInputActive,
-                      isEditing,
-                      elements
-                    });
-                    
                     // Don't start dragging if any item is being edited
                     if (isInputActive || isEditing) {
-                      console.log('PasteArea: Drag start prevented - input is active');
                       return;
                     }
 
@@ -1497,19 +1515,11 @@ const PasteArea = ({ onExport }) => {
                       setIsDragging(true);
                       activeItemRef.current = element.id;
                       wasDraggedRef.current = true;
-                      console.log('PasteArea: Drag started:', { elementId: element.id });
                     }
                   }}
                   onElementsChangeEnd={(element) => {
-                    console.log('PasteArea: PanZoom onElementsChangeEnd', {
-                      isInputActive,
-                      isEditing,
-                      element
-                    });
-                    
                     // Don't handle element changes if input is active
                     if (isInputActive || isEditing) {
-                      console.log('PasteArea: Element change end prevented - input is active');
                       return;
                     }
                     
@@ -1662,6 +1672,8 @@ const PasteArea = ({ onExport }) => {
                           storage={storage}
                           isSelected={selectedId === item.id}
                           wasDragged={wasDraggedRef.current}
+                          canSeparate={item.canSeparate || false}
+                          onSeparate={() => handleSeparateCard(item.id)}
                         />
                       ) : item.type === 'newText' ? (
                         <TextCard
@@ -1674,6 +1686,8 @@ const PasteArea = ({ onExport }) => {
                           storage={storage}
                           isSelected={selectedId === item.id}
                           wasDragged={wasDraggedRef.current}
+                          canSeparate={item.canSeparate || false}
+                          onSeparate={() => handleSeparateCard(item.id)}
                         />
                       ) : null}
                     </Element>

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 
 const TextCard = React.memo(function TextCard({ 
   content, 
@@ -11,7 +12,9 @@ const TextCard = React.memo(function TextCard({
   storage, 
   isSelected, 
   wasDragged,
-  onDoubleClick 
+  onDoubleClick,
+  canSeparate,
+  onSeparate
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isContentEditing, setIsContentEditing] = useState(false);
@@ -172,6 +175,31 @@ const TextCard = React.memo(function TextCard({
   // Determine if any input is active
   const isInputActive = isContentEditing || isEditing;
 
+  // Handle separate button click
+  const handleSeparateClick = useCallback((e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (onSeparate) {
+      onSeparate();
+    }
+  }, [onSeparate]);
+
+  // Render the separate button - always at top of canvas when selected
+  const renderSeparateButton = () => {
+    if (!canSeparate || !onSeparate || !isSelected) return null;
+
+    const button = (
+      <button
+        onClick={handleSeparateClick}
+        className="separate-button separate-button-fixed"
+      >
+        separate by line
+      </button>
+    );
+
+    return ReactDOM.createPortal(button, document.body);
+  };
+
   useEffect(() => {
     if (isEmpty && contentRef.current) {
       setIsContentEditing(true);
@@ -193,6 +221,7 @@ const TextCard = React.memo(function TextCard({
 
   return (
     <div className={`text-container ${isInputActive ? 'input-active' : ''}`}>
+      {renderSeparateButton()}
       <div className="text-content">
         {isContentEditing ? (
           <textarea

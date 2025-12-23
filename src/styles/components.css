@@ -1449,3 +1449,45 @@ You can find the assignment logic in useAgingEffect.js.
   pointer-events: none;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
+
+/* Separate button styles */
+.separate-button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 4px 12px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  z-index: 100;
+  font-family: inherit;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.separate-button:hover {
+  background: rgba(228, 155, 63, 0.2);
+  transform: translateY(-1px);
+}
+
+/* Fixed separate button for long content */
+.separate-button-fixed {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 20px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 2px solid #E49B3F;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 9000;
+}
+
+.separate-button-fixed:hover {
+  background: rgba(228, 155, 63, 0.15);
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
