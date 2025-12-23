@@ -1204,6 +1204,9 @@ You can find the assignment logic in useAgingEffect.js.
   box-sizing: border-box;
   resize: none;
   overflow: hidden;
+  margin: 0;
+  padding: 0;
+  line-height: 1.5;
 }
 
 .tweet-loading {

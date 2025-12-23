@@ -22,6 +22,7 @@ const TextCard = React.memo(function TextCard({
   const [cardContent, setCardContent] = useState(content || '');
   const contentRef = useRef(null);
   const textLength = useRef(null);
+  const textWidth = useRef(null);
   const clickCountRef = useRef(0);
   const isBlurringRef = useRef(false);
   const isMouseDownRef = useRef(false);
@@ -235,7 +236,8 @@ const TextCard = React.memo(function TextCard({
             placeholder={isEmpty ? "Click to edit" : ""}
             style={{ 
               height: textLength.current ? `${textLength.current}px` : 'auto',
-              width: '100%',
+              minWidth: textWidth.current ? `${textWidth.current}px` : '200px',
+              width: 'auto',
               resize: 'none',
               boxSizing: 'border-box'
             }}
@@ -246,7 +248,10 @@ const TextCard = React.memo(function TextCard({
             className={`${isEmpty ? 'empty-content' : ''} editable ${type === 'newText' ? 'new-text' : 'pasted-text'}`}
             onClick={handleContentClick}
             ref={el => {
-              if (el) textLength.current = el.clientHeight;
+              if (el) {
+                textLength.current = el.clientHeight;
+                textWidth.current = el.clientWidth;
+              }
             }}
           >
             {cardContent || (isEmpty ? 'Click to edit' : '')}
