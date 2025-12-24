@@ -1694,7 +1694,7 @@ const PasteArea = ({ onExport }) => {
                         id={`section-${section.id}`}
                         x={section.bounds?.x || 0}
                         y={section.bounds?.y || 0}
-                        className="section-element"
+                        className={`section-element ${selectedSectionId === section.id ? 'selected' : ''}`}
                       >
                         <SectionCard
                           section={section}

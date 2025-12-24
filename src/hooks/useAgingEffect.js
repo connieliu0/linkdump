@@ -82,6 +82,8 @@ export const useAgingEffect = (timeSettings) => {
       elements.forEach(assignAgingClasses);
       const cards = document.querySelectorAll('.card');
       cards.forEach(assignAgingClasses);
+      const sections = document.querySelectorAll('.section-card');
+      sections.forEach(assignAgingClasses);
     };
 
     applyAgingEffects();

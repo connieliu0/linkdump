@@ -24,6 +24,7 @@ const TextCard = React.memo(function TextCard({
   const textLength = useRef(null);
   const textWidth = useRef(null);
   const clickCountRef = useRef(0);
+  const clickTimeoutRef = useRef(null);
   const isBlurringRef = useRef(false);
   const isMouseDownRef = useRef(false);
   const blurTimeoutRef = useRef(null);
@@ -54,11 +55,14 @@ const TextCard = React.memo(function TextCard({
     };
   }, []);
 
-  // Cleanup blur timeout on unmount
+  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       if (blurTimeoutRef.current) {
         clearTimeout(blurTimeoutRef.current);
+      }
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
       }
     };
   }, []);
@@ -68,6 +72,12 @@ const TextCard = React.memo(function TextCard({
     
     if (isContentEditing) return;
     
+    // If we were just dragging, ignore this click entirely
+    if (wasDragged) {
+      clickCountRef.current = 0;
+      return;
+    }
+    
     if (!isSelected) {
       if (onDoubleClick) {
         onDoubleClick();
@@ -77,9 +87,19 @@ const TextCard = React.memo(function TextCard({
 
     clickCountRef.current += 1;
 
-    if (clickCountRef.current === 2 && !wasDragged) {
+    // Clear any existing timeout
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+    }
+
+    if (clickCountRef.current === 2) {
       setIsContentEditing(true);
       clickCountRef.current = 0;
+    } else {
+      // Reset click count after 300ms if no second click
+      clickTimeoutRef.current = setTimeout(() => {
+        clickCountRef.current = 0;
+      }, 300);
     }
   }, [isSelected, wasDragged, onDoubleClick, isContentEditing]);
 
@@ -88,6 +108,12 @@ const TextCard = React.memo(function TextCard({
     
     if (isEditing) return;
     
+    // If we were just dragging, ignore this click entirely
+    if (wasDragged) {
+      clickCountRef.current = 0;
+      return;
+    }
+    
     if (!isSelected) {
       if (onDoubleClick) {
         onDoubleClick();
@@ -97,16 +123,29 @@ const TextCard = React.memo(function TextCard({
 
     clickCountRef.current += 1;
 
-    if (clickCountRef.current === 2 && !wasDragged) {
+    // Clear any existing timeout
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+    }
+
+    if (clickCountRef.current === 2) {
       setIsEditing(true);
       clickCountRef.current = 0;
+    } else {
+      // Reset click count after 300ms if no second click
+      clickTimeoutRef.current = setTimeout(() => {
+        clickCountRef.current = 0;
+      }, 300);
     }
   }, [isSelected, wasDragged, onDoubleClick, isEditing]);
 
-  // Reset click count when selection changes
+  // Reset click count when selection changes or after drag
   useEffect(() => {
     clickCountRef.current = 0;
-  }, [isSelected]);
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+    }
+  }, [isSelected, wasDragged]);
 
   const handleContentChange = useCallback(async (e) => {
     const newContent = e.target.value;

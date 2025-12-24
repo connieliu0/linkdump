@@ -1255,6 +1255,11 @@ You can find the assignment logic in useAgingEffect.js.
   overflow: visible !important; /* Allow resize handles to extend beyond bounds */
 }
 
+/* When section element is selected, bring it forward but keep it behind cards (cards are z-index 10) */
+.section-element.selected {
+  z-index: 5 !important;
+}
+
 .section-card {
   background: rgba(200, 220, 255, 0.35);
   border: 2px dashed rgba(35, 51, 76, 0.4);
@@ -1262,14 +1267,35 @@ You can find the assignment logic in useAgingEffect.js.
   cursor: move;
   user-select: none;
   box-sizing: border-box;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease, opacity 0.3s ease, filter 0.3s ease;
   overflow: visible; /* Allow resize handles to extend beyond bounds */
 }
 
+/* Section aging effect - fades and blurs over time */
+.section-card.aging-opacity-fade {
+  opacity: calc(1 - (var(--aging-progress, 0) * (1 - var(--min-opacity, 0.7))));
+}
 
+.section-card.aging-blur {
+  filter: blur(calc(var(--aging-progress, 0) * 2px * var(--blur-mult, 1)));
+}
+
+/* When section is selected, restore full visibility (bring to front effect) */
+.section-element.selected .section-card {
+  border-color: #5B8DEF;
+  border-style: solid;
+  opacity: 1 !important;
+  filter: none !important;
+  box-shadow: 0 10px 30px -3px rgba(0, 0, 0, 0.2);
+  transform: translate3d(0, 0, 0); /* Maintain GPU acceleration */
+}
+
+/* Also apply to section-card.selected for backwards compatibility */
 .section-card.selected {
   border-color: #5B8DEF;
   border-style: solid;
+  opacity: 1 !important;
+  filter: none !important;
 }
 
 .section-card.resizing {
