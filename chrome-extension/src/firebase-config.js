@@ -1,10 +1,7 @@
 // Firebase configuration for Chrome Extension
-// Copy your values from your .env file or Firebase console
+import { initializeApp } from 'firebase/app';
+import { getDatabase, ref, push, set } from 'firebase/database';
 
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getDatabase, ref, push, set } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-
-// TODO: Replace these with your actual Firebase config values
 const firebaseConfig = {
   apiKey: "AIzaSyBvSYH1cdLkBgrkJyo5k1IpIXOl6CSQa_Y",
   authDomain: "linkdump-f6ac5.firebaseapp.com",

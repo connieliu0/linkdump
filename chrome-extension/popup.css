@@ -1,3 +1,13 @@
+@font-face {
+  font-family: 'Decompositionphase1';
+  src: url('fonts/Decompositionphase1.woff2') format('woff2'),
+       url('fonts/Decompositionphase1.woff') format('woff'),
+       url('fonts/Decompositionphase1.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -5,12 +15,19 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #1a1a1a;
-  color: #e0e0e0;
+  font-family: 'Decompositionphase1';
+  letter-spacing: 0.1em;
+  backdrop-filter: blur(10px);
+  color: #5a2d2d;
+  background: rgb(255, 243, 220);
   min-width: 320px;
 }
+button{
+  font-family: 'Decompositionphase1';
+  letter-spacing: 0.1em;
+  border: 1px solid #837070;
 
+}
 .container {
   padding: 16px;
 }
@@ -19,14 +36,17 @@ header {
   text-align: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid #33333324;
+  flex-direction: row;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 header h1 {
   font-size: 18px;
   font-weight: 600;
-  color: #fff;
-  letter-spacing: -0.5px;
+  color: #5a2d2d;
 }
 
 .subtitle {
@@ -57,52 +77,54 @@ label {
 input[type="text"],
 textarea {
   width: 100%;
-  padding: 10px 12px;
-  background: #2a2a2a;
-  border: 1px solid #3a3a3a;
-  border-radius: 6px;
-  color: #e0e0e0;
-  font-size: 14px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+  border: none;
+  border-bottom: 1px solid #5a2d2d;
+  background: rgba(255, 255, 255, 0.2);
+  color: #5a2d2d;
+  margin: 4px 0px;
+  padding: 8px;
+  font-family: 'Decompositionphase1';
+  font-size: 1rem;
+  transition: background 0.2s;
 }
 
 input[type="text"]:focus,
 textarea:focus {
   outline: none;
-  border-color: #5a8dee;
-  box-shadow: 0 0 0 2px rgba(90, 141, 238, 0.2);
+  background: linear-gradient(to top, rgba(211, 211, 211, 0.5), transparent);
 }
 
 input[type="text"]::placeholder,
 textarea::placeholder {
-  color: #666;
+  color: #5a2d2d;
+  opacity: 0.6;
+  font-family: 'Decompositionphase1';
 }
 
 textarea {
   resize: vertical;
   min-height: 60px;
-  font-family: inherit;
 }
 
 .icon-btn {
   flex-shrink: 0;
   width: 36px;
   height: 36px;
-  background: #2a2a2a;
-  border: 1px solid #3a3a3a;
-  border-radius: 6px;
-  color: #888;
+  background: rgba(255, 255, 255, 0.20);
+  border-radius: 0;
+  color: #5a2d2d;
   font-size: 18px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .icon-btn:hover {
-  background: #3a3a3a;
-  color: #e0e0e0;
+  background: rgba(255, 255, 255, 0.30);
+  transform: translateY(-1px);
 }
 
 .hint {
@@ -115,45 +137,32 @@ textarea {
   color: #5cb85c;
 }
 
-.primary-btn,
-.secondary-btn {
+
+.btn {
   width: 100%;
-  padding: 12px 16px;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
+  padding: 12px;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.20);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  color: #5a2d2d;
+  font-family: 'Decompositionphase1';
+  font-size: 1rem;
+  font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
 }
 
-.primary-btn {
-  background: #5a8dee;
-  color: #fff;
-}
-
-.primary-btn:hover:not(:disabled) {
-  background: #4a7dde;
-}
-
-.primary-btn:disabled,
-.secondary-btn:disabled {
+.btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.secondary-btn {
-  background: #2a2a2a;
-  border: 1px solid #3a3a3a;
-  color: #e0e0e0;
-}
-
-.secondary-btn:hover:not(:disabled) {
-  background: #3a3a3a;
+.btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.30);
+  transform: translateY(-1px);
 }
 
 .icon {
@@ -163,7 +172,6 @@ textarea {
 .divider {
   display: flex;
   align-items: center;
-  gap: 12px;
   margin: 16px 0;
 }
 
@@ -172,13 +180,7 @@ textarea {
   content: '';
   flex: 1;
   height: 1px;
-  background: #333;
-}
-
-.divider span {
-  font-size: 11px;
-  color: #666;
-  text-transform: uppercase;
+  border-bottom: 1px solid #33333324;
 }
 
 .toast {
@@ -213,14 +215,12 @@ textarea {
 }
 
 /* Loading state */
-.primary-btn.loading,
-.secondary-btn.loading {
+.btn.loading {
   position: relative;
   color: transparent;
 }
 
-.primary-btn.loading::after,
-.secondary-btn.loading::after {
+.btn.loading::after {
   content: '';
   position: absolute;
   width: 16px;
@@ -231,16 +231,61 @@ textarea {
   animation: spin 0.8s linear infinite;
 }
 
-.primary-btn.loading::after {
+.loading::after {
   border-top-color: #fff;
 }
 
-.secondary-btn.loading::after {
+.btn.loading::after {
   border-top-color: #e0e0e0;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Image preview */
+.image-preview {
+  position: relative;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  border-radius: 0;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid #5a2d2d;
+}
+
+.image-preview.hidden {
+  display: none;
+}
+
+.image-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 150px;
+  margin: 0 auto;
+}
+
+.clear-image-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  background: rgba(90, 45, 45, 0.6);
+  border: none;
+  border-radius: 0;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  font-family: 'Decompositionphase1';
+}
+
+.clear-image-btn:hover {
+  background: rgba(90, 45, 45, 0.8);
 }
 
 

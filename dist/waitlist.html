@@ -1,0 +1,1295 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Link Dump Waitlist</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Mansalva&family=Schoolbell&display=swap');
+    
+    @font-face {
+      font-family: 'Decompositionphase1';
+      src: url('../src/assets/fonts/Decompositionphase1.woff2') format('woff2'),
+           url('../src/assets/fonts/Decompositionphase1.woff') format('woff'),
+           url('../src/assets/fonts/Decompositionphase1.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Page reset */
+    html, body { height: 100%; margin: 0; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  
+    /* Container to hold video and content */
+    .hero {
+      position: relative;
+      height: 100vh;
+      overflow: hidden;
+      background: #111 url('/assets/thumbnail.jpg') center/cover no-repeat;
+    }
+
+    .video-container {
+      position: relative;
+      height: 100%;
+      z-index: 1;
+    }
+
+    video {
+      display: block;
+      width: 100%;
+    }
+
+    /* Clear video - visible in center */
+    .video-clear {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity .8s ease-in-out;
+      pointer-events: none;
+      z-index: 1;
+      mask-image: radial-gradient(
+        ellipse at center,
+        black 0%,
+        black 30%,
+        rgba(0, 0, 0, 0.7) 50%,
+        rgba(0, 0, 0, 0.3) 70%,
+        transparent 100%
+      );
+      -webkit-mask-image: radial-gradient(
+        ellipse at center,
+        black 0%,
+        black 30%,
+        rgba(0, 0, 0, 0.7) 50%,
+        rgba(0, 0, 0, 0.3) 70%,
+        transparent 100%
+      );
+    }
+
+    /* Blurred video - visible around edges */
+    .video-blur {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity .8s ease-in-out;
+      pointer-events: none;
+      z-index: 1;
+      filter: blur(20px);
+      mask-image: radial-gradient(
+        ellipse at center,
+        transparent 0%,
+        rgba(0, 0, 0, 0.3) 30%,
+        rgba(0, 0, 0, 0.7) 50%,
+        black 70%,
+        black 100%
+      );
+      -webkit-mask-image: radial-gradient(
+        ellipse at center,
+        transparent 0%,
+        rgba(0, 0, 0, 0.3) 30%,
+        rgba(0, 0, 0, 0.7) 50%,
+        black 70%,
+        black 100%
+      );
+    }
+
+    .group{
+      flex-direction: row;
+      display: flex;
+    }
+
+    /* Shadow overlay */
+    .video-container::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 50%;
+      background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+      pointer-events: none;
+    }
+
+    /* Vignette overlay for darker edges, brighter center */
+    .video-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(
+        ellipse at center,
+        transparent 0%,
+        transparent 40%,
+        rgba(0, 0, 0, 0.2) 70%,
+        rgba(0, 0, 0, 0.6) 100%
+      );
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .hero.ready .video-clear { opacity: 1; }
+    .hero.ready .video-blur { opacity: 1; }
+    
+    /* Show videos immediately when they have a poster */
+    .video-clear[poster], .video-blur[poster] {
+      opacity: 0.5;
+    }
+    
+    /* Crossfade effect during transitions */
+    .video-clear.transitioning { opacity: 0.3; }
+    .video-blur.transitioning { opacity: 0.3; }
+
+    /* Content on top of the video */
+    .content {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 20;
+      justify-content: center;
+      text-align: center;
+      backdrop-filter: saturate(120%);
+      pointer-events: none;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 2rem;
+      height: 100vh;
+      align-items: center;
+      justify-items: center;
+    }
+
+    .card {
+      backdrop-filter: blur(10px);
+      padding: 1.5rem;
+      margin: 0.5rem;
+      pointer-events: auto;
+      height: 100px;
+      width: 100px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: left;
+      border: 1px solid white;
+      mix-blend-mode: multiply;
+      opacity: 0;
+      transform: translateY(-20px) rotate(0deg);
+      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+    }
+
+    /* Card drop animation */
+    .card.drop-animation {
+      opacity: 1;
+      transform: translateY(0) rotate(var(--random-rotation, 0deg));
+    }
+
+    /* Signup drop animation */
+    .signup.drop-animation {
+      opacity: 1;
+      transform: translateY(0) rotate(0deg);
+    }
+
+    .card h2 {
+      font-size: 2.5rem;
+      margin: 0 0 .5rem;
+      font-family: 'Decompositionphase1';
+      letter-spacing: 0.05em;
+      color: white;
+      font-weight: 400;
+    }
+
+    .card p {
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      opacity: .9;
+      color: white;
+      margin: 0;
+      mix-blend-mode: exclusion;
+    }
+   
+    .top-left {
+      grid-column: 1;
+      grid-row: 1;
+      justify-self: start;
+      align-self: start;
+      margin-left: 1rem;
+      margin-top: 1rem;
+      font-family: 'Decompositionphase1';
+      letter-spacing: 0.05em;
+    }
+
+    .top-right {
+      grid-column: 3;
+      grid-row: 1;
+      justify-self: end;
+      align-self: start;
+      margin-right: 1rem;
+      margin-top: 1rem;
+      text-align: right;
+      font-family: 'Decompositionphase1';
+      letter-spacing: 0.05em;
+    }
+
+    .bottom-left {
+      grid-column: 1;
+      grid-row: 2;
+      justify-self: start;
+      align-self: end;
+      margin-left: 1rem;
+      margin-bottom: 1rem;
+      text-align: left;
+      font-family: 'Decompositionphase1';
+      letter-spacing: 0.05em;
+    }
+
+    .bottom-right {
+      grid-column: 3;
+      grid-row: 2;
+      justify-self: end;
+      align-self: end;
+      margin-right: 1rem;
+      margin-bottom: 1rem;
+      text-align: right;
+      font-family: 'Decompositionphase1';
+      letter-spacing: 0.05em;
+    }
+
+    .signup {
+      grid-column: 2;
+      grid-row: 1 / 3;
+      justify-self: center;
+      align-self: center;
+      z-index: 100;
+      position: relative;
+      background: radial-gradient(50% 50% at 50% 50%, rgba(255, 255, 255, 0.00) 14.96%, rgba(255, 255, 255, 0.34) 42.99%, rgba(255, 255, 255, 0.50) 100%);
+      padding: 1em;
+      border: 1px dashed #c6bbbb;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      opacity: 0;
+      transform: translateY(-20px) rotate(0deg);
+      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+    }
+
+    /* Hide mobile elements on desktop */
+    .mobile-descriptions {
+      display: none;
+    }
+
+    .signup-form {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      z-index: 101;
+      position: relative;
+    }
+
+    .signup p{
+      letter-spacing: 0.05em;
+      font-family: "Decompositionphase1";
+      color: #645a5a;
+      margin: 0;
+    }
+    .signup small{
+      color: #645a5a;
+      font-family: "Schoolbell", cursive;
+    }
+    .signup small a{
+      color: #3b343494;
+      font-family: "Schoolbell", cursive;
+    }
+
+    /* Consolidated input styles */
+    input {
+      font-family: "Schoolbell", cursive;
+      padding: 0.75rem;
+      background: rgba(242, 242, 242, 0.1);
+      border: none;
+      border-bottom: 1px dashed #645a5a;
+      color: #3b343494;
+      backdrop-filter: blur(10px);
+      font-size: 1rem;
+      outline: none;
+      pointer-events: auto;
+      z-index: 10;
+      width: 100%;
+      box-sizing: border-box;
+      height: auto;
+      line-height: 1;
+    }
+
+    input::placeholder {
+      color: #645a5a94;
+      font-family: "Schoolbell", cursive;
+      font-size: 0.8rem;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Link form styles */
+    .link-form {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      z-index: 101;
+      position: relative;
+      margin:0;
+    }
+
+
+    input:focus {
+      border-color: white;
+      background: rgba(73, 73, 73, 0.1);
+    }
+
+    button {
+      padding: 0.75rem;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid white;
+      color: #645a5a;
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+      font-family: "Schoolbell", cursive;
+      z-index: 102;
+      position: relative;
+      pointer-events: auto;
+      font-size: 1rem;
+      box-sizing: border-box;
+      height: auto;
+      line-height: 1;
+    }
+
+    button:hover {
+      background: rgba(255, 255, 255, 0.9);
+
+    }
+
+    /* Link board styles */
+    .link-board {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .link-card {
+        position: absolute;
+    backdrop-filter: blur(10px);
+    padding: 1rem;
+    pointer-events: auto;
+    border: 1px solid white;
+    mix-blend-mode: multiply;
+    opacity: 0;
+    transform: translateY(-20px) rotate(var(--random-rotation, 0deg));
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out, box-shadow 0.4s ease-out;
+    max-width: 200px;
+    background: rgba(255, 255, 255, 0.1);
+    height: auto;
+    min-height: auto;
+    display: flex;
+    color:white;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    z-index: 1;
+    overflow: hidden;
+    font-family: "Schoolbell", cursive;
+
+    }
+    .link-card a {
+      color: white;
+    }
+    .link-card a:hover {
+      color: #645a5a;
+      transition: all 0.3s ease;  /* Smooth 0.3s transition */
+
+    }
+    /* Hover effect - only the hovered card moves */
+    .link-card:hover {
+        z-index: 10;
+        transform: translateY(-15px) rotate(0deg) scale(1.1);
+        transition: transform 0.3s ease-out, z-index 0s, box-shadow 0.4s ease-out, background 0.3s ease-out;
+        box-shadow: 0 20px 40px rgba(124, 124, 124, 0.2), 0 5px 15px rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 0.4);
+        color: #645a5a;
+    }
+    
+    /* Reset animation for cards returning to original position */
+    .link-card.resetting {
+        transition: transform 0.5s ease-in-out;
+    }
+  
+    /* Dynamic positioning handled by JavaScript collision detection */
+    
+    /* Hide link board on mobile */
+    @media (max-width: 768px) {
+      .link-board {
+        display: none !important;
+      }
+    }
+    
+    .link-card.drop-animation {
+      opacity: 1;
+      transform: translateY(0) rotate(var(--random-rotation, 0deg));
+    }
+    
+    /* Initial hovered state for new cards */
+    .link-card.initial-hovered {
+      z-index: 10;
+      transform: translateY(-15px) rotate(0deg) scale(1.1);
+      box-shadow: 0 20px 40px rgba(124, 124, 124, 0.2), 0 5px 15px rgba(0, 0, 0, 0.1);
+      background: rgba(255, 255, 255, 0.4);
+      color: #645a5a;
+      transition: all 0.8s ease-out;
+    }
+    
+    .link-card.initial-hovered p,
+    .link-card.initial-hovered small {
+      color: #645a5a;
+    }
+    
+    .link-card p {
+      color: white;
+      text-decoration: none;
+      font-family: "Schoolbell", cursive;
+      font-size: 0.9rem;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    
+    .link-card small {
+      color: white;
+      font-size: 0.7rem;
+      margin-top: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    
+    /* Hover state for text elements */
+    .link-card:hover p,
+    .link-card:hover small {
+      color: #645a5a;
+    }
+    form{
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+    }
+    /* Respect user's reduced motion preference: hide video and just use the poster/fallback */
+    @media (prefers-reduced-motion: reduce) {
+      #bgvideo { display: none; }
+    }
+
+    /* Mobile responsive design */
+    @media (max-width: 768px) {
+      .content {
+        display: flex !important;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        text-align: center;
+        min-height: 90dvh; /* Dynamic viewport height for mobile */
+        min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        padding: 1rem;
+        box-sizing: border-box;
+      }
+      
+      /* Show link dump cards on mobile - at the top */
+      .top-left {
+        display: flex !important;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        grid-column: unset;
+        grid-row: unset;
+        justify-self: center;
+        align-self: center;
+      }
+      
+      /* Signup form in the middle */
+      .signup {
+        position: static;
+        margin: 0;
+        grid-column: unset;
+        grid-row: unset;
+      }
+      
+      /* Mobile descriptions at the bottom */
+      .mobile-descriptions {
+        display: flex !important;
+        flex-direction: column;
+        gap:0.5rem;
+        margin-bottom: 1rem;
+        padding: 0 1rem;
+        box-sizing: border-box;
+      }
+      
+      .mobile-descriptions p {
+        font-size: 1rem;
+        font-family: "Schoolbell", cursive;
+        color: white;
+        opacity: 0.9;
+        margin:0;
+      }
+      
+      /* Hide other cards on mobile */
+      .top-right,
+      .bottom-left,
+      .bottom-right {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="hero" id="hero">
+    <div class="video-container">
+      <!-- Clear video in center -->
+      <video
+        id="bgvideo"
+        class="video-clear"
+        poster="/assets/thumbnail.jpg"
+        preload="auto"
+        autoplay
+        muted
+        playsinline
+      >
+        <source src="/assets/output.webm" type="video/webm">
+        <source src="/assets/output.mp4" type="video/mp4">
+      </video>
+      
+      <!-- Blurred video for edges -->
+      <video
+        id="bgvideo-blur"
+        class="video-blur"
+        poster="/assets/thumbnail.jpg"
+        preload="auto"
+        autoplay
+        muted
+        playsinline
+      >
+        <source src="/assets/output.webm" type="video/webm">
+        <source src="/assets/output.mp4" type="video/mp4">
+      </video>
+    </div>
+
+    <div class="content">
+      <!-- Top Left: Link Dump Cards -->
+      <div class="top-left">
+        <div style="display: flex; gap: -40px;">
+          <div class="card">
+            <h2>link</h2>
+          </div>
+          <div class="card" style="margin-left: -20px;">
+            <h2>dump</h2>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Top Right: Import Links Card -->
+      <div class="top-right">
+        <div class="card">
+          <p>paste links or import from are.na</p>
+        </div>
+      </div>
+      
+      <!-- Bottom Left: Organize Card -->
+      <div class="bottom-left">
+        <div class="card">
+          <p>organize on an ephemeral canvas</p>
+        </div>
+      </div>
+      
+      <!-- Bottom Right: Until it Disappears Card -->
+      <div class="bottom-right">
+        <div class="card">
+          <p>until it disappears</p>
+        </div>
+      </div>
+      
+      <!-- Center: Signup Form -->
+      <div class="signup">
+        <p>waitlist sign up </p>
+        <small>(I promise to only send one email!)</small>
+        <form id="submitForm" class="signup-form">
+          <input type="email" id="emailInput" placeholder="Enter your email" required />
+          <button type="submit">→</button>
+        </form>
+        <div id="confirmationMessage" class="confirmation-message" style="display: none;">
+          Submission confirmed!
+        </div>
+        
+        <!-- Link Form -->
+        <form id="linkForm" class="link-form">
+          <input type="text" id="linkInput" placeholder="Paste your link" />
+          <button type="submit">→</button>
+        </form>
+        <div id="linkConfirmationMessage" class="confirmation-message" style="display: none;">
+          Link submitted!
+        </div>
+        <small>try the beta <a href="linkdump.connie.surf" target="_blank">linkdump.connie.surf</a> </small>
+      </div>
+      
+      <!-- Mobile Descriptions (hidden on desktop) -->
+      <div class="mobile-descriptions">
+        <p>import links from are.na</p>
+        <p>organize on an ephemeral canvas</p>
+        <p>until it disappears</p>
+      </div>
+    </div>
+    
+    <!-- Link Board for displaying submitted links -->
+    <div id="linkBoard" class="link-board"></div>
+  </section>
+
+  <script>
+    // URL processing functions
+    function normalizeUrl(url) {
+      if (!url) return url;
+      
+      // Remove any existing protocol
+      let cleanUrl = url.replace(/^https?:\/\//, '');
+      
+      // Add https:// prefix
+      return `https://${cleanUrl}`;
+    }
+
+    function getDisplayUrl(url) {
+      if (!url) return url;
+      
+      // Remove https:// prefix for display
+      return url.replace(/^https:\/\//, '');
+    }
+
+    (() => {
+      const hero = document.getElementById('hero');
+      const vid = document.getElementById('bgvideo');
+      const vidBlur = document.getElementById('bgvideo-blur');
+      
+      // Optimized card animation
+      function animateCards() {
+        const cards = document.querySelectorAll('.card');
+        const signup = document.querySelector('.signup');
+        
+        cards.forEach((card, i) => {
+          card.style.setProperty('--random-rotation', `${(Math.random() - 0.5) * 30}deg`);
+          setTimeout(() => card.classList.add('drop-animation'), i * 50 + 100);
+        });
+        
+        setTimeout(() => signup?.classList.add('drop-animation'), cards.length * 50 + 300);
+      }
+      
+      // Optimized video setup
+      function setupVideo() {
+        [vid, vidBlur].forEach(video => {
+          video.loop = true;
+        });
+        
+        let readyCount = 0;
+        let hasStarted = false;
+        
+        const handleReady = () => {
+          readyCount++;
+          if (!hasStarted && readyCount >= 1) {
+            hasStarted = true;
+            hero.classList.add('ready');
+            // Synchronize both videos to start at the same time
+            const currentTime = vid.currentTime;
+            vidBlur.currentTime = currentTime;
+            vid.play().catch(() => {});
+            vidBlur.play().catch(() => {});
+            
+            // Keep videos synchronized during playback
+            setInterval(() => {
+              if (!vid.paused && !vidBlur.paused) {
+                const timeDiff = Math.abs(vid.currentTime - vidBlur.currentTime);
+                if (timeDiff > 0.1) { // If more than 100ms difference
+                  vidBlur.currentTime = vid.currentTime;
+                }
+              }
+            }, 100); // Check every 100ms
+          }
+        };
+        
+        // Try multiple events for better compatibility
+        const events = ['canplay', 'loadeddata', 'canplaythrough'];
+        events.forEach(event => {
+          vid.addEventListener(event, handleReady, { once: true });
+          vidBlur.addEventListener(event, handleReady, { once: true });
+        });
+        
+        // Fallback timeout - show videos after 2 seconds regardless
+        setTimeout(() => {
+          if (!hasStarted) {
+            console.log('Video loading timeout - showing videos anyway');
+            handleReady();
+          }
+        }, 2000);
+        
+        // Start playing immediately if possible
+        vid.play().catch(() => {});
+        vidBlur.play().catch(() => {});
+      }
+      
+      // Intersection observer for performance
+      new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting) {
+          vid.play().catch(() => {});
+          vidBlur.play().catch(() => {});
+        } else {
+          vid.pause();
+          vidBlur.pause();
+        }
+      }, { threshold: 0.01 }).observe(hero);
+      
+      // Optimized form handling
+      document.getElementById('submitForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('emailInput').value;
+        const button = document.querySelector('#submitForm button');
+        const input = document.getElementById('emailInput');
+        const message = document.getElementById('confirmationMessage');
+        
+        button.textContent = '꩜';
+        button.disabled = true;
+        
+        // Show "Submitting" first
+        input.value = 'Submitting';
+        input.disabled = true;
+        input.style.color = '#645a5a';
+        input.style.fontFamily = '"Schoolbell", cursive';
+        
+        try {
+          const formData = new FormData();
+          formData.append('email', email);
+          
+          await fetch('https://script.google.com/macros/s/AKfycbylPGBqsBh6gH_1bsKGo0IcybmY2sDZXs8kuSY_FROYwktv_7i0kj25qabEmlzRJdp4Zw/exec', {
+            method: 'POST',
+            body: formData
+          });
+        } catch (error) {
+          console.error('Error:', error);
+        }
+        
+        // Change input to show "Submitted!"
+        input.value = 'Submitted!';
+        
+        button.textContent = '→';
+        button.disabled = false;
+        
+        // Reset input after 2 seconds
+        setTimeout(() => {
+          input.value = '';
+          input.disabled = false;
+          input.style.fontFamily = '';
+        }, 2000);
+      });
+
+      // Link form submission
+      document.getElementById('linkForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const link = document.getElementById('linkInput').value;
+        const button = document.querySelector('#linkForm button');
+        const input = document.getElementById('linkInput');
+        const message = document.getElementById('linkConfirmationMessage');
+        
+        if (!link) return;
+        
+        button.textContent = '꩜';
+        button.disabled = true;
+        
+        // Show "Submitting" first
+        input.value = 'Submitting';
+        input.disabled = true;
+        input.style.color = '#645a5a';
+        input.style.fontFamily = '"Schoolbell", cursive';
+        
+        try {
+          const formData = new FormData();
+          formData.append('link', link);
+          
+          await fetch('https://script.google.com/macros/s/AKfycbyTX9-mYAnLX_UaGAmtuoCAC23dTgHAiaQNYtnQwm2qIp75A45OMqGw9KeudyZfe0_L/exec', {
+            method: 'POST',
+            body: formData
+          });
+        } catch (error) {
+          console.error('Error:', error);
+        }
+        
+        // Change input to show "Submitted!"
+        input.value = 'Submitted!';
+        
+        button.textContent = '→';
+        button.disabled = false;
+        
+        // Reset input after 2 seconds
+        setTimeout(() => {
+          input.value = '';
+          input.disabled = false;
+          input.style.fontFamily = '';
+        }, 2000);
+        
+        // Clear cache and refresh links after submission
+        localStorage.removeItem('linkDumpLinks');
+        localStorage.removeItem('linkDumpCacheTime');
+        
+        // Mark user as active and trigger immediate check
+        trackUserActivity();
+        fetchLinks(true, false); // Force refresh to get the new card immediately, not initial load
+        
+        setTimeout(() => message.style.display = 'none', 5000);
+      });
+
+      // Global tracking of processed links
+      let processedLinks = new Set();
+      let lastFetchTime = 0;
+      let isUserActive = false;
+      let userActivityTimer = null;
+      
+      // Card hover and reset functionality
+      let cardOriginalPositions = new Map();
+      let resetTimer = null;
+
+      // Load processed links from localStorage on page load
+      function loadProcessedLinks() {
+        const saved = localStorage.getItem('processedLinks');
+        if (saved) {
+          const linksArray = JSON.parse(saved);
+          processedLinks = new Set(linksArray);
+          console.log('Loaded', processedLinks.size, 'previously processed links');
+        }
+      }
+
+      // Save processed links to localStorage
+      function saveProcessedLinks() {
+        const linksArray = Array.from(processedLinks);
+        localStorage.setItem('processedLinks', JSON.stringify(linksArray));
+      }
+
+      // Track user activity
+      function trackUserActivity() {
+        isUserActive = true;
+        clearTimeout(userActivityTimer);
+        userActivityTimer = setTimeout(() => {
+          isUserActive = false;
+        }, 10000); // Consider user inactive after 10 seconds
+      }
+
+      // Add event listeners for user activity
+      document.addEventListener('click', trackUserActivity);
+      document.addEventListener('keydown', trackUserActivity);
+      document.addEventListener('scroll', trackUserActivity);
+      
+      // Store original position of a card wrapper
+      function storeOriginalPosition(wrapper) {
+        const card = wrapper.querySelector('.link-card');
+        if (card) {
+          cardOriginalPositions.set(wrapper, {
+            left: wrapper.style.left,
+            top: wrapper.style.top,
+            transform: card.style.transform,
+            rotation: card.style.getPropertyValue('--random-rotation')
+          });
+        }
+      }
+      
+      // Reset all cards to their original positions
+      function resetCardsToOriginalPositions() {
+        const linkWrappers = document.querySelectorAll('#linkBoard > a');
+        linkWrappers.forEach(wrapper => {
+          const card = wrapper.querySelector('.link-card');
+          if (card) {
+            const originalPos = cardOriginalPositions.get(wrapper);
+            if (originalPos) {
+              card.classList.add('resetting');
+              wrapper.style.left = originalPos.left;
+              wrapper.style.top = originalPos.top;
+              card.style.transform = originalPos.transform;
+              card.style.setProperty('--random-rotation', originalPos.rotation);
+              
+              // Remove resetting class after animation
+              setTimeout(() => {
+                card.classList.remove('resetting');
+              }, 500);
+            }
+          }
+        });
+      }
+      
+      // Handle card hover with simple lift effect
+      function setupCardHoverEffects() {
+        const linkWrappers = document.querySelectorAll('#linkBoard > a');
+        
+        linkWrappers.forEach(wrapper => {
+          const card = wrapper.querySelector('.link-card');
+          if (card) {
+            // Store original position when card is created
+            storeOriginalPosition(wrapper);
+            
+            wrapper.addEventListener('mouseenter', () => {
+              // Clear any existing reset timer
+              if (resetTimer) {
+                clearTimeout(resetTimer);
+                resetTimer = null;
+              }
+            });
+            
+            wrapper.addEventListener('mouseleave', () => {
+              // Start 5-second timer to reset cards
+              resetTimer = setTimeout(() => {
+                resetCardsToOriginalPositions();
+              }, 5000);
+            });
+          }
+        });
+      }
+
+      // Function to fetch links from Google Apps Script
+      function fetchLinks(forceRefresh = false, isInitialLoad = false) {
+        const cachedLinks = localStorage.getItem('linkDumpLinks');
+        const cacheTime = localStorage.getItem('linkDumpCacheTime');
+        const now = Date.now();
+        
+        // Use cache if it's less than 30 seconds old and not forcing refresh
+        // This ensures we get fresh data more frequently while still using cache for performance
+        if (!forceRefresh && cachedLinks && cacheTime && (now - parseInt(cacheTime)) < 30000) {
+          displayLinks(JSON.parse(cachedLinks), isInitialLoad);
+          return;
+        }
+        
+        fetch('https://script.google.com/macros/s/AKfycbyTX9-mYAnLX_UaGAmtuoCAC23dTgHAiaQNYtnQwm2qIp75A45OMqGw9KeudyZfe0_L/exec')
+          .then(response => response.json())
+          .then(data => {
+            // Cache the data
+            localStorage.setItem('linkDumpLinks', JSON.stringify(data));
+            localStorage.setItem('linkDumpCacheTime', now.toString());
+            displayLinks(data, isInitialLoad);
+          })
+          .catch(error => {
+            console.error('Error fetching links:', error);
+            // Try to use cached data even if it's old
+            if (cachedLinks) {
+              displayLinks(JSON.parse(cachedLinks), isInitialLoad);
+            }
+          });
+      }
+
+      // Function to check if a position collides with existing cards
+      function checkCardCollision(x, y, cardWidth, cardHeight, existingCards) {
+        const minDistance = 120; // Increased minimum distance between cards
+        
+        return existingCards.some(card => {
+          const cardRect = card.getBoundingClientRect();
+          const cardX = cardRect.left;
+          const cardY = cardRect.top;
+          
+          // Check if cards are too close using circular distance
+          const distanceX = Math.abs(x - cardX);
+          const distanceY = Math.abs(y - cardY);
+          const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+          
+          return distance < minDistance;
+        });
+      }
+
+      // Function to check if position conflicts with forbidden zones
+      function checkZoneCollision(x, y, cardWidth, cardHeight, forbiddenZones, boardRect) {
+        return forbiddenZones.some(zone => {
+          if (!zone) return false;
+          
+          const zoneRect = zone.getBoundingClientRect();
+          const zoneLeft = zoneRect.left - boardRect.left;
+          const zoneTop = zoneRect.top - boardRect.top;
+          const zoneRight = zoneLeft + zoneRect.width;
+          const zoneBottom = zoneTop + zoneRect.height;
+          
+          // Add buffer around the zone - larger buffer for signup form
+          const buffer = zone.classList.contains('signup') ? 200 : 150;
+          const expandedLeft = zoneLeft - buffer;
+          const expandedTop = zoneTop - buffer;
+          const expandedRight = zoneRight + buffer;
+          const expandedBottom = zoneBottom + buffer;
+          
+          // Check if card would overlap with expanded zone
+          const cardRight = x + cardWidth;
+          const cardBottom = y + cardHeight;
+          
+          return (x < expandedRight && cardRight > expandedLeft && 
+                  y < expandedBottom && cardBottom > expandedTop);
+        });
+      }
+
+      // Function to check if position is in center exclusion zone
+      function checkCenterExclusion(x, y, cardWidth, cardHeight, boardRect) {
+        const centerX = boardRect.width / 2;
+        const centerY = boardRect.height / 2;
+        
+        // Define exclusion zone - larger area around center
+        const exclusionWidth = 400; // Width of exclusion zone
+        const exclusionHeight = 300; // Height of exclusion zone
+        
+        const exclusionLeft = centerX - exclusionWidth / 2;
+        const exclusionTop = centerY - exclusionHeight / 2;
+        const exclusionRight = centerX + exclusionWidth / 2;
+        const exclusionBottom = centerY + exclusionHeight / 2;
+        
+        // Check if card would overlap with center exclusion zone
+        const cardRight = x + cardWidth;
+        const cardBottom = y + cardHeight;
+        
+        return (x < exclusionRight && cardRight > exclusionLeft && 
+                y < exclusionBottom && cardBottom > exclusionTop);
+      }
+
+      // Function to generate evenly distributed grid positions
+      function generateGridPositions(boardRect, cardWidth, cardHeight, margin) {
+        const positions = [];
+        const cols = Math.floor((boardRect.width - margin * 2) / (cardWidth + margin));
+        const rows = Math.floor((boardRect.height - margin * 2) / (cardHeight + margin));
+        
+        for (let row = 0; row < rows; row++) {
+          for (let col = 0; col < cols; col++) {
+            const x = margin + col * (cardWidth + margin);
+            const y = margin + row * (cardHeight + margin);
+            
+            // Skip positions in the center exclusion zone
+            if (!checkCenterExclusion(x, y, cardWidth, cardHeight, boardRect)) {
+              positions.push({ x, y });
+            }
+          }
+        }
+        
+        // Shuffle positions for random distribution
+        return positions.sort(() => Math.random() - 0.5);
+      }
+
+      // Function to find the best available position
+      function findBestPosition(boardRect, cardWidth, cardHeight, forbiddenZones, existingCards) {
+        const margin = 80;
+        const gridPositions = generateGridPositions(boardRect, cardWidth, cardHeight, margin);
+        
+        console.log('=== POSITION DEBUG ===');
+        console.log('Board:', { width: boardRect.width, height: boardRect.height });
+        console.log('Center:', { x: boardRect.width/2, y: boardRect.height/2 });
+        console.log('Exclusion zone:', { 
+          left: boardRect.width/2 - 200, 
+          top: boardRect.height/2 - 150, 
+          right: boardRect.width/2 + 200, 
+          bottom: boardRect.height/2 + 150 
+        });
+        console.log('Grid positions available:', gridPositions.length);
+        console.log('Existing cards:', existingCards.length);
+        
+        // Try grid positions first
+        for (const position of gridPositions) {
+          const zoneCollision = checkZoneCollision(position.x, position.y, cardWidth, cardHeight, forbiddenZones, boardRect);
+          const centerExclusion = checkCenterExclusion(position.x, position.y, cardWidth, cardHeight, boardRect);
+          const cardCollision = checkCardCollision(position.x, position.y, cardWidth, cardHeight, existingCards);
+          
+          console.log(`Position ${position.x},${position.y}:`, { zoneCollision, centerExclusion, cardCollision });
+          
+          if (!zoneCollision && !centerExclusion && !cardCollision) {
+            console.log('✅ Found valid grid position:', position);
+            return position;
+          }
+        }
+        
+        console.log('❌ No valid grid positions found, trying random...');
+        
+        // If no grid position works, try random positions
+        for (let i = 0; i < 50; i++) { // Reduced for debugging
+          const x = Math.random() * (boardRect.width - cardWidth - margin * 2) + margin;
+          const y = Math.random() * (boardRect.height - cardHeight - margin * 2) + margin;
+          
+          const zoneCollision = checkZoneCollision(x, y, cardWidth, cardHeight, forbiddenZones, boardRect);
+          const centerExclusion = checkCenterExclusion(x, y, cardWidth, cardHeight, boardRect);
+          const cardCollision = checkCardCollision(x, y, cardWidth, cardHeight, existingCards);
+          
+          if (!zoneCollision && !centerExclusion && !cardCollision) {
+            console.log('✅ Found valid random position:', { x, y });
+            return { x, y };
+          }
+        }
+        
+        console.log('❌ No valid positions found, using fallback');
+        
+        // Fallback: return a position even if it might overlap
+        const fallbackX = Math.random() * (boardRect.width - cardWidth - margin * 2) + margin;
+        const fallbackY = Math.random() * (boardRect.height - cardHeight - margin * 2) + margin;
+        console.log('⚠️ Using fallback position:', { x: fallbackX, y: fallbackY });
+        return { x: fallbackX, y: fallbackY };
+      }
+
+      // Function to display links as cards
+      function displayLinks(data, isInitialLoad = false) {
+        const linkBoard = document.getElementById('linkBoard');
+        const forbiddenZones = [
+          document.querySelector('.top-left'),
+          document.querySelector('.top-right'),
+          document.querySelector('.bottom-left'),
+          document.querySelector('.bottom-right'),
+          document.querySelector('.signup')
+        ];
+
+        // Get existing cards for collision detection
+        const existingCards = Array.from(linkBoard.querySelectorAll('.link-card'));
+        const boardRect = linkBoard.getBoundingClientRect();
+        const cardWidth = 200;
+        const cardHeight = 100;
+        
+        // Skip header row and reverse to show newest first
+        const links = data.slice(1).reverse();
+        
+        if (links.length === 0) return;
+        
+        // Track new cards added in this session
+        let newCardsAdded = 0;
+        
+        console.log('Total links from sheet:', links.length);
+        console.log('Already processed links:', processedLinks.size);
+        
+        links.forEach((row, index) => {
+          if (row.length >= 2 && row[1]) {
+            const originalUrl = row[1];
+            
+            // Normalize URL to ensure it has https://www. prefix
+            const normalizedUrl = normalizeUrl(originalUrl);
+            
+            // On initial load, show all cards regardless of processed status
+            // For subsequent loads, only show new cards
+            if (!isInitialLoad && processedLinks.has(normalizedUrl)) {
+              console.log('Skipping already processed link:', normalizedUrl);
+              return;
+            }
+            
+            // Only add to processed links set if this is NOT an initial load
+            // This prevents the processed links from interfering with page reloads
+            if (!isInitialLoad) {
+              processedLinks.add(normalizedUrl);
+              newCardsAdded++;
+              // Save processed links to localStorage
+              saveProcessedLinks();
+            } else {
+              // On initial load, just count all cards as "new" for display purposes
+              newCardsAdded++;
+            }
+            
+            // Create the anchor wrapper
+            const linkWrapper = document.createElement('a');
+            linkWrapper.href = normalizedUrl;
+            linkWrapper.target = '_blank';
+            linkWrapper.style.textDecoration = 'none';
+            linkWrapper.style.color = 'inherit';
+            
+            const linkCard = document.createElement('div');
+            linkCard.className = 'link-card';
+            
+            // Use the new positioning system for all cards
+            const position = findBestPosition(boardRect, cardWidth, cardHeight, forbiddenZones, existingCards);
+            
+            linkWrapper.style.position = 'absolute';
+            linkWrapper.style.left = `${position.x}px`;
+            linkWrapper.style.top = `${position.y}px`;
+            
+            // Add this card to existing cards for next iteration
+            existingCards.push(linkCard);
+            
+            // Generate random rotation
+            const randomRotation = (Math.random() - 0.5) * 30;
+            linkCard.style.setProperty('--random-rotation', `${randomRotation}deg`);
+            
+            // Create link content with normalized URL for href but clean display
+            const timestamp = row[0] ? new Date(row[0]).toLocaleString() : 'Unknown time';
+            const displayUrl = getDisplayUrl(normalizedUrl);
+            
+            linkCard.innerHTML = `
+              <p>${displayUrl}</p>
+              <small>${timestamp}</small>
+            `;
+            
+            // Append card to wrapper, then wrapper to board
+            linkWrapper.appendChild(linkCard);
+            linkBoard.appendChild(linkWrapper);
+            
+            // Animate the card drop (only for new cards)
+            const delay = !isInitialLoad ? 50 : newCardsAdded * 5 + 10; // Much faster for new submissions
+            setTimeout(() => {
+              linkCard.classList.add('drop-animation');
+              // Start with hovered state for new cards
+              if (!isInitialLoad) {
+                linkCard.classList.add('initial-hovered');
+                // Fade to normal state after 1.5 seconds
+                setTimeout(() => {
+                  linkCard.classList.remove('initial-hovered');
+                }, 1500);
+              }
+            }, delay);
+          }
+        });
+        
+        // Setup hover effects for all cards after they're created
+        const hoverDelay = !isInitialLoad ? 100 : newCardsAdded * 5 + 50; // Faster for new submissions
+        setTimeout(() => {
+          setupCardHoverEffects();
+        }, hoverDelay);
+        
+        console.log('New cards added this session:', newCardsAdded);
+      }
+      
+      // Smart polling system
+      function startSmartPolling() {
+        // Check every 5 seconds for new cards
+        setInterval(() => {
+          if (!isUserActive) {
+            console.log('Background check for new cards...');
+            fetchLinks();
+          }
+        }, 5000);
+      }
+
+      // Initialize
+      window.addEventListener('load', () => {
+        // Don't load processed links on initial page load - we want to show all cards
+        // Processed links will be loaded after the initial display
+        
+        setTimeout(animateCards, 100);
+        setupVideo();
+        
+        // Initial fetch - show all cards on page load
+        fetchLinks(true, true); // Force refresh on initial load, and mark as initial load
+        
+        // Load processed links after initial display to track future changes
+        setTimeout(() => {
+          loadProcessedLinks();
+        }, 1000);
+        
+        // Start smart polling
+        startSmartPolling();
+      });
+    })();
+  </script>
+</body>
+</html>
