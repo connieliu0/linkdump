@@ -6,7 +6,7 @@ export const createDefaultTimeSettings = () => {
   const durationInSeconds = durationInMinutes * 60;
   
   return {
-    description: "Your first project",
+    description: "Your first project (desktop view recommended)",
     startTime,
     endTime: startTime + (durationInSeconds * 1000),
     halfwayPoint: startTime + (durationInSeconds * 500),

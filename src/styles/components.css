@@ -426,6 +426,45 @@ button:hover {
   transform: translateY(0);
 }
 
+.first-board-toolbar {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8001;
+  pointer-events: none;
+  opacity:0.7;
+}
+
+.first-board-toolbar__buttons {
+  display: flex;
+  gap: 12px;
+  pointer-events: auto;
+  background: url('../assets/crumpled-paper.webp');
+  background-size: cover;
+  background-position: center;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10), 0 1.5px 0 #fff inset;
+}
+
+.first-board-toolbar__button {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--tertiary-color);
+  color: var(--primary-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.95em;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.first-board-toolbar__button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
 .toolbar-section {
   border-radius: 4px;
   position: absolute;
@@ -932,7 +971,6 @@ main {
 .clickable-div.add-section-btn {
   rotate: 3deg;
   position: relative;
-  left: -30px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -988,125 +1026,6 @@ main {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-
-/* Add responsive styles for mobile */
-@media screen and (max-width: 480px) {
-  .actions-section {
-    transform: translateY(calc(100% - 130px)); 
-    right:-20px;/* Show more of the buttons */
-    z-index: 2;
-  }
-  
-  /* Hide Make Collaborative button on mobile */
-  .action.share-section {
-    display: none;
-  }
-
-  /* Fix bottom toolbar positioning on mobile */
-  .action.add-section,
-  .action.import-section,
-  .action.section-tool {
-    transform: translateY(calc(100% - 40px));
-  }
-
-  /* Make buttons smaller on mobile to fit all 4 */
-  .bottom-toolbar .clickable-div {
-    min-width: 60px;
-    min-height: 50px;
-    padding: 12px 8px 6px 8px;
-    font-size: 0.95em;
-  }
-
-  /* Adjust button offsets for mobile */
-  .clickable-div.import-arena {
-    left: 0;
-    min-width: auto; /* Hug text instead of fixed width */
-    width: fit-content;
-    padding: 16px 12px 8px 12px;
-  }
-
-
-  /* Hide symbol on Add section button on mobile, keep text */
-  .clickable-div.add-section-btn span {
-    display: none;
-  }
-
-  /* Make tab smaller on mobile for section button */
-  .clickable-div.add-section-btn::before {
-    width: 25px;
-    height: 20px;
-    top: -22px;
-  }
-  
-  /* Adjust padding for smaller tab on mobile */
-  .clickable-div.add-section-btn {
-    padding-top: 32px;
-  }
-
-  .time-section {
-    z-index: 1;
-    transition: transform 0.3s ease, z-index 0s;
-  }
-  .time-section:hover {
-    transform: translateY(0);
-    z-index: 3; /* Higher than actions-section when hovering */
-  }
-  
-  /* Add responsive styles for cards and images */
-  .paste-item {
-    max-width: 240px;
-    min-width: 200px;
-  }
-
-  .text-content {
-    max-width: 224px; /* Match paste-item minus padding */
-    min-width: 180px;
-    font-size: 0.9em; /* Slightly smaller font */
-  }
-
-  .text-content .editable.new-text,
-  .text-content .content-input.new-text {
-    font-size: 1.2em; /* Reduce handwriting font size */
-  }
-
-  .link-card {
-    max-width: 224px; /* Match text-content max-width on mobile */
-  }
-
-  .link-title {
-    font-size: 14px; /* Smaller title */
-  }
-
-  .link-description {
-    font-size: 12px; /* Smaller description */
-  }
-
-  .source-url-container {
-    padding: 6px; /* Smaller padding */
-  }
-
-  .source-text,
-  .source-input {
-    font-size: 11px; /* Smaller source text */
-  }
-
-  /* Adjust toolbar sections for mobile */
-  .toolbar-section {
-    max-width: 200px;
-    padding: 15px;
-  }
-
-  .time-section,
-  .project-section,
-  .actions-section {
-    font-size: 0.85em;
-  }
-  .share-section {
-    right: 240px;
-    min-width: 100px;
-    font-size: 0.85em;
-  }
-}
 
 /*
 ============================================
@@ -1237,7 +1156,7 @@ You can find the assignment logic in useAgingEffect.js.
 .clickable-div.add-image {
   rotate: 2deg;
   position: relative;
-  left: -50px;
+  left: -25px;
   filter: sepia(0.1);
   border-radius: 10px;
   border: 3px solid var(--tertiary-color);
@@ -1643,4 +1562,118 @@ You can find the assignment logic in useAgingEffect.js.
   background: rgba(228, 155, 63, 0.15);
   transform: translateX(-50%) translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+
+/* Add responsive styles for mobile */
+@media screen and (max-width: 480px) {
+  .first-board-toolbar {
+    display: none;    
+  }
+
+
+  /* Fix bottom toolbar positioning on mobile */
+  .action.add-section,
+  .action.import-section,
+  .action.section-tool {
+    transform: translateY(calc(100% - 40px));
+  }
+
+  /* Make buttons smaller on mobile to fit all 4 */
+  .bottom-toolbar .clickable-div {
+    min-width: 60px;
+    min-height: 50px;
+    padding: 12px 8px 6px 8px;
+    font-size: 0.95em;
+  }
+
+  /* Adjust button offsets for mobile */
+  .clickable-div.import-arena {
+    left: 0;
+    min-width: auto; /* Hug text instead of fixed width */
+    width: fit-content;
+    padding: 16px 12px 8px 12px;
+  }
+
+
+  /* Hide symbol on Add section button on mobile, keep text */
+  .clickable-div.add-section-btn span {
+    display: none;
+  }
+
+  /* Make tab smaller on mobile for section button */
+  .clickable-div.add-section-btn::before {
+    width: 25px;
+    height: 20px;
+    top: -22px;
+  }
+  
+  /* Adjust padding for smaller tab on mobile */
+  .clickable-div.add-section-btn {
+    padding-top: 32px;
+  }
+
+  .time-section {
+    z-index: 1;
+    transition: transform 0.3s ease, z-index 0s;
+  }
+  .time-section:hover {
+    transform: translateY(0);
+    z-index: 3; /* Higher than actions-section when hovering */
+  }
+  
+  /* Add responsive styles for cards and images */
+  .paste-item {
+    max-width: 240px;
+    min-width: 200px;
+  }
+
+  .text-content {
+    max-width: 224px; /* Match paste-item minus padding */
+    min-width: 180px;
+    font-size: 0.9em; /* Slightly smaller font */
+  }
+
+  .text-content .editable.new-text,
+  .text-content .content-input.new-text {
+    font-size: 1.2em; /* Reduce handwriting font size */
+  }
+
+  .link-card {
+    max-width: 224px; /* Match text-content max-width on mobile */
+  }
+
+  .link-title {
+    font-size: 14px; /* Smaller title */
+  }
+
+  .link-description {
+    font-size: 12px; /* Smaller description */
+  }
+
+  .source-url-container {
+    padding: 6px; /* Smaller padding */
+  }
+
+  .source-text,
+  .source-input {
+    font-size: 11px; /* Smaller source text */
+  }
+
+  /* Adjust toolbar sections for mobile */
+  .toolbar-section {
+    max-width: 200px;
+    padding: 15px;
+  }
+
+  .time-section,
+  .project-section,
+  .actions-section {
+    font-size: 0.85em;
+  }
+  .share-section {
+    right: 240px;
+    min-width: 100px;
+    font-size: 0.85em;
+  }
 }

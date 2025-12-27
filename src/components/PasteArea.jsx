@@ -7,6 +7,7 @@ import LinkCard from './LinkCard';
 import ImageCard from './ImageCard';
 import BottomToolbar from './Toolbar/BottomToolbar';
 import TopToolbar from './Toolbar/TopToolbar';
+import FirstBoardToolbar from './Toolbar/FirstBoardToolbar';
 import ExpiryDialog from './Dialog/ExpiryDialog';
 import { useAgingEffect } from '../hooks/useAgingEffect';
 import { usePaperAgingEffect } from '../hooks/usePaperAgingEffect';
@@ -89,6 +90,9 @@ const PasteArea = ({ onExport }) => {
   let inactivityTimer = useRef(null);
   const [showTimeInput, setShowTimeInput] = useState(false);
   const [loadingTimeSettings, setLoadingTimeSettings] = useState(true);
+  const [isFirstBoardMode, setIsFirstBoardMode] = useState(() => {
+    return localStorage.getItem('isFirstBoardMode') === 'true';
+  });
   const [isDragging, setIsDragging] = useState(false);
   const [showCollaborativeDialog, setShowCollaborativeDialog] = useState(false);
   const wasDraggedRef = useRef(false);
@@ -267,6 +271,17 @@ const PasteArea = ({ onExport }) => {
     };
   }, [storageMode]);
 
+  // Sync isFirstBoardMode state when storageMode or boardId changes
+  useEffect(() => {
+    // Clear first board mode if we're not at root URL or not in local mode
+    if (boardId || storageMode !== 'local') {
+      setIsFirstBoardMode(false);
+    } else {
+      // Re-check localStorage when we're back at root in local mode
+      setIsFirstBoardMode(localStorage.getItem('isFirstBoardMode') === 'true');
+    }
+  }, [storageMode, boardId]);
+
   const handleStorageModeChange = (mode) => {
     // console.log('Handling storage mode change:', mode);
     setStorageMode(mode);
@@ -282,6 +297,10 @@ const PasteArea = ({ onExport }) => {
   const handleTimeSet = async (settings) => {
     // console.log('Handling time set:', settings);
     try {
+      // Clear first board mode flag when creating a new board
+      localStorage.removeItem('isFirstBoardMode');
+      setIsFirstBoardMode(false);
+      
       // Ensure we have all the required fields
       const timeSettings = {
         description: settings.description,
@@ -749,6 +768,8 @@ const PasteArea = ({ onExport }) => {
       // Clear local board data and flags after successful conversion
       await storage.clearBoard(); // Clear IndexedDB
       localStorage.removeItem('localBoardActive'); // Remove local board flag
+      localStorage.removeItem('isFirstBoardMode'); // Remove first board mode flag
+      setIsFirstBoardMode(false);
 
       // console.log('Successfully converted to collaborative mode');
       return newBoardId;
@@ -903,6 +924,10 @@ const PasteArea = ({ onExport }) => {
     // Set clearing flag
     isClearingRef.current = true;
 
+    // Clear first board mode flag when canvas is cleared
+    localStorage.removeItem('isFirstBoardMode');
+    setIsFirstBoardMode(false);
+
     // Start the animation first
     const elements = document.querySelectorAll('.paste-item');
     elements.forEach((el, index) => {
@@ -1056,6 +1081,8 @@ const PasteArea = ({ onExport }) => {
             
             localStorage.setItem('localBoardActive', 'true');
             localStorage.setItem('hasVisitedBefore', 'true');
+            localStorage.setItem('isFirstBoardMode', 'true');
+            setIsFirstBoardMode(true);
           }
         }
       } catch (error) {
@@ -1487,6 +1514,24 @@ const PasteArea = ({ onExport }) => {
                 rotate: '180deg',
               }}
             ></div>
+            {/* First Board Toolbar - only shown in first board mode */}
+            {isFirstBoardMode && 
+             !boardId && 
+             storageMode === 'local' && 
+             timeSettings && (
+              <FirstBoardToolbar
+                onCreateBoard={() => {
+                  setCreateBoardFromToolbar(true);
+                  setShowCreateBoardModal(true);
+                }}
+                onMakeCollaborative={() => setShowCollaborativeDialog(true)}
+                onClearCanvas={() => {
+                  if (window.confirm('Are you sure you want to clear the canvas? This cannot be undone.')) {
+                    handleClearCanvas();
+                  }
+                }}
+              />
+            )}
             <TopToolbar 
               panzoomRef={panzoomRef} 
               onExport={onExport} 
@@ -1502,6 +1547,7 @@ const PasteArea = ({ onExport }) => {
                 setCreateBoardFromToolbar(true);
                 setShowCreateBoardModal(true);
               }}
+              hideBoardActions={isFirstBoardMode && !boardId && storageMode === 'local' && timeSettings}
             />
             <BottomToolbar 
               panzoomRef={panzoomRef} 

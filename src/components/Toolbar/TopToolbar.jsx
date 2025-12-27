@@ -14,7 +14,7 @@ const markChangelogSeen = () => {
   localStorage.setItem('seenChangelogVersion', CHANGELOG_VERSION);
 };
 
-const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription, onProjectDescriptionChange, onCreateBoard, isLocalBoard, onConvertToCollaborative }) => {
+const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription, onProjectDescriptionChange, onCreateBoard, isLocalBoard, onConvertToCollaborative, hideBoardActions }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
 
@@ -128,7 +128,7 @@ const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription, onProjec
         {/* <div><em>{getMessage()}</em></div> */}
       </div>
       <div>{formatTimeRemaining(timeRemaining)}<span style={{color: 'var(--secondary-color)'}}> until full decay</span></div>
-      {onCreateBoard && (
+      {onCreateBoard && !hideBoardActions && (
         <div style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <div className="clickable-div new-board" onClick={onCreateBoard} style={{ display: 'inline-block' }}>
             ➕ New board
@@ -225,6 +225,7 @@ const Toolbar = ({
   storageMode,
   onCreateBoard,
   boardId,
+  hideBoardActions,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
@@ -272,6 +273,7 @@ const Toolbar = ({
           onCreateBoard={onCreateBoard}
           isLocalBoard={isLocalBoard}
           onConvertToCollaborative={onConvertToCollaborative}
+          hideBoardActions={hideBoardActions}
         />
         <MoreMenu 
           onClearCanvas={handleClear}
