@@ -13,7 +13,7 @@ const layoutArenaItems = (items, options = {}) => {
     startX = 50,
     startY = 50,
     padding = 30,
-    columnWidth = 250,
+    columnWidth = 240,
     maxColumns = 5
   } = options;
   

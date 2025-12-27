@@ -76,6 +76,7 @@ const PasteArea = ({ onExport }) => {
   const [items, setItems] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const mousePositionRef = useRef({ x: 0, y: 0 }); // Ref to avoid stale closures
   const [isSelecting, setIsSelecting] = useState(false);
   const panzoomRef = useRef();
   const activeItemRef = useRef(null);
@@ -584,7 +585,10 @@ const PasteArea = ({ onExport }) => {
 
     e.preventDefault();
     const clipboardData = e.clipboardData;
-    const { x, y } = mousePosition;
+    
+    // Use the ref for position (always current, avoids stale closure)
+    // Paste events don't have clientX/clientY so we must use last known mouse position
+    const { x, y } = mousePositionRef.current;
     
     try {
       // console.log('Clipboard items:', clipboardData.items);
@@ -1134,11 +1138,21 @@ const PasteArea = ({ onExport }) => {
   }, []);
 
   const handleCanvasMouseMove = useCallback((e) => {
-    // Update mouse position for paste
-    if (panzoomRef.current) {
-      const { x, y } = panzoomRef.current.getPosition(e);
-      setMousePosition({ x, y });
-    }
+    // Update mouse position for paste using manual coordinate conversion
+    // panzoom.getPosition() returns pan position, not converted coords
+    const canvasEl = document.querySelector('.canvas-area__in');
+    if (!canvasEl || !panzoomRef.current) return;
+    
+    const rect = canvasEl.getBoundingClientRect();
+    const zoom = panzoomRef.current.getZoom() || 1;
+    
+    // Convert screen coords to canvas coords
+    const x = (e.clientX - rect.left) / zoom;
+    const y = (e.clientY - rect.top) / zoom;
+    
+    // Update both ref and state
+    mousePositionRef.current = { x, y };
+    setMousePosition({ x, y });
   }, []);
 
   // Drawing overlay event handlers - these capture events when in drawing mode
@@ -1483,6 +1497,11 @@ const PasteArea = ({ onExport }) => {
               onProjectDescriptionChange={updateProjectDescription}
               onConvertToCollaborative={() => setShowCollaborativeDialog(true)}
               storageMode={storageMode}
+              boardId={boardId}
+              onCreateBoard={() => {
+                setCreateBoardFromToolbar(true);
+                setShowCreateBoardModal(true);
+              }}
             />
             <BottomToolbar 
               panzoomRef={panzoomRef} 
@@ -1498,10 +1517,6 @@ const PasteArea = ({ onExport }) => {
               isCollaborative={storageMode === 'collaborative'}
               onConvertToCollaborative={() => setShowCollaborativeDialog(true)}
               storageMode={storageMode}
-              onCreateBoard={() => {
-                setCreateBoardFromToolbar(true);
-                setShowCreateBoardModal(true);
-              }}
               onAddSection={handleStartDrawingSection}
               isDrawingSection={isDrawingSection}
             />
@@ -1519,7 +1534,7 @@ const PasteArea = ({ onExport }) => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                style={{ width: '2160px', height: '1200px' }}
+                style={{ width: '3097px', height: '1750px' }}
               >
                 <PanZoom 
                   selecting={isSelecting}

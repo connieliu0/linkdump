@@ -14,7 +14,7 @@ const markChangelogSeen = () => {
   localStorage.setItem('seenChangelogVersion', CHANGELOG_VERSION);
 };
 
-const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription, onProjectDescriptionChange }) => {
+const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription, onProjectDescriptionChange, onCreateBoard, isLocalBoard, onConvertToCollaborative }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
 
@@ -23,6 +23,10 @@ const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription, onProjec
     const now = Date.now();
     const timePhase = getTimePhase(now, timeSettings.startTime, timeSettings.halfwayPoint);
     return getTimeMessage(timePhase);
+  };
+
+  const getDefaultTitle = () => {
+    return isLocalBoard ? 'Untitled Local Storage Board' : 'Untitled Collaborative Board';
   };
 
   const adjustTextareaHeight = (textarea) => {
@@ -101,7 +105,7 @@ const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription, onProjec
               }}
               className="project-name-input"
               style={{ width: inputWidth }}
-              placeholder="Project Name here"
+              placeholder={getDefaultTitle()}
               rows={1}
             />
           </form>
@@ -112,7 +116,7 @@ const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription, onProjec
               className={`project-name-display ${onProjectDescriptionChange ? 'editable' : ''}`}
               title={onProjectDescriptionChange ? 'Click to edit' : ''}
             >
-              {projectDescription || 'Project Name here'}
+              {projectDescription || getDefaultTitle()}
             </span>
             {onProjectDescriptionChange && (
               <span className="edit-icon" onClick={handleClick}>
@@ -124,6 +128,18 @@ const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription, onProjec
         {/* <div><em>{getMessage()}</em></div> */}
       </div>
       <div>{formatTimeRemaining(timeRemaining)}<span style={{color: 'var(--secondary-color)'}}> until full decay</span></div>
+      {onCreateBoard && (
+        <div style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div className="clickable-div new-board" onClick={onCreateBoard} style={{ display: 'inline-block' }}>
+            ➕ New board
+          </div>
+          {isLocalBoard && onConvertToCollaborative && (
+            <div className="clickable-div new-board" onClick={onConvertToCollaborative} style={{ display: 'inline-block' }}>
+              🔗 Make Collaborative
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -207,10 +223,15 @@ const Toolbar = ({
   onProjectDescriptionChange,
   onConvertToCollaborative,
   storageMode,
+  onCreateBoard,
+  boardId,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
   const hasShownInitialChangelog = React.useRef(false);
+
+  // Check if we're on a local board (not collaborative)
+  const isLocalBoard = storageMode === 'local' || !boardId;
 
   useEffect(() => {
     // Small delay to ensure the initial render is complete
@@ -248,6 +269,9 @@ const Toolbar = ({
           timeSettings={timeSettings} 
           projectDescription={projectDescription}
           onProjectDescriptionChange={onProjectDescriptionChange}
+          onCreateBoard={onCreateBoard}
+          isLocalBoard={isLocalBoard}
+          onConvertToCollaborative={onConvertToCollaborative}
         />
         <MoreMenu 
           onClearCanvas={handleClear}

@@ -20,7 +20,7 @@ const ImageCard = React.memo(function ImageCard({ src, itemId, sourceUrl: initia
         try {
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
-          const maxWidth = 300; // Match with paste-item max-width
+          const maxWidth = 304; // Match with paste-item max-width (320 minus padding)
           
           let width = img.width;
           let height = img.height;

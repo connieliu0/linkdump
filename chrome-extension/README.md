@@ -74,3 +74,5 @@ Make sure you've entered a valid board ID in the popup.
 - Check that your Firebase Realtime Database rules allow writes
 
 
+
+

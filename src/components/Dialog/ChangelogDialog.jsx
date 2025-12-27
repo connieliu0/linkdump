@@ -13,7 +13,8 @@ const ChangelogDialog = ({ isOpen, onClose }) => {
       <div className="step" style={{ transform: 'rotate(-1deg)' }}>
         <p>Latest Updates</p>
         <ul>
-          <li>Sections to group your cards together</li>
+          <li>Sections to mindmap your cards together</li>
+          <li>Simplified mobile view for easy on the go note-taking</li>
           <li>Paste a bullet list and have the option to separate out into individual cards</li>
         </ul>
       </div>

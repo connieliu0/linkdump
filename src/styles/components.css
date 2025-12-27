@@ -70,8 +70,6 @@ body {
 /* Content styles */
 .canvas-area {
   position: relative;
-  width: 100vw;
-  height: 100vh;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -84,8 +82,8 @@ body {
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   position: relative;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   transform: translate(-50%, -50%);
   background: rgba(255, 255, 255, 0.5);
   isolation: isolate;
@@ -138,8 +136,8 @@ body {
 }
 
 .paste-item {
-  max-width: 400px;
-  min-width: auto;
+  max-width: 320px;
+  min-width: 200px;
   width: fit-content;
   background: white;
   border-radius: 0.25rem;
@@ -229,7 +227,7 @@ body {
   line-height: 1.5;
   border-radius: 4px;
   width: fit-content;
-  max-width: 384px;
+  max-width: 304px;
   min-width: 200px;
   box-sizing: border-box;
   transition: background-color 1.5s linear;
@@ -241,12 +239,13 @@ body {
   overflow: hidden;
   transition: all 0.2s ease;
   background: white;
+  max-width: 304px;
 }
 .link-preview {
   display: block;
   text-decoration: none;
   color: inherit;
-    border-radius: 6px;
+  border-radius: 6px;
   overflow: hidden;
   transition: all 0.2s ease;
   background: white;
@@ -832,7 +831,7 @@ button:hover {
 /* Tweet Card styles */
 .tweet-card {
   background: transparent !important;
-  width: 550px;
+  width: 304px;
   max-width: 100%;
   margin: 0 auto;
   padding: 6px;
@@ -931,18 +930,44 @@ main {
 }
 
 .clickable-div.add-section-btn {
-  rotate: -1deg;
+  rotate: 3deg;
   position: relative;
   left: -30px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  background: rgba(200, 220, 255, 0.35) !important;
+  border: 2px dashed rgba(35, 51, 76, 0.4) !important;
+  border-radius: 0 8px 8px 8px; /* No rounding on top-left corner */
+  padding-top: 40px; /* Space for the smaller tab */
+}
+
+/* Tab on top left for section button - styled like section header */
+.clickable-div.add-section-btn::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: 0;
+  width: 30px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 4px 4px 0 0; /* Keep top corners rounded, remove bottom rounding */
+  border: 2px dashed rgba(35, 51, 76, 0.4);
+  border-bottom: none;
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
+  z-index: 1;
 }
 
 .clickable-div.add-section-btn.active {
-  background: rgba(91, 141, 239, 0.2);
-  border: 2px solid #5B8DEF;
+  background: rgba(91, 141, 239, 0.2) !important;
+  border: 2px solid #5B8DEF !important;
+}
+
+.clickable-div.add-section-btn.active::before {
+  border-color: #5B8DEF;
+  border-style: solid;
+  border-bottom: none;
 }
 
 .share-button {
@@ -972,12 +997,52 @@ main {
     z-index: 2;
   }
   
+  /* Hide Make Collaborative button on mobile */
+  .action.share-section {
+    display: none;
+  }
+
   /* Fix bottom toolbar positioning on mobile */
-  .add-section,
-  .import-section,
-  .create-section {
+  .action.add-section,
+  .action.import-section,
+  .action.section-tool {
     transform: translateY(calc(100% - 40px));
   }
+
+  /* Make buttons smaller on mobile to fit all 4 */
+  .bottom-toolbar .clickable-div {
+    min-width: 60px;
+    min-height: 50px;
+    padding: 12px 8px 6px 8px;
+    font-size: 0.95em;
+  }
+
+  /* Adjust button offsets for mobile */
+  .clickable-div.import-arena {
+    left: 0;
+    min-width: auto; /* Hug text instead of fixed width */
+    width: fit-content;
+    padding: 16px 12px 8px 12px;
+  }
+
+
+  /* Hide symbol on Add section button on mobile, keep text */
+  .clickable-div.add-section-btn span {
+    display: none;
+  }
+
+  /* Make tab smaller on mobile for section button */
+  .clickable-div.add-section-btn::before {
+    width: 25px;
+    height: 20px;
+    top: -22px;
+  }
+  
+  /* Adjust padding for smaller tab on mobile */
+  .clickable-div.add-section-btn {
+    padding-top: 32px;
+  }
+
   .time-section {
     z-index: 1;
     transition: transform 0.3s ease, z-index 0s;
@@ -989,12 +1054,13 @@ main {
   
   /* Add responsive styles for cards and images */
   .paste-item {
-    max-width: 300px; /* Slightly larger on mobile */
-    min-width: auto;
+    max-width: 240px;
+    min-width: 200px;
   }
 
   .text-content {
-    max-width: 180px; /* Reduce text content width */
+    max-width: 224px; /* Match paste-item minus padding */
+    min-width: 180px;
     font-size: 0.9em; /* Slightly smaller font */
   }
 
@@ -1004,7 +1070,7 @@ main {
   }
 
   .link-card {
-    max-width: 200px; /* Match paste-item max-width */
+    max-width: 224px; /* Match text-content max-width on mobile */
   }
 
   .link-title {
@@ -1143,6 +1209,7 @@ You can find the assignment logic in useAgingEffect.js.
   gap: 4px;
   font-size: 1.1em;
   color: var(--secondary-color);
+  position: relative; /* For tooltip positioning */
 }
 
 /* Unique rotations for each card */
@@ -1153,7 +1220,7 @@ You can find the assignment logic in useAgingEffect.js.
 .clickable-div.import-arena {
   rotate: -3deg;
   position: relative;
-  left: 10px;
+  left: -15px;
   padding-right: 24px; /* Increased right padding for better readability when overlapped */
 }
 .clickable-div.share-board {
@@ -1164,21 +1231,81 @@ You can find the assignment logic in useAgingEffect.js.
 .clickable-div.add-text {
   rotate: -2deg;
   position: relative;
-  left: -10px;
   bottom:10px;
   filter: sepia(0.15);
 }
 .clickable-div.add-image {
   rotate: 2deg;
   position: relative;
-  left: -20px;
+  left: -50px;
   filter: sepia(0.1);
+  border-radius: 10px;
+  border: 3px solid var(--tertiary-color);
 }
 .clickable-div.new-board {
-  padding-right: 27px; /* Increased right padding for better readability when overlapped */
+  /* Subtle button style for new board in top toolbar */
+  background: transparent !important;
+  border: 1px solid var(--tertiary-color) !important;
+  box-shadow: none !important;
+  padding: 6px 12px !important;
+  min-width: auto !important;
+  min-height: auto !important;
+  font-size: 0.95em;
+  color: var(--secondary-color);
+  rotate: 0deg !important;
+  position: static !important;
 }
+
+.clickable-div.new-board:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: none !important; /* No animation on hover */
+}
+
 .clickable-div:hover {
   transform: translateY(-20px);
+}
+
+/* Prevent hover animation on new board button */
+.time-section .clickable-div.new-board:hover {
+  transform: none !important;
+}
+
+/* Tooltip styles - tooltip is rendered inside the clickable-div */
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  font-size: 0.9em;
+  border-radius: 4px;
+  white-space: nowrap;
+  z-index: 1000;
+  pointer-events: none;
+  animation: tooltipFadeIn 0.2s ease;
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.85);
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .add-content .lines-svg {
@@ -1196,10 +1323,21 @@ You can find the assignment logic in useAgingEffect.js.
   width: 85%;
 }
 
+/* Picture SVG for add-image button */
+.clickable-div.add-image .picture-svg {
+  display: block;
+  width: 90%;
+  max-width: 120px;
+  margin: 12px auto 0 auto;
+  position: relative;
+  bottom: 0;
+  opacity: 0.7;
+}
+
 /* Add styles for textarea in edit mode */
 .text-content textarea.content-input {
   width: 100%;
-  max-width: 384px;
+  max-width: 304px;
   min-width: 200px;
   box-sizing: border-box;
   resize: none;

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import AddContentDialog from '../Dialog/AddContentDialog';
 import ImportArenaDialog from '../Dialog/ImportArenaDialog';
 import LinesSvg from '../../assets/Lines.svg';
-import { motion, AnimatePresence } from 'framer-motion';
+import PictureSvg from '../../assets/picture.svg';
+import Tooltip from '../Tooltip';
 
 
 const BottomToolbar = ({ 
@@ -12,7 +13,6 @@ const BottomToolbar = ({
   isCollaborative,
   onConvertToCollaborative,
   storageMode,
-  onCreateBoard,
   onAddSection,
   isDrawingSection
 }) => {
@@ -23,15 +23,6 @@ const BottomToolbar = ({
   const [copied, setCopied] = useState(false);
   const [imageDataUrl, setImageDataUrl] = useState(null);
   const fileInputRef = React.useRef(null);
-
-  // Check if we're on a local board (not collaborative)
-  const isLocalBoard = storageMode === 'local' || !boardId;
-
-  // Animation variants
-  const variants = {
-    hidden: { opacity: 0, y: 5, scale: 0.9 },
-    visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.2 } }
-  };
 
   useEffect(() => {
     // Small delay to ensure the initial render is complete
@@ -95,67 +86,41 @@ const BottomToolbar = ({
         style={{ display: 'none' }}
       />
       <div className={`toolbar bottom-toolbar${isVisible ? ' visible' : ''}`}>
+        {/* Import Arena */}
         <div className="action import-section">
           <div className="clickable-div import-arena" onClick={() => setShowImportArena(true)}>
-          ✶✶
-          Import Are.na
-          </div>
-        </div>
-        <div className="action add-section">
-          <div className="clickable-div add-text" onClick={() => { setAddContentMode('text'); setShowAddContentModal(true); }}>
-            Add text
-            <img src={LinesSvg} alt="" className="lines-svg" />
-          </div>
-        </div>
-        <div className="action add-section">
-          <div className="clickable-div add-image" onClick={handleAddImageClick}>
-            Add image
-            <div style={{ 
-              width: '100%', 
-              maxWidth: '120px', 
-              height: '120px', 
-              backgroundColor: 'rgba(0, 0, 0, 0.3)', 
-              margin: '12px auto 0 auto' 
-            }} />
-          </div>
-        </div>
-
-        {/* Add Section button */}
-        <div className="action section-tool">
-          <div 
-            className={`clickable-div add-section-btn ${isDrawingSection ? 'active' : ''}`}
-            onClick={onAddSection}
-          >
-            <span style={{ fontSize: '1.4em' }}>⬚</span>
-            Add section
+            Import ✶✶
           </div>
         </div>
         
-        {/* Create new board - shows on every board */}
-        <div className="action create-section">
-          <div className="clickable-div new-board" onClick={onCreateBoard}>
-          ➕ New board
-          </div>
-        </div>
-        
-        {/* Make Collaborative - always shows on local boards */}
-        {isLocalBoard && (
-          <div className="action share-section">
-            <div className="clickable-div share-board" onClick={onConvertToCollaborative}>
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.span
-                  key="collaborate"
-                  variants={variants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="hidden"
-                >
-                  🔗 Make Collaborative
-                </motion.span>
-              </AnimatePresence>
+        {/* Add Text */}
+        <div className="action add-section">
+          <Tooltip text="Add text">
+            <div className="clickable-div add-text" onClick={() => { setAddContentMode('text'); setShowAddContentModal(true); }}>
+              <img src={LinesSvg} alt="" className="lines-svg" />
             </div>
-          </div>
-        )}
+          </Tooltip>
+        </div>
+        
+        {/* Add Image */}
+        <div className="action add-section">
+          <Tooltip text="Add image">
+            <div className="clickable-div add-image" onClick={handleAddImageClick}>
+              <img src={PictureSvg} alt="" className="picture-svg" />
+            </div>
+          </Tooltip>
+        </div>
+        
+        {/* Add Section */}
+        <div className="action section-tool">
+          <Tooltip text="Add section">
+            <div 
+              className={`clickable-div add-section-btn ${isDrawingSection ? 'active' : ''}`}
+              onClick={onAddSection}
+            >
+            </div>
+          </Tooltip>
+        </div>
       </div>
       <AddContentDialog 
         isOpen={showAddContentModal} 

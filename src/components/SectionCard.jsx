@@ -1,7 +1,7 @@
 // src/components/SectionCard.jsx
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
-const MIN_SECTION_WIDTH = 150;
+const MIN_SECTION_WIDTH = 200;
 const MIN_SECTION_HEIGHT = 100;
 
 const SectionCard = React.memo(function SectionCard({

@@ -26,7 +26,15 @@ const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect, forceTi
   }, [forceTimeInputStep]);
 
   // Time input state (from TimeInputDialog)
-  const [description, setDescription] = useState('Untitled');
+  const [storageMode, setStorageMode] = useState(() => {
+    const mode = localStorage.getItem('storageMode') || 'local';
+    return mode;
+  });
+  
+  const [description, setDescription] = useState(() => {
+    const mode = localStorage.getItem('storageMode') || 'local';
+    return mode === 'local' ? 'Untitled Local Storage Board' : 'Untitled Collaborative Board';
+  });
   const [hours, setHours] = useState('');
   const [minutes, setMinutes] = useState('');
   const [seconds, setSeconds] = useState('');
@@ -35,13 +43,17 @@ const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect, forceTi
   const [customUrl, setCustomUrl] = useState('');
   const [selectedDuration, setSelectedDuration] = useState('month'); // 'month', 'day', 'hour', 'custom'
   const [showCustomDuration, setShowCustomDuration] = useState(false);
-  const [storageMode, setStorageMode] = useState(() => {
-    const mode = localStorage.getItem('storageMode') || 'local';
-    return mode;
-  });
 
   const handleStorageModeSelect = useCallback((mode) => {
     if (mode === storageMode) return;
+    
+    // Update description if it's still the default
+    const isDefaultTitle = description === 'Untitled Local Storage Board' || description === 'Untitled Collaborative Board';
+    if (isDefaultTitle) {
+      const newDefaultTitle = mode === 'local' ? 'Untitled Local Storage Board' : 'Untitled Collaborative Board';
+      setDescription(newDefaultTitle);
+    }
+    
     setStorageMode(mode);
     // Only sync with parent for local mode - collaborative mode is handled entirely in handleSubmit
     // (We don't want to trigger PasteArea's useEffect that forces switch back to local when no URL boardId exists)
@@ -49,7 +61,7 @@ const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect, forceTi
       onStorageModeSelect(mode);
     }
     logEvent(analytics, 'storage_mode_selected', { mode });
-  }, [storageMode, onStorageModeSelect]);
+  }, [storageMode, description, onStorageModeSelect]);
 
   const handleInputChange = useCallback((setter) => (e) => {
     const value = e.target.value;
@@ -334,7 +346,7 @@ const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect, forceTi
   );
 
   // Time input content
-  const timeInputContent = (
+  const timeInputContent = useMemo(() => (
     <div className="input-container">
       <div>
         <label>Set your intention</label>
@@ -343,7 +355,7 @@ const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect, forceTi
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="input-field"
-          placeholder="Enter project description"
+          placeholder={storageMode === 'local' ? 'Untitled Local Storage Board' : 'Untitled Collaborative Board'}
         />
       </div>
       <div>
@@ -447,7 +459,7 @@ const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect, forceTi
       </div>
       {error && <div className="error-message">{error}</div>}
     </div>
-  );
+  ), [description, days, hours, minutes, seconds, handleInputChange, storageModeButtons, handleStorageModeSelect, storageMode, customUrl, selectedDuration, setSelectedDuration, setShowCustomDuration, CustomDurationInputs, CollaborativeInput, error]);
 
   const content = useMemo(() => {
     switch (currentStep) {
