@@ -28,6 +28,54 @@ import MergedDialog from './Dialog/MergedDialog';
 import ConvertToCollaborativeDialog from './Dialog/ConvertToCollaborativeDialog';
 import { normalizeSectionBounds, getCardsToMoveWithSection, moveCardsWithSection, getCardsInSection, isCardInSection } from '../utils/sectionUtils';
 
+// Onboarding version - increment when you want to reset onboarding for users still on default state
+const ONBOARDING_VERSION = '3.0';
+
+// Default values for comparison
+const DEFAULT_DESCRIPTION = "Your first project (desktop view recommended)";
+const DEFAULT_DURATION_MINUTES = 7 * 24 * 60; // 7 days
+
+// Helper to check if user is still on default onboarding state
+const isDefaultOnboardingState = async (adapter) => {
+  try {
+    const settings = await adapter.getTimeSettings();
+    
+    // If no settings exist, they're not on default state (no board at all)
+    if (!settings) {
+      return false;
+    }
+    
+    // Check if description and duration match defaults
+    const descriptionMatches = settings.description === DEFAULT_DESCRIPTION;
+    const durationMatches = settings.duration === DEFAULT_DURATION_MINUTES;
+    
+    return descriptionMatches && durationMatches;
+  } catch (error) {
+    console.error('Error checking default state:', error);
+    return false;
+  }
+};
+
+// Helper to check and reset onboarding if version changed AND still on default state
+const checkOnboardingVersion = async (adapter) => {
+  const storedVersion = localStorage.getItem('onboardingVersion');
+  if (storedVersion !== ONBOARDING_VERSION) {
+    // Only reset if they're still on the default onboarding state
+    const isDefault = await isDefaultOnboardingState(adapter);
+    
+    if (isDefault) {
+      // Reset onboarding flags
+      localStorage.removeItem('hasVisitedBefore');
+      localStorage.removeItem('isFirstBoardMode');
+      localStorage.removeItem('localBoardActive');
+      localStorage.setItem('onboardingVersion', ONBOARDING_VERSION);
+    } else {
+      // User has their own board, just update version
+      localStorage.setItem('onboardingVersion', ONBOARDING_VERSION);
+    }
+  }
+};
+
 // Helper to get/set visited boards
 const getVisitedBoards = () => {
   try {
@@ -1028,6 +1076,12 @@ const PasteArea = ({ onExport }) => {
         const pathParts = window.location.pathname.split('/').filter(Boolean);
         const urlBoardId = pathParts[0] || null;
         const { adapter } = getStorageAdapter(storageMode, urlBoardId);
+        
+        // Only check version for local boards (not collaborative)
+        if (!urlBoardId && storageMode === 'local') {
+          await checkOnboardingVersion(adapter);
+        }
+        
         const hasVisited = localStorage.getItem('hasVisitedBefore');
 
         // If we're in collaborative mode with a URL board ID, handle it separately

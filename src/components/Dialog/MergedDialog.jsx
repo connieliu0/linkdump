@@ -6,7 +6,6 @@ import useMeasure from 'react-use-measure';
 import { logEvent } from 'firebase/analytics';
 import { analytics } from '../../utils/storage/firebase';
 
-
 const STEPS = {
   ONBOARD: 0,
   TIME_INPUT: 1,
@@ -21,6 +20,9 @@ const MergedDialog = ({ isOpen, onClose, onTimeSet, onStorageModeSelect, forceTi
       setCurrentStep(STEPS.TIME_INPUT);
       return;
     }
+    
+    // PasteArea handles version checking and reset logic
+    // We just check if user has visited before to determine which step to show
     const hasVisited = localStorage.getItem('hasVisitedBefore');
     if (hasVisited) setCurrentStep(STEPS.TIME_INPUT);
   }, [forceTimeInputStep]);
