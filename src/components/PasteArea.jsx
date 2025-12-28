@@ -126,6 +126,7 @@ const PasteArea = ({ onExport }) => {
   const [selectedId, setSelectedId] = useState(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const mousePositionRef = useRef({ x: 0, y: 0 }); // Ref to avoid stale closures
+  const [screenMousePosition, setScreenMousePosition] = useState({ x: 0, y: 0 }); // Screen coordinates for ghost card
   const [isSelecting, setIsSelecting] = useState(false);
   const panzoomRef = useRef();
   const activeItemRef = useRef(null);
@@ -168,6 +169,9 @@ const PasteArea = ({ onExport }) => {
   // Animation state for card separation
   const [separatingCardId, setSeparatingCardId] = useState(null);
   const [newCardAnimations, setNewCardAnimations] = useState({});
+
+  // Placement mode state - tracks if user is in card placement mode
+  const [isPlacingCard, setIsPlacingCard] = useState(false);
 
   // Add a ref to track if we're clearing
   const isClearingRef = useRef(false);
@@ -477,17 +481,106 @@ const PasteArea = ({ onExport }) => {
     return () => clearInterval(timer);
   }, [timeSettings]);
 
+  // Helper to get center of viewport in canvas coordinates
+  const getViewportCenterPosition = useCallback(() => {
+    const canvasEl = document.querySelector('.canvas-area__in');
+    if (!canvasEl || !panzoomRef.current) {
+      return { x: 100, y: 100 }; // fallback
+    }
+    
+    const rect = canvasEl.getBoundingClientRect();
+    const zoom = panzoomRef.current.getZoom() || 1;
+    
+    // Calculate viewport center in screen coordinates
+    const viewportCenterX = window.innerWidth / 2;
+    const viewportCenterY = window.innerHeight / 2;
+    
+    // Convert to canvas coordinates
+    const x = (viewportCenterX - rect.left) / zoom;
+    const y = (viewportCenterY - rect.top) / zoom;
+    
+    return { x, y };
+  }, []);
+
   // Define addEmptyCard function
-  const addEmptyCard = async (cardData = { position: { x: 100, y: 100 } }) => {
+  const addEmptyCard = async (cardData = {}) => {
     try {
+      // If no position provided, place at center of viewport
+      const position = cardData.position || getViewportCenterPosition();
+      
       const newItem = cardData.type === 'image' 
-        ? createImageCard(cardData.content, cardData.position, cardData.sourceUrl)
-        : createTextCard(cardData.content, cardData.position, cardData.isEmpty);
+        ? createImageCard(cardData.content, position, cardData.sourceUrl)
+        : createTextCard(cardData.content, position, cardData.isEmpty);
       await saveAndUpdateItems(storage, newItem, setItems);
     } catch (error) {
       console.error('Error adding empty card:', error);
     }
   };
+
+  // Start placement mode for desktop text insertion
+  const startPlacingCard = useCallback(() => {
+    setIsPlacingCard(true);
+  }, []);
+
+  // Place card at mouse position and enter edit mode
+  const placeCardAtPosition = useCallback(async (position) => {
+    if (!storage) return;
+    try {
+      const newItem = createTextCard('', position, true);
+      const cardId = await storage.saveItem(newItem);
+      
+      if (cardId) {
+        // Update items state with the new card
+        setItems(prev => [...prev, { ...newItem, id: cardId }]);
+        
+        setIsPlacingCard(false);
+        
+        // Select the card first
+        setSelectedId(cardId);
+        
+        // Wait for React to render the card and enter edit mode, then focus the textarea
+        // TextCard should auto-enter edit mode when isEmpty is true
+        const focusTextarea = () => {
+          // Card is rendered inside PanZoom Element, so search for it differently
+          const cardElements = document.querySelectorAll('.paste-item');
+          let cardElement = null;
+          for (const el of cardElements) {
+            if (el.id === cardId) {
+              cardElement = el;
+              break;
+            }
+          }
+          if (cardElement) {
+            const textarea = cardElement.querySelector('.content-input');
+            if (textarea) {
+              textarea.focus();
+              // Ensure cursor is at the end
+              const len = textarea.value.length;
+              textarea.setSelectionRange(len, len);
+              return true;
+            }
+          }
+          return false;
+        };
+        
+        // Try multiple times with increasing delays to account for React rendering and edit mode activation
+        if (!focusTextarea()) {
+          setTimeout(() => {
+            if (!focusTextarea()) {
+              setTimeout(() => {
+                focusTextarea();
+              }, 150);
+            }
+          }, 100);
+        }
+      } else {
+        setIsPlacingCard(false);
+      }
+    } catch (error) {
+      console.error('Error placing card:', error);
+      setIsPlacingCard(false);
+    }
+  }, [storage]);
 
 
   // Define updateCard function
@@ -1219,6 +1312,9 @@ const PasteArea = ({ onExport }) => {
   }, []);
 
   const handleCanvasMouseMove = useCallback((e) => {
+    // Update screen mouse position for ghost card
+    setScreenMousePosition({ x: e.clientX, y: e.clientY });
+    
     // Update mouse position for paste using manual coordinate conversion
     // panzoom.getPosition() returns pan position, not converted coords
     const canvasEl = document.querySelector('.canvas-area__in');
@@ -1326,6 +1422,22 @@ const PasteArea = ({ onExport }) => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isDrawingSection]);
+
+  // Handle ESC to cancel placement mode
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Don't handle if input is active or we're drawing a section
+      if (isInputActive || isEditing || isDrawingSection) return;
+      
+      // ESC: Cancel placement mode
+      if (e.key === 'Escape' && isPlacingCard) {
+        setIsPlacingCard(false);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPlacingCard, isDrawingSection, isInputActive, isEditing]);
 
   // Section drag handling - move cards with section
   const handleSectionDragStart = useCallback((sectionId, e) => {
@@ -1479,6 +1591,23 @@ const PasteArea = ({ onExport }) => {
     }
   }, [isInputActive, isEditing]);
 
+  // Helper to convert canvas coordinates to screen coordinates
+  const canvasToScreen = useCallback((canvasX, canvasY) => {
+    const canvasEl = document.querySelector('.canvas-area__in');
+    if (!canvasEl || !panzoomRef.current) {
+      return { x: 0, y: 0 };
+    }
+    
+    const rect = canvasEl.getBoundingClientRect();
+    const zoom = panzoomRef.current.getZoom() || 1;
+    
+    // Convert canvas coords to screen coords
+    const screenX = canvasX * zoom + rect.left;
+    const screenY = canvasY * zoom + rect.top;
+    
+    return { x: screenX, y: screenY };
+  }, []);
+
   return (
     <>
       <ConvertToCollaborativeDialog
@@ -1550,6 +1679,30 @@ const PasteArea = ({ onExport }) => {
                 )}
               </div>
             )}
+            {/* Ghost card for placement mode */}
+            {isPlacingCard && (() => {
+              const screenPos = canvasToScreen(mousePosition.x, mousePosition.y);
+              const zoom = panzoomRef.current?.getZoom() || 0.73; // Get current zoom level
+              return (
+                <div 
+                  className="ghost-card-placement"
+                  style={{
+                    position: 'fixed',
+                    left: `${screenPos.x}px`,
+                    top: `${screenPos.y}px`,
+                    pointerEvents: 'none',
+                    transform: `translate(-50%, -50%) scale(${zoom})`, // Apply zoom scale
+                    zIndex: 1000
+                  }}
+                >
+                  <div className="text-container">
+                    <div className="text-content">
+                      <div className="empty-content editable new-text"></div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
             <div 
               className="leaf-shadows-container sway1"
               style={{
@@ -1610,6 +1763,7 @@ const PasteArea = ({ onExport }) => {
               timeSettings={timeSettings}
               projectDescription={timeSettings?.description}
               onAddEmptyCard={addEmptyCard}
+              onStartPlacingCard={startPlacingCard}
               onClearCanvas={handleClearCanvas}
               isExpired={isExpired}
               boardId={boardId}
@@ -1643,7 +1797,36 @@ const PasteArea = ({ onExport }) => {
                   zoomMax={2}
                   ref={panzoomRef}
                   className="canvas-area"
-                  onContainerClick={() => {
+                  onContainerClick={async (e) => {
+                    // If in placement mode, place card at mouse position (centered)
+                    if (isPlacingCard) {
+                      // Get actual ghost card dimensions to center it properly
+                      const ghostCard = document.querySelector('.ghost-card-placement');
+                      let cardWidth = 200; // default min-width
+                      let cardHeight = 50; // default estimated height
+                      
+                      if (ghostCard) {
+                        const rect = ghostCard.getBoundingClientRect();
+                        cardWidth = rect.width;
+                        cardHeight = rect.height;
+                      }
+                      
+                      // Convert card dimensions from screen pixels to canvas coordinates
+                      const canvasEl = document.querySelector('.canvas-area__in');
+                      const zoom = panzoomRef.current?.getZoom() || 1;
+                      
+                      const canvasCardWidth = cardWidth / zoom;
+                      const canvasCardHeight = cardHeight / zoom;
+                      
+                      // Offset position by half card dimensions to center it on mouse
+                      const position = {
+                        x: mousePositionRef.current.x - (canvasCardWidth / 2),
+                        y: mousePositionRef.current.y - (canvasCardHeight / 2)
+                      };
+                      await placeCardAtPosition(position);
+                      return;
+                    }
+                    
                     setSelectedId(null);
                     setSelectedSectionId(null);
                   }}

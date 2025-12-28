@@ -152,8 +152,15 @@ const TextCard = React.memo(function TextCard({
     setCardContent(newContent);
     if (contentRef.current) {
       contentRef.current.style.height = 'auto';
-      contentRef.current.style.height = `${contentRef.current.scrollHeight}px`;
+      const scrollHeight = contentRef.current.scrollHeight;
+      // Maintain minimum two-line height if card was empty when editing started
+      const minHeight = wasEmptyWhenEditingStartedRef.current 
+        ? parseFloat(getComputedStyle(contentRef.current).fontSize) * 1.4 * 1.5 * 2 
+        : 0;
+      contentRef.current.style.height = `${Math.max(scrollHeight, minHeight)}px`;
     }
+    // Mark as interacted when user types
+    hasInteractedRef.current = true;
     await storage.updateItem(itemId, { 
       content: newContent,
       isEmpty: newContent.trim() === ''
@@ -240,11 +247,33 @@ const TextCard = React.memo(function TextCard({
     return ReactDOM.createPortal(button, document.body);
   };
 
+  // Track if user has interacted with the card (to prevent re-auto-editing after blur)
+  const hasInteractedRef = useRef(false);
+  // Track if card was empty when editing started (to maintain two-line height)
+  const wasEmptyWhenEditingStartedRef = useRef(false);
+  
   useEffect(() => {
-    if (isEmpty && contentRef.current) {
+    // Auto-edit when empty (card is ready for input)
+    // Only auto-edit if user hasn't interacted yet (prevents re-editing after blur)
+    if (isEmpty && !isContentEditing && !hasInteractedRef.current) {
       setIsContentEditing(true);
+      wasEmptyWhenEditingStartedRef.current = true; // Track that it was empty when editing started
     }
-  }, [isEmpty]);
+  }, [isEmpty, isContentEditing, itemId]);
+  
+  // Track when user interacts with the card
+  useEffect(() => {
+    if (isContentEditing) {
+      hasInteractedRef.current = true;
+      // If we're entering edit mode and the card is empty, mark it
+      if (isEmpty) {
+        wasEmptyWhenEditingStartedRef.current = true;
+      }
+    } else {
+      // Reset when leaving edit mode
+      wasEmptyWhenEditingStartedRef.current = false;
+    }
+  }, [isContentEditing, isEmpty]);
 
   // Only set cursor position when first entering edit mode
   const isFirstEdit = useRef(true);
@@ -274,9 +303,10 @@ const TextCard = React.memo(function TextCard({
             className={`input-field content-input ${type === 'newText' ? 'new-text' : 'pasted-text'}`}
             placeholder={isEmpty ? "Click to edit" : ""}
             style={{ 
-              height: textLength.current ? `${textLength.current}px` : 'auto',
+              height: textLength.current ? `${textLength.current}px` : (isEmpty ? 'auto' : 'auto'),
+              minHeight: (isEmpty || wasEmptyWhenEditingStartedRef.current) ? 'calc(1.4em * 1.5 * 2)' : 'auto',
               minWidth: textWidth.current ? `${textWidth.current}px` : '200px',
-              width: 'auto',
+              width: isEmpty ? '304px' : (textWidth.current ? `${textWidth.current}px` : 'auto'),
               resize: 'none',
               boxSizing: 'border-box'
             }}

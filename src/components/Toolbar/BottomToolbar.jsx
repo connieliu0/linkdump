@@ -4,11 +4,13 @@ import ImportArenaDialog from '../Dialog/ImportArenaDialog';
 import LinesSvg from '../../assets/Lines.svg';
 import PictureSvg from '../../assets/picture.svg';
 import Tooltip from '../Tooltip';
+import { isMobileDevice } from '../../utils/deviceDetection';
 
 
 const BottomToolbar = ({ 
   boardId,
   onAddEmptyCard,
+  onStartPlacingCard,
   onImportArenaItems,
   isCollaborative,
   onConvertToCollaborative,
@@ -76,6 +78,19 @@ const BottomToolbar = ({
     }
   };
 
+  const handleAddTextClick = () => {
+    if (isMobileDevice()) {
+      // Mobile: show modal
+      setAddContentMode('text');
+      setShowAddContentModal(true);
+    } else {
+      // Desktop: start placement mode
+      if (onStartPlacingCard) {
+        onStartPlacingCard();
+      }
+    }
+  };
+
   return (
     <>
       <input
@@ -96,7 +111,7 @@ const BottomToolbar = ({
         {/* Add Text */}
         <div className="action add-section">
           <Tooltip text="Add text">
-            <div className="clickable-div add-text" onClick={() => { setAddContentMode('text'); setShowAddContentModal(true); }}>
+            <div className="clickable-div add-text" onClick={handleAddTextClick}>
               <img src={LinesSvg} alt="" className="lines-svg" />
             </div>
           </Tooltip>

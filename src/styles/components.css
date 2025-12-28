@@ -657,6 +657,14 @@ button:hover {
   font-size: 1.4em; /* Make it a bit larger for better readability */
 }
 
+/* Empty content should match the two-line height of the textarea */
+.text-content .empty-content.editable.new-text {
+  min-height: calc(1.4em * 1.5 * 2);
+  width: 304px; /* Match max-width of text-content to prevent resizing */
+  display: block;
+  box-sizing: border-box;
+}
+
 /* Styles for pasted text */
 .text-content .editable.pasted-text,
 .text-content .content-input.pasted-text,
@@ -962,7 +970,7 @@ main {
 .section-tool {
   right: calc(50% - 350px);
   text-align: center;
-  min-width: 80px;
+  min-width: 150px;
   transform: translateY(calc(100% - 50px));
   transition: transform 0.3s ease;
   rotate: 1deg;
@@ -1564,6 +1572,41 @@ You can find the assignment logic in useAgingEffect.js.
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
+/* Ghost card for placement mode */
+.ghost-card-placement {
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.ghost-card-placement .text-container {
+  background: url('../assets/crumpled-paper.webp');
+  background-size: cover;
+  background-position: center;
+  border-radius: 0.25rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10), 0 1.5px 0 #fff inset;
+  max-width: 320px;
+  min-width: 200px;
+  width: fit-content;
+}
+
+.ghost-card-placement .text-content {
+  padding: 8px;
+  border-radius: 4px;
+  width: fit-content;
+  max-width: 304px;
+  min-width: 200px;
+  box-sizing: border-box;
+  background-color: transparent;
+}
+
+.ghost-card-placement .empty-content.editable.new-text {
+  /* Match exact styling of actual empty new-text card */
+  font-family: "Schoolbell", cursive;
+  font-weight: 400;
+  font-style: normal; /* Match actual new-text style */
+  font-size: 1.2em; /* Match .text-content .editable.new-text */
+  color: rgba(0, 0, 0, 0.4); /* Light grey text for ghost appearance */
+}
 
 /* Add responsive styles for mobile */
 @media screen and (max-width: 480px) {
@@ -1627,6 +1670,7 @@ You can find the assignment logic in useAgingEffect.js.
     max-width: 240px;
     min-width: 200px;
   }
+
 
   .text-content {
     max-width: 224px; /* Match paste-item minus padding */
