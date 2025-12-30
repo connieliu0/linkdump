@@ -11,6 +11,7 @@ const BottomToolbar = ({
   boardId,
   onAddEmptyCard,
   onStartPlacingCard,
+  onDragStartPlacingCard,
   onImportArenaItems,
   isCollaborative,
   onConvertToCollaborative,
@@ -91,6 +92,16 @@ const BottomToolbar = ({
     }
   };
 
+  const handleAddTextMouseDown = (e) => {
+    // Only handle left mouse button and desktop
+    if (e.button !== 0 || isMobileDevice()) return;
+    
+    // Start drag placement mode
+    if (onDragStartPlacingCard) {
+      onDragStartPlacingCard();
+    }
+  };
+
   return (
     <>
       <input
@@ -111,8 +122,18 @@ const BottomToolbar = ({
         {/* Add Text */}
         <div className="action add-section">
           <Tooltip text="Add text">
-            <div className="clickable-div add-text" onClick={handleAddTextClick}>
-              <img src={LinesSvg} alt="" className="lines-svg" />
+            <div 
+              className="clickable-div add-text" 
+              onClick={handleAddTextClick}
+              onMouseDown={handleAddTextMouseDown}
+            >
+              <img 
+                src={LinesSvg} 
+                alt="" 
+                className="lines-svg" 
+                draggable={false}
+                onDragStart={(e) => e.preventDefault()}
+              />
             </div>
           </Tooltip>
         </div>

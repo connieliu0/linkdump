@@ -20,6 +20,7 @@ const TextCard = React.memo(function TextCard({
   const [isContentEditing, setIsContentEditing] = useState(false);
   const [sourceUrl, setSourceUrl] = useState(initialSourceUrl || '');
   const [cardContent, setCardContent] = useState(content || '');
+  const [wasEmptyWhenEditingStarted, setWasEmptyWhenEditingStarted] = useState(false);
   const contentRef = useRef(null);
   const textLength = useRef(null);
   const textWidth = useRef(null);
@@ -34,25 +35,13 @@ const TextCard = React.memo(function TextCard({
     onInputActiveChange(isContentEditing || isEditing);
   }, [isContentEditing, isEditing, onInputActiveChange]);
 
-  // Add mouse event listeners to track mouse state
-  useEffect(() => {
-    const handleMouseDown = (e) => {
-      if (e.target.closest('.text-container')) {
-        isMouseDownRef.current = true;
-      }
-    };
+  // Handle mouse state locally instead of document listeners for better performance
+  const handleContainerMouseDown = useCallback(() => {
+    isMouseDownRef.current = true;
+  }, []);
 
-    const handleMouseUp = () => {
-      isMouseDownRef.current = false;
-    };
-
-    document.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      document.removeEventListener('mousedown', handleMouseDown);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
+  const handleContainerMouseUp = useCallback(() => {
+    isMouseDownRef.current = false;
   }, []);
 
   // Cleanup timeouts on unmount
@@ -257,7 +246,8 @@ const TextCard = React.memo(function TextCard({
     // Only auto-edit if user hasn't interacted yet (prevents re-editing after blur)
     if (isEmpty && !isContentEditing && !hasInteractedRef.current) {
       setIsContentEditing(true);
-      wasEmptyWhenEditingStartedRef.current = true; // Track that it was empty when editing started
+      setWasEmptyWhenEditingStarted(true); // Track that it was empty when editing started
+      wasEmptyWhenEditingStartedRef.current = true; // Also set ref for height calculation
     }
   }, [isEmpty, isContentEditing, itemId]);
   
@@ -267,10 +257,12 @@ const TextCard = React.memo(function TextCard({
       hasInteractedRef.current = true;
       // If we're entering edit mode and the card is empty, mark it
       if (isEmpty) {
+        setWasEmptyWhenEditingStarted(true);
         wasEmptyWhenEditingStartedRef.current = true;
       }
     } else {
       // Reset when leaving edit mode
+      setWasEmptyWhenEditingStarted(false);
       wasEmptyWhenEditingStartedRef.current = false;
     }
   }, [isContentEditing, isEmpty]);
@@ -289,9 +281,13 @@ const TextCard = React.memo(function TextCard({
   }, [isContentEditing, isEditing]);
 
   return (
-    <div className={`text-container ${isInputActive ? 'input-active' : ''}`}>
+    <div 
+      className={`text-container ${isInputActive ? 'input-active' : ''}`}
+      onMouseDown={handleContainerMouseDown}
+      onMouseUp={handleContainerMouseUp}
+    >
       {renderSeparateButton()}
-      <div className="text-content">
+      <div className={`text-content ${wasEmptyWhenEditingStarted && isContentEditing ? 'empty-editing' : ''} ${isContentEditing ? 'has-textarea' : ''}`}>
         {isContentEditing ? (
           <textarea
             ref={contentRef}
@@ -306,7 +302,7 @@ const TextCard = React.memo(function TextCard({
               height: textLength.current ? `${textLength.current}px` : (isEmpty ? 'auto' : 'auto'),
               minHeight: (isEmpty || wasEmptyWhenEditingStartedRef.current) ? 'calc(1.4em * 1.5 * 2)' : 'auto',
               minWidth: textWidth.current ? `${textWidth.current}px` : '200px',
-              width: isEmpty ? '304px' : (textWidth.current ? `${textWidth.current}px` : 'auto'),
+              width: '100%', // Always fill container
               resize: 'none',
               boxSizing: 'border-box'
             }}

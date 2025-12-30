@@ -172,6 +172,8 @@ const PasteArea = ({ onExport }) => {
 
   // Placement mode state - tracks if user is in card placement mode
   const [isPlacingCard, setIsPlacingCard] = useState(false);
+  // Track if placement was initiated via drag (vs click)
+  const [isDragPlacing, setIsDragPlacing] = useState(false);
 
   // Add a ref to track if we're clearing
   const isClearingRef = useRef(false);
@@ -517,9 +519,16 @@ const PasteArea = ({ onExport }) => {
     }
   };
 
-  // Start placement mode for desktop text insertion
+  // Start placement mode for desktop text insertion (click mode)
   const startPlacingCard = useCallback(() => {
     setIsPlacingCard(true);
+    setIsDragPlacing(false);
+  }, []);
+
+  // Start drag-placement mode for desktop text insertion (drag mode)
+  const startDragPlacingCard = useCallback(() => {
+    setIsPlacingCard(true);
+    setIsDragPlacing(true);
   }, []);
 
   // Place card at mouse position and enter edit mode
@@ -534,6 +543,7 @@ const PasteArea = ({ onExport }) => {
         setItems(prev => [...prev, { ...newItem, id: cardId }]);
         
         setIsPlacingCard(false);
+        setIsDragPlacing(false);
         
         // Select the card first
         setSelectedId(cardId);
@@ -575,10 +585,12 @@ const PasteArea = ({ onExport }) => {
         }
       } else {
         setIsPlacingCard(false);
+        setIsDragPlacing(false);
       }
     } catch (error) {
       console.error('Error placing card:', error);
       setIsPlacingCard(false);
+      setIsDragPlacing(false);
     }
   }, [storage]);
 
@@ -1432,12 +1444,47 @@ const PasteArea = ({ onExport }) => {
       // ESC: Cancel placement mode
       if (e.key === 'Escape' && isPlacingCard) {
         setIsPlacingCard(false);
+        setIsDragPlacing(false);
       }
     };
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isPlacingCard, isDrawingSection, isInputActive, isEditing]);
+
+  // Handle mouseup to place card when in drag-placement mode
+  useEffect(() => {
+    if (!isDragPlacing) return;
+    
+    const handleMouseUp = async () => {
+      // Get actual ghost card dimensions to center it properly
+      const ghostCard = document.querySelector('.ghost-card-placement');
+      let cardWidth = 200; // default min-width
+      let cardHeight = 50; // default estimated height
+      
+      if (ghostCard) {
+        const rect = ghostCard.getBoundingClientRect();
+        cardWidth = rect.width;
+        cardHeight = rect.height;
+      }
+      
+      // Convert card dimensions from screen pixels to canvas coordinates
+      const zoom = panzoomRef.current?.getZoom() || 1;
+      const canvasCardWidth = cardWidth / zoom;
+      const canvasCardHeight = cardHeight / zoom;
+      
+      // Offset position by half card dimensions to center it on mouse
+      const position = {
+        x: mousePositionRef.current.x - (canvasCardWidth / 2),
+        y: mousePositionRef.current.y - (canvasCardHeight / 2)
+      };
+      
+      await placeCardAtPosition(position);
+    };
+    
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => window.removeEventListener('mouseup', handleMouseUp);
+  }, [isDragPlacing, placeCardAtPosition]);
 
   // Section drag handling - move cards with section
   const handleSectionDragStart = useCallback((sectionId, e) => {
@@ -1764,6 +1811,7 @@ const PasteArea = ({ onExport }) => {
               projectDescription={timeSettings?.description}
               onAddEmptyCard={addEmptyCard}
               onStartPlacingCard={startPlacingCard}
+              onDragStartPlacingCard={startDragPlacingCard}
               onClearCanvas={handleClearCanvas}
               isExpired={isExpired}
               boardId={boardId}

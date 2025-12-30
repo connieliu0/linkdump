@@ -233,6 +233,22 @@ body {
   transition: background-color 1.5s linear;
 }
 
+/* Ensure text-content expands to contain textarea properly */
+/* Using class-based approach instead of :has() for better performance */
+.text-content.has-textarea {
+  width: 100%;
+  max-width: 304px;
+  min-width: 200px;
+}
+
+/* When textarea is empty and being edited, ensure container expands to full width */
+/* Account for 8px padding on each side (16px total) */
+.text-content.empty-editing.has-textarea {
+  width: 320px !important; /* 304px content + 16px padding */
+  max-width: 320px !important;
+  min-width: 320px !important;
+}
+
 /* Link Card styles */
 .link-card {
   border-radius: 6px;
@@ -1269,7 +1285,7 @@ You can find the assignment logic in useAgingEffect.js.
 /* Add styles for textarea in edit mode */
 .text-content textarea.content-input {
   width: 100%;
-  max-width: 304px;
+  max-width: 100%; /* Fill container, respect text-content max-width */
   min-width: 200px;
   box-sizing: border-box;
   resize: none;
@@ -1277,6 +1293,13 @@ You can find the assignment logic in useAgingEffect.js.
   margin: 0;
   padding: 0;
   line-height: 1.5;
+}
+
+/* Ensure textarea in empty-editing state fills the content area properly */
+.text-content.empty-editing textarea.content-input {
+  width: 100%;
+  max-width: 304px; /* Match the content area (320px container - 16px padding) */
+  box-sizing: border-box;
 }
 
 .tweet-loading {
@@ -1609,7 +1632,11 @@ You can find the assignment logic in useAgingEffect.js.
   font-family: "Schoolbell", cursive;
   font-weight: 400;
   font-style: normal; /* Match actual new-text style */
-  font-size: 1.2em; /* Match .text-content .editable.new-text */
+  font-size: 1.4em; /* Match .text-content .editable.new-text */
+  min-height: calc(1.4em * 1.5 * 2); /* Match two-line height of actual card */
+  width: 304px; /* Match width of actual card */
+  display: block; /* Ensure min-height applies */
+  box-sizing: border-box;
   color: rgba(0, 0, 0, 0.4); /* Light grey text for ghost appearance */
 }
 
