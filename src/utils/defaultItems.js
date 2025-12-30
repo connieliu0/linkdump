@@ -43,7 +43,7 @@ export const getDefaultHomepageItems = () => {
     ),
     createLinkCard(
       "https://connie.surf/valuesbasedsoftware.html",
-      { x: CENTER_X + SPACING_X -240, y: CENTER_Y - SPACING_Y +180}
+      { x: CENTER_X + SPACING_X -240, y: CENTER_Y - SPACING_Y +160}
     ),
     // Pro tips - bottom left of center group
     // Pro Tips cards, broken up and moved to the left of the welcome card
@@ -65,12 +65,12 @@ export const getDefaultHomepageItems = () => {
     // Chrome extension tip - to the right of tips
     createTextCard(
       "• Save items using the Chrome extension",
-      { x: CENTER_X - SPACING_X, y: CENTER_Y - SPACING_Y + 80 },
+      { x: CENTER_X - 300, y: CENTER_Y - SPACING_Y + 230 },
       false
     ),
     createLinkCard(
       "https://chromewebstore.google.com/detail/linkdump-saver/eemcbhaiifgompigbdjfhklaimdcdndh",
-      { x: CENTER_X - SPACING_X, y: CENTER_Y - SPACING_Y + 150 }
+      { x: CENTER_X - 300, y: CENTER_Y - SPACING_Y + 318 }
     ),
 
     // Add to Home Screen image card
