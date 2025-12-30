@@ -22,7 +22,7 @@ const ChangelogDialog = ({ isOpen, onClose }) => {
           rel="noopener noreferrer"
           style={{ flex: 1, textDecoration: 'none' }}
         >
-          <button style={{ width: '100%' }}>Asking for feedback ~ I'll buy you a coffee</button>
+          <button style={{ width: '100%' }}>Asking for feedback ~ I'll buy you a coffee!</button>
         </a>
       </div>
     </Modal>

@@ -27,6 +27,7 @@ const FirstBoardToolbar = ({
           🗑️ Clear canvas
         </button>
       </div>
+      Paste an image or link below; Hold down shift to drag and select multiple 
     </div>
   );
 };

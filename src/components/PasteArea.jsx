@@ -1971,7 +1971,7 @@ const PasteArea = ({ onExport }) => {
                     }
                   }}
                 >
-                  {!isExpired && (
+                  {/* {!isExpired && (
                     <div style={{ 
                       position: 'fixed', 
                       top: '1rem', 
@@ -1981,9 +1981,8 @@ const PasteArea = ({ onExport }) => {
                       pointerEvents: 'none',
                       fontSize: '1.5rem',
                     }}>
-                      Paste an image or link here; Hold down shift to drag and select multiple 
                     </div>
-                  )}
+                  )} */}
 
                   {/* Render sections (below cards) */}
                   {visibleSections.map(section => (
