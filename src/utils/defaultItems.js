@@ -62,6 +62,16 @@ export const getDefaultHomepageItems = () => {
       { x: CENTER_X - SPACING_X * 2 - 20, y: CENTER_Y - SPACING_Y + 180 },
       false
     ),
+    // Chrome extension tip - to the right of tips
+    createTextCard(
+      "• Save items using the Chrome extension",
+      { x: CENTER_X - SPACING_X, y: CENTER_Y - SPACING_Y + 80 },
+      false
+    ),
+    createLinkCard(
+      "https://chromewebstore.google.com/detail/linkdump-saver/eemcbhaiifgompigbdjfhklaimdcdndh",
+      { x: CENTER_X - SPACING_X, y: CENTER_Y - SPACING_Y + 150 }
+    ),
 
     // Add to Home Screen image card
     createImageCard(

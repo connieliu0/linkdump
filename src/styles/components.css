@@ -502,6 +502,7 @@ button:hover {
   rotate: -2deg;
   background-size: cover;
   background-position: center;
+  max-width: 450px;
 }
 .time-section::before {
   content: '';
@@ -1708,6 +1709,10 @@ You can find the assignment logic in useAgingEffect.js.
   .toolbar-section {
     max-width: 200px;
     padding: 15px;
+  }
+
+  .time-section {
+    max-width: 280px;
   }
 
   .time-section,

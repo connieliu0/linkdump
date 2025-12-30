@@ -6,7 +6,7 @@ import { formatTimeRemaining, getTimePhase, getTimeMessage } from '../../utils/t
 import { AnimatePresence, motion } from 'framer-motion';
 
 // Helper to check if user has seen the changelog
-const CHANGELOG_VERSION = '1.0'; // Increment this when you want to show the changelog again
+const CHANGELOG_VERSION = '1.1'; // Increment this when you want to show the changelog again
 const hasSeenChangelog = () => {
   return localStorage.getItem('seenChangelogVersion') === CHANGELOG_VERSION;
 };
@@ -127,14 +127,33 @@ const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription, onProjec
         )}
         {/* <div><em>{getMessage()}</em></div> */}
       </div>
-      <div>{formatTimeRemaining(timeRemaining)}<span style={{color: 'var(--secondary-color)'}}> until full decay</span></div>
-      {onCreateBoard && !hideBoardActions && (
-        <div style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <div className="clickable-div new-board" onClick={onCreateBoard} style={{ display: 'inline-block' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <span style={{ width: '210px', display: 'inline-block' }}>{formatTimeRemaining(timeRemaining)}<span style={{color: 'var(--secondary-color)'}}> until full decay</span></span>
+        {onCreateBoard && !hideBoardActions && isLocalBoard && onConvertToCollaborative && (
+          <div className="clickable-div new-board" onClick={onCreateBoard} style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
             ➕ New board
           </div>
+        )}
+      </div>
+      {onCreateBoard && !hideBoardActions && (
+        <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+          {(!isLocalBoard || !onConvertToCollaborative) && (
+            <div className="clickable-div new-board" onClick={onCreateBoard} style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
+              ➕ New board
+            </div>
+          )}
+          <a 
+            href="https://chromewebstore.google.com/detail/eemcbhaiifgompigbdjfhklaimdcdndh/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: 'none' }}
+          >
+            <div className="clickable-div new-board" style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
+              🧩 Chrome extension
+            </div>
+          </a>
           {isLocalBoard && onConvertToCollaborative && (
-            <div className="clickable-div new-board" onClick={onConvertToCollaborative} style={{ display: 'inline-block' }}>
+            <div className="clickable-div new-board" onClick={onConvertToCollaborative} style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
               🔗 Make Collaborative
             </div>
           )}
@@ -197,6 +216,13 @@ const MoreMenu = ({ onClearCanvas, onShowChangelog, onConvertToCollaborative, st
               rel="noopener noreferrer"
             >
               <button>Give feedback</button>
+            </a>
+            <a 
+              href="https://chromewebstore.google.com/detail/eemcbhaiifgompigbdjfhklaimdcdndh/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <button>Chrome extension</button>
             </a>
             <button onClick={onShowChangelog}>What's new</button>
             <a 
