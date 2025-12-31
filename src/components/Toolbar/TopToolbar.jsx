@@ -4,6 +4,7 @@ import AddContentDialog from '../Dialog/AddContentDialog';
 import ImportArenaDialog from '../Dialog/ImportArenaDialog';
 import { formatTimeRemaining, getTimePhase, getTimeMessage } from '../../utils/timeFormatting';
 import { AnimatePresence, motion } from 'framer-motion';
+import { isMobileDevice } from '../../utils/deviceDetection';
 
 // Helper to check if user has seen the changelog
 const CHANGELOG_VERSION = '1.1'; // Increment this when you want to show the changelog again
@@ -17,6 +18,14 @@ const markChangelogSeen = () => {
 const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription, onProjectDescriptionChange, onCreateBoard, isLocalBoard, onConvertToCollaborative, hideBoardActions }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(isMobileDevice());
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const getMessage = () => {
     if (!timeSettings) return '';
@@ -127,9 +136,9 @@ const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription, onProjec
         )}
         {/* <div><em>{getMessage()}</em></div> */}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
         <span style={{ width: '210px', display: 'inline-block' }}>{formatTimeRemaining(timeRemaining)}<span style={{color: 'var(--secondary-color)'}}> until full decay</span></span>
-        {onCreateBoard && !hideBoardActions && isLocalBoard && onConvertToCollaborative && (
+        {onCreateBoard && !hideBoardActions && isLocalBoard && onConvertToCollaborative && !isMobile && (
           <div className="clickable-div new-board" onClick={onCreateBoard} style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
             ➕ New board
           </div>
@@ -137,25 +146,29 @@ const TimeDisplay = ({ timeRemaining, timeSettings, projectDescription, onProjec
       </div>
       {onCreateBoard && !hideBoardActions && (
         <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
-          {(!isLocalBoard || !onConvertToCollaborative) && (
+          {((!isLocalBoard || !onConvertToCollaborative) || isMobile) && (
             <div className="clickable-div new-board" onClick={onCreateBoard} style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
               ➕ New board
             </div>
           )}
-          <a 
-            href="https://chromewebstore.google.com/detail/eemcbhaiifgompigbdjfhklaimdcdndh/"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ textDecoration: 'none' }}
-          >
-            <div className="clickable-div new-board" style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
-              🧩 Chrome extension
-            </div>
-          </a>
-          {isLocalBoard && onConvertToCollaborative && (
-            <div className="clickable-div new-board" onClick={onConvertToCollaborative} style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
-              🔗 Make Collaborative
-            </div>
+          {!isMobile && (
+            <>
+              <a 
+                href="https://chromewebstore.google.com/detail/eemcbhaiifgompigbdjfhklaimdcdndh/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ textDecoration: 'none' }}
+              >
+                <div className="clickable-div new-board" style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
+                  🧩 Chrome extension
+                </div>
+              </a>
+              {isLocalBoard && onConvertToCollaborative && (
+                <div className="clickable-div new-board" onClick={onConvertToCollaborative} style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
+                  🔗 Make Collaborative
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
